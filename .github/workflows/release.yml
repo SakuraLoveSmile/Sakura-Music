@@ -1,0 +1,191 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v1.0.0)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Android Split APKs
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build Android Universal APK
+        run: flutter build apk --release
+
+      - name: Collect Android Assets
+        run: |
+          mkdir -p release-assets/android
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release-assets/android/SakuraMusic-android-arm64-v8a.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release-assets/android/SakuraMusic-android-armeabi-v7a.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk release-assets/android/SakuraMusic-android-x86_64.apk
+          cp build/app/outputs/flutter-apk/app-release.apk release-assets/android/SakuraMusic-android-universal.apk
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: release-assets/android/*
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Package Windows Zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-assets/windows
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath release-assets\windows\SakuraMusic-windows-x64.zip
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: release-assets/windows/*
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Package macOS App
+        run: |
+          mkdir -p release-assets/macos
+          ditto -c -k --sequesterRsrc --keepParent build/macos/Build/Products/Release/sakuramusic.app release-assets/macos/SakuraMusic-macos.zip
+          hdiutil create -volname "SakuraMusic" -srcfolder "build/macos/Build/Products/Release/sakuramusic.app" -ov -format UDZO "release-assets/macos/SakuraMusic-macos.dmg"
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: release-assets/macos/*
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (unsigned)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package iOS IPA & App
+        run: |
+          mkdir -p release-assets/ios
+          mkdir -p build/ios/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/Payload/
+          cd build/ios
+          zip -r -9 ../../release-assets/ios/SakuraMusic-ios-unsigned.ipa Payload
+          cd ../..
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app release-assets/ios/SakuraMusic-ios-Runner.app.zip
+
+      - name: Upload iOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release
+          path: release-assets/ios/*
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-android, build-windows, build-macos, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p release-files
+          find artifacts -type f \( -name "*.apk" -o -name "*.zip" -o -name "*.dmg" -o -name "*.ipa" \) -exec cp {} release-files/ \;
+          ls -lh release-files/
+
+      - name: Determine Release Tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: release-files/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
