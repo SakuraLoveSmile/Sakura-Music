@@ -197,15 +197,10 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
   @override
   Future<void> playAt(int index) async {
     _checkIndex(index);
-    final wasPlaying = _playing;
-    if (wasPlaying) {
-      await _fadeTo(0);
-    }
+    await _fadeTo(0);
     await _player.jump(index);
-    if (wasPlaying) {
-      await _player.play();
-      unawaited(_fadeTo(_volume));
-    }
+    await _player.play();
+    unawaited(_fadeTo(_volume));
   }
 
   @override

@@ -24,12 +24,16 @@ class AudioServiceHandler extends BaseAudioHandler
 
   @override
   Future<void> setQueue(List<PlayableItem> items, {int startIndex = 0}) async {
+    _stopped = false;
     queue.add(items.map(_mediaItemFor).toList(growable: false));
     await _delegate.setQueue(items, startIndex: startIndex);
   }
 
   @override
-  Future<void> play() => _delegate.play();
+  Future<void> play() {
+    _stopped = false;
+    return _delegate.play();
+  }
 
   @override
   Future<void> pause() => _delegate.pause();
@@ -57,6 +61,18 @@ class AudioServiceHandler extends BaseAudioHandler
 
   @override
   Future<void> playAt(int index) => _delegate.playAt(index);
+
+  @override
+  Future<void> stop() async {
+    _stopped = true;
+    await _delegate.pause();
+    playbackState.add(
+      playbackState.value.copyWith(
+        processingState: AudioProcessingState.idle,
+        playing: false,
+      ),
+    );
+  }
 
   @override
   Future<void> insertNext(PlayableItem item) async {
@@ -87,6 +103,7 @@ class AudioServiceHandler extends BaseAudioHandler
       _delegate.setEqualizer(settings);
 
   List<PlayableItem> _lastQueue = const <PlayableItem>[];
+  bool _stopped = false;
 
   void _publishSnapshot(PlayerSnapshot snapshot) {
     _lastQueue = snapshot.queue;
@@ -95,25 +112,33 @@ class AudioServiceHandler extends BaseAudioHandler
     if (item != null) {
       mediaItem.add(_mediaItemFor(item));
     }
+    final controls = snapshot.playing
+        ? const <MediaControl>[
+            MediaControl.skipToPrevious,
+            MediaControl.pause,
+            MediaControl.skipToNext,
+          ]
+        : const <MediaControl>[
+            MediaControl.skipToPrevious,
+            MediaControl.play,
+            MediaControl.skipToNext,
+          ];
     playbackState.add(
       PlaybackState(
-        controls: const <MediaControl>[
-          MediaControl.skipToPrevious,
-          MediaControl.play,
-          MediaControl.pause,
-          MediaControl.skipToNext,
-        ],
+        controls: controls,
         systemActions: const <MediaAction>{MediaAction.seek},
-        androidCompactActionIndices: const <int>[0, 1, 3],
-        processingState: switch (snapshot.status) {
-          PlayerStatus.idle => AudioProcessingState.idle,
-          PlayerStatus.loading => AudioProcessingState.loading,
-          PlayerStatus.buffering => AudioProcessingState.buffering,
-          PlayerStatus.ready => AudioProcessingState.ready,
-          PlayerStatus.completed => AudioProcessingState.completed,
-          PlayerStatus.error => AudioProcessingState.error,
-        },
-        playing: snapshot.playing,
+        androidCompactActionIndices: const <int>[0, 1, 2],
+        processingState: _stopped
+            ? AudioProcessingState.idle
+            : switch (snapshot.status) {
+                PlayerStatus.idle => AudioProcessingState.idle,
+                PlayerStatus.loading => AudioProcessingState.loading,
+                PlayerStatus.buffering => AudioProcessingState.buffering,
+                PlayerStatus.ready => AudioProcessingState.ready,
+                PlayerStatus.completed => AudioProcessingState.completed,
+                PlayerStatus.error => AudioProcessingState.error,
+              },
+        playing: _stopped ? false : snapshot.playing,
         updatePosition: snapshot.position,
         bufferedPosition: snapshot.position,
         queueIndex: snapshot.currentIndex,

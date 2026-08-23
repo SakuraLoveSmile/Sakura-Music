@@ -119,65 +119,72 @@ class AppShell extends ConsumerWidget {
               },
             ),
           Expanded(
-            child: Column(
-              children: <Widget>[
-                // Top Global Action Header
-                _TopActionBar(
-                  activeServer: activeServer,
-                  serversAsync: serversAsync,
-                  onSwitchServer: (server) {
-                    ref.read(selectedServerIdProvider.notifier).state =
-                        server.id;
-                  },
-                ),
-                Expanded(child: navigationShell),
-              ],
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: <Widget>[
+                  // Top Global Action Header
+                  _TopActionBar(
+                    isWide: isWide,
+                    activeServer: activeServer,
+                    serversAsync: serversAsync,
+                    onSwitchServer: (server) {
+                      ref.read(selectedServerIdProvider.notifier).state =
+                          server.id;
+                    },
+                  ),
+                  Expanded(child: navigationShell),
+                ],
+              ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
-          if (!isWide)
-            NavigationBar(
-              selectedIndex: currentIndex.clamp(0, 4),
-              onDestinationSelected: (index) {
-                navigationShell.goBranch(
-                  index,
-                  initialLocation: index == navigationShell.currentIndex,
-                );
-              },
-              destinations: const <NavigationDestination>[
-                NavigationDestination(
-                  icon: Icon(Icons.explore_outlined),
-                  selectedIcon: Icon(Icons.explore_rounded),
-                  label: '发现',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.music_note_outlined),
-                  selectedIcon: Icon(Icons.music_note_rounded),
-                  label: '歌曲',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.album_outlined),
-                  selectedIcon: Icon(Icons.album_rounded),
-                  label: '专辑',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.favorite_border_rounded),
-                  selectedIcon: Icon(Icons.favorite_rounded),
-                  label: '喜欢',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.download_outlined),
-                  selectedIcon: Icon(Icons.download_done_rounded),
-                  label: '下载',
-                ),
-              ],
-            ),
-        ],
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
+            if (!isWide)
+              NavigationBar(
+                selectedIndex: currentIndex.clamp(0, 4),
+                onDestinationSelected: (index) {
+                  navigationShell.goBranch(
+                    index,
+                    initialLocation: index == navigationShell.currentIndex,
+                  );
+                },
+                destinations: const <NavigationDestination>[
+                  NavigationDestination(
+                    icon: Icon(Icons.explore_outlined),
+                    selectedIcon: Icon(Icons.explore_rounded),
+                    label: '发现',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.music_note_outlined),
+                    selectedIcon: Icon(Icons.music_note_rounded),
+                    label: '歌曲',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.album_outlined),
+                    selectedIcon: Icon(Icons.album_rounded),
+                    label: '专辑',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.favorite_border_rounded),
+                    selectedIcon: Icon(Icons.favorite_rounded),
+                    label: '喜欢',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.download_outlined),
+                    selectedIcon: Icon(Icons.download_done_rounded),
+                    label: '下载',
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -185,11 +192,13 @@ class AppShell extends ConsumerWidget {
 
 class _TopActionBar extends StatelessWidget {
   const _TopActionBar({
+    required this.isWide,
     required this.activeServer,
     required this.serversAsync,
     required this.onSwitchServer,
   });
 
+  final bool isWide;
   final Server? activeServer;
   final AsyncValue<List<Server>> serversAsync;
   final void Function(Server) onSwitchServer;
@@ -207,6 +216,23 @@ class _TopActionBar extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
+          if (!isWide)
+            PopupMenuButton<String>(
+              tooltip: '浏览',
+              offset: const Offset(0, 40),
+              color: const Color(0xFF22252E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (path) => context.go(path),
+              itemBuilder: (context) => const <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(value: '/artists', child: Text('艺术家')),
+                PopupMenuItem<String>(value: '/genres', child: Text('流派')),
+                PopupMenuItem<String>(value: '/radios', child: Text('电台')),
+                PopupMenuItem<String>(value: '/playlists', child: Text('歌单')),
+              ],
+              child: const Icon(Icons.explore_outlined, color: Colors.white70),
+            ),
           const Spacer(),
 
           // Server Switch Disc Icon / Popup

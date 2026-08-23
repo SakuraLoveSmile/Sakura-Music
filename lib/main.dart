@@ -4,6 +4,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -27,6 +28,9 @@ Future<void> main() async {
     });
   }
   if (Platform.isAndroid || Platform.isIOS) {
+    if (Platform.isAndroid) {
+      await Permission.notification.request();
+    }
     final audioHandler = await AudioService.init<AudioServiceHandler>(
       builder: AudioServiceHandler.new,
       config: const AudioServiceConfig(
