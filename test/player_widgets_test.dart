@@ -131,6 +131,53 @@ void main() {
   });
 
   testWidgets(
+    'MiniPlayerBar stays compact without queue controls on narrow widths',
+    (WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+
+      for (final width in <double>[320, 360]) {
+        tester.view.physicalSize = Size(width, 800);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              serversProvider.overrideWithValue(
+                const AsyncValue.data(<Server>[]),
+              ),
+              starredProvider.overrideWith(() => _FakeStarredNotifier()),
+            ],
+            child: MaterialApp(
+              home: Scaffold(body: MiniPlayerBar(service: service)),
+            ),
+          ),
+        );
+        service.emit(
+          const PlayerSnapshot(
+            status: PlayerStatus.ready,
+            currentItem: sampleItem,
+            duration: Duration(minutes: 3, seconds: 45),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.skip_next_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.queue_music_rounded), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
     'PlayerScreen renders close button, shuffle, and loop mode buttons',
     (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1200, 1800);
@@ -181,6 +228,57 @@ void main() {
       expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
       expect(find.byIcon(Icons.skip_next_rounded), findsOneWidget);
       expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'PlayerScreen fits narrow mobile widths and exposes secondary controls',
+    (WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+
+      for (final width in <double>[360, 390, 430]) {
+        tester.view.physicalSize = Size(width, 800);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              audioPlayerProvider.overrideWithValue(service),
+              databaseProvider.overrideWithValue(database),
+              serversProvider.overrideWithValue(
+                const AsyncValue.data(<Server>[]),
+              ),
+              starredProvider.overrideWith(() => _FakeStarredNotifier()),
+            ],
+            child: const MaterialApp(home: PlayerScreen()),
+          ),
+        );
+        service.emit(
+          const PlayerSnapshot(
+            status: PlayerStatus.ready,
+            playing: true,
+            currentItem: sampleItem,
+            position: Duration(minutes: 1),
+            duration: Duration(minutes: 3, seconds: 45),
+            shuffle: true,
+            loopMode: AppLoopMode.all,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.queue_music_rounded), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
     },
   );
 }

@@ -288,7 +288,7 @@ Future<void> _playSongs(
     await service.setQueue(items, startIndex: index);
     await service.play();
     if (context.mounted) {
-      context.go('/player');
+      context.push('/player');
     }
   } catch (error) {
     if (context.mounted) {

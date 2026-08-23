@@ -38,63 +38,63 @@ class DownloadsScreen extends ConsumerWidget {
               title: const Text('下载'),
               floating: true,
             ),
-          downloads.when(
-            loading: () => const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, stackTrace) => SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: Text('读取下载失败：$error')),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: Text('还没有下载歌曲。')),
+            downloads.when(
+              loading: () => const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (error, stackTrace) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text('读取下载失败：$error')),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: Text('还没有下载歌曲。')),
+                  );
+                }
+                final active = items
+                    .where((item) => item.status != 'completed')
+                    .toList(growable: false);
+                final completed = items
+                    .where((item) => item.status == 'completed')
+                    .toList(growable: false);
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+                  sliver: SliverMainAxisGroup(
+                    slivers: <Widget>[
+                      if (active.isNotEmpty) ...<Widget>[
+                        const _DownloadSectionHeader(title: '进行中'),
+                        SliverList.builder(
+                          itemCount: active.length,
+                          itemBuilder: (context, index) => _downloadTile(
+                            context: context,
+                            ref: ref,
+                            download: active[index],
+                            manager: manager,
+                            client: client,
+                          ),
+                        ),
+                      ],
+                      if (completed.isNotEmpty) ...<Widget>[
+                        const _DownloadSectionHeader(title: '已完成'),
+                        SliverList.builder(
+                          itemCount: completed.length,
+                          itemBuilder: (context, index) => _downloadTile(
+                            context: context,
+                            ref: ref,
+                            download: completed[index],
+                            manager: manager,
+                            client: client,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 );
-              }
-              final active = items
-                  .where((item) => item.status != 'completed')
-                  .toList(growable: false);
-              final completed = items
-                  .where((item) => item.status == 'completed')
-                  .toList(growable: false);
-              return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
-                sliver: SliverMainAxisGroup(
-                  slivers: <Widget>[
-                    if (active.isNotEmpty) ...<Widget>[
-                      const _DownloadSectionHeader(title: '进行中'),
-                      SliverList.builder(
-                        itemCount: active.length,
-                        itemBuilder: (context, index) => _downloadTile(
-                          context: context,
-                          ref: ref,
-                          download: active[index],
-                          manager: manager,
-                          client: client,
-                        ),
-                      ),
-                    ],
-                    if (completed.isNotEmpty) ...<Widget>[
-                      const _DownloadSectionHeader(title: '已完成'),
-                      SliverList.builder(
-                        itemCount: completed.length,
-                        itemBuilder: (context, index) => _downloadTile(
-                          context: context,
-                          ref: ref,
-                          download: completed[index],
-                          manager: manager,
-                          client: client,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            },
-          ),
+              },
+            ),
           ],
         ),
       ),
@@ -189,7 +189,7 @@ Widget _downloadTile({
                 await service.setQueue(<PlayableItem>[item]);
                 await service.play();
                 if (context.mounted) {
-                  context.go('/player');
+                  context.push('/player');
                 }
               },
       ),

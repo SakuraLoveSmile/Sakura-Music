@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -275,39 +276,56 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                   ),
                                 ],
                               )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  SizedBox.square(
-                                    dimension: 260,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: item.artworkUrl == null
-                                          ? Container(
-                                              color: const Color(0xFF22242D),
-                                              child: const Icon(
-                                                Icons.album_rounded,
-                                                size: 80,
-                                                color: Colors.white24,
-                                              ),
-                                            )
-                                          : CachedNetworkImage(
-                                              imageUrl: item.artworkUrl!,
-                                              cacheKey: item.artworkCacheKey,
-                                              fit: BoxFit.cover,
-                                              memCacheWidth: 260,
-                                              memCacheHeight: 260,
-                                            ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Expanded(
-                                    child: _PlaybackLyrics(
-                                      service: service,
-                                      item: item,
-                                    ),
-                                  ),
-                                ],
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final availableHeight =
+                                      constraints.maxHeight.isFinite
+                                      ? constraints.maxHeight
+                                      : 620.0;
+                                  final dimension = math.min(
+                                    280.0,
+                                    math.max(1.0, availableHeight * 0.42),
+                                  );
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      SizedBox.square(
+                                        dimension: dimension,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          child: item.artworkUrl == null
+                                              ? Container(
+                                                  color: const Color(
+                                                    0xFF22242D,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.album_rounded,
+                                                    size: 80,
+                                                    color: Colors.white24,
+                                                  ),
+                                                )
+                                              : CachedNetworkImage(
+                                                  imageUrl: item.artworkUrl!,
+                                                  cacheKey:
+                                                      item.artworkCacheKey,
+                                                  fit: BoxFit.cover,
+                                                  memCacheWidth: 280,
+                                                  memCacheHeight: 280,
+                                                ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Expanded(
+                                        child: _PlaybackLyrics(
+                                          service: service,
+                                          item: item,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                       ),
                     ),
@@ -339,6 +357,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }) {
     final isWide = MediaQuery.sizeOf(context).width >= 860;
     final duration = state.duration ?? item.duration ?? Duration.zero;
+
+    if (!isWide) {
+      return _buildNarrowBottomDock(
+        context: context,
+        service: service,
+        state: state,
+        item: item,
+        isStarred: isStarred,
+        duration: duration,
+      );
+    }
 
     return SmoothPositionBuilder(
       service: service,
@@ -715,6 +744,239 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ),
               ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNarrowBottomDock({
+    required BuildContext context,
+    required AudioPlayerService service,
+    required _PlayerControlsState state,
+    required PlayableItem item,
+    required bool isStarred,
+    required Duration duration,
+  }) {
+    return SmoothPositionBuilder(
+      service: service,
+      duration: duration,
+      builder: (context, position, controls) {
+        final maxMs = duration.inMilliseconds > 0
+            ? duration.inMilliseconds.toDouble()
+            : 1.0;
+        final posMs = position.inMilliseconds
+            .clamp(0, maxMs.toInt())
+            .toDouble();
+        final sliderTheme = SliderTheme.of(context).copyWith(
+          trackHeight: 2.5,
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.5),
+          overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+          activeTrackColor: const Color(0xFF1E7BF6),
+          inactiveTrackColor: const Color(0xFF2A2C37),
+          thumbColor: Colors.white,
+        );
+
+        return Container(
+          height: 136,
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
+          decoration: const BoxDecoration(
+            color: Color(0xFF16171D),
+            border: Border(top: BorderSide(color: Color(0xFF22242D), width: 1)),
+          ),
+          child: Column(
+            children: <Widget>[
+              SizedBox(
+                height: 30,
+                child: Row(
+                  children: <Widget>[
+                    Text(
+                      _formatDuration(position),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    Expanded(
+                      child: SliderTheme(
+                        data: sliderTheme,
+                        child: Slider(
+                          value: posMs,
+                          max: maxMs,
+                          onChanged: duration == Duration.zero
+                              ? null
+                              : (value) => controls.seek(
+                                  Duration(milliseconds: value.round()),
+                                ),
+                          onChangeEnd: duration == Duration.zero
+                              ? null
+                              : (_) => controls.seekEnd(),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      _formatDuration(duration),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Expanded(
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Center(
+                        child: StarButton(
+                          isStarred: isStarred,
+                          size: 20,
+                          onPressed: () async {
+                            await ref
+                                .read(starredProvider.notifier)
+                                .toggleSong(
+                                  Song(
+                                    id: item.id,
+                                    title: item.title,
+                                    artist: item.artist,
+                                    album: item.album,
+                                  ),
+                                );
+                          },
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: IconButton(
+                          tooltip: '上一首',
+                          onPressed: service.previous,
+                          icon: const Icon(
+                            Icons.skip_previous_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(24),
+                            onTap: () async {
+                              if (state.playing) {
+                                await service.pause();
+                              } else {
+                                await service.play();
+                              }
+                            },
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF1E7BF6),
+                                boxShadow: <BoxShadow>[
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF1E7BF6,
+                                    ).withValues(alpha: 0.45),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                state.playing
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                size: 27,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: IconButton(
+                          tooltip: '下一首',
+                          onPressed: service.next,
+                          icon: const Icon(
+                            Icons.skip_next_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: IconButton(
+                          tooltip: '播放队列',
+                          onPressed: () => showQueuePanel(context, service),
+                          icon: const Icon(
+                            Icons.queue_music_rounded,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 32,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    IconButton(
+                      tooltip: _loopModeLabel(state.loopMode),
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        final next = switch (state.loopMode) {
+                          AppLoopMode.off => AppLoopMode.all,
+                          AppLoopMode.all => AppLoopMode.one,
+                          AppLoopMode.one => AppLoopMode.off,
+                        };
+                        service.setLoopMode(next);
+                      },
+                      icon: Icon(
+                        _loopModeIcon(state.loopMode),
+                        color: state.loopMode == AppLoopMode.off
+                            ? Colors.white60
+                            : const Color(0xFF1E7BF6),
+                      ),
+                    ),
+                    const SizedBox(width: 28),
+                    IconButton(
+                      tooltip: state.shuffle ? '关闭随机播放' : '开启随机播放',
+                      padding: EdgeInsets.zero,
+                      onPressed: () => service.setShuffle(!state.shuffle),
+                      icon: Icon(
+                        Icons.shuffle_rounded,
+                        color: state.shuffle
+                            ? const Color(0xFF1E7BF6)
+                            : Colors.white60,
+                      ),
+                    ),
+                    const SizedBox(width: 28),
+                    IconButton(
+                      tooltip: '睡眠定时',
+                      padding: EdgeInsets.zero,
+                      onPressed: () => _showSleepTimer(context),
+                      icon: const Icon(
+                        Icons.timer_outlined,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         );

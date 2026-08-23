@@ -120,7 +120,7 @@ class _FavoriteSongs extends StatelessWidget {
             await service.setQueue(items, startIndex: index);
             await service.play();
             if (context.mounted) {
-              context.go('/player');
+              context.push('/player');
             }
           },
         );

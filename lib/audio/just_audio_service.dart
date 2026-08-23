@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
 import 'audio_cache_manager.dart';
@@ -61,6 +63,11 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   PlayerSnapshot? get currentSnapshot => _latestSnapshot;
+
+  @visibleForTesting
+  void setQueueForTest(List<PlayableItem> items) {
+    _queue = List<PlayableItem>.unmodifiable(items);
+  }
 
   @override
   Future<void> setQueue(List<PlayableItem> items, {int startIndex = 0}) async {
@@ -160,15 +167,10 @@ class JustAudioPlayerService implements AudioPlayerService {
   @override
   Future<void> playAt(int index) async {
     _checkIndex(index);
-    final wasPlaying = _player.playerState.playing;
-    if (wasPlaying) {
-      await _fadeTo(0);
-    }
+    await _fadeTo(0);
     await _player.seek(Duration.zero, index: index);
-    if (wasPlaying) {
-      await _player.play();
-      unawaited(_fadeTo(_volume));
-    }
+    await _player.play();
+    unawaited(_fadeTo(_volume));
   }
 
   @override
@@ -253,8 +255,8 @@ class JustAudioPlayerService implements AudioPlayerService {
     if (equalizer == null) {
       return;
     }
-    await equalizer.setEnabled(_equalizerSettings.enabled);
     try {
+      await equalizer.setEnabled(_equalizerSettings.enabled);
       final parameters = await equalizer.parameters.timeout(
         const Duration(milliseconds: 250),
       );
@@ -273,6 +275,9 @@ class JustAudioPlayerService implements AudioPlayerService {
     } on TimeoutException {
       // The native effect becomes ready with the first audio source; setQueue
       // calls this method again after that activation.
+    } on PlatformException {
+      // Some Android audio effect implementations are not ready yet. A
+      // missing equalizer must not prevent the queue from being loaded.
     }
   }
 
