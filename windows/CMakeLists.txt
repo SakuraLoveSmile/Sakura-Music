@@ -57,6 +57,16 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# permission_handler_windows still includes the deprecated experimental
+# coroutine header on MSVC. VS 18 treats its deprecation diagnostic as an
+# error, so silence it for the plugin target until the dependency migrates.
+if(TARGET permission_handler_windows_plugin)
+  target_compile_definitions(
+    permission_handler_windows_plugin
+    PRIVATE _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+  )
+endif()
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
