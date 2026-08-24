@@ -93,6 +93,9 @@ class QueuePanel extends StatelessWidget {
               child: ReorderableListView.builder(
                 padding: const EdgeInsets.only(bottom: 24),
                 itemCount: state.queue.length,
+                // onReorderItem only exists in newer Flutter releases; keep
+                // onReorder so the project also analyzes on older SDKs.
+                // ignore: deprecated_member_use
                 onReorder: (oldIndex, newIndex) {
                   if (newIndex > oldIndex) {
                     newIndex -= 1;
