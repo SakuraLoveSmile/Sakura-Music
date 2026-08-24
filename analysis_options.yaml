@@ -9,6 +9,15 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# The vendored just_audio fork ships its own example app and upstream tests
+# that depend on packages not present in this project (mockito,
+# just_audio_media_kit, ...). They are kept for provenance but are not part
+# of this app, so they are excluded from analysis.
+analyzer:
+  exclude:
+    - packages/just_audio/example/**
+    - packages/just_audio/test/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

@@ -123,6 +123,30 @@ void main() {
   });
 
   test(
+    'setPreferredOutputDevice delegates to the player and logs the result',
+    () async {
+      final player = _RecordingAudioPlayer();
+      final service = JustAudioPlayerService(player: player);
+      addTearDown(service.dispose);
+
+      expect(await service.setPreferredOutputDevice('42'), isTrue);
+      expect(player.events, contains('preferred:42'));
+      expect(
+        playbackDebugLog.entries
+            .any((e) => e.message == 'setPreferredDevice: result=true'),
+        isTrue,
+      );
+
+      // null restores the system default routing.
+      expect(await service.setPreferredOutputDevice(null), isTrue);
+      expect(player.events, contains('preferred:null'));
+
+      // An unknown/missing device id must be reported as a failure.
+      expect(await service.setPreferredOutputDevice('missing'), isFalse);
+    },
+  );
+
+  test(
     'retries the equalizer after ready when setQueue timed out',
     () async {
       final fake = _FakeEqualizer(timeoutPattern: const <bool>[true, false]);
@@ -217,6 +241,12 @@ class _RecordingAudioPlayer extends AudioPlayer {
   @override
   Future<void> setVolume(double volume) async {
     events.add('volume:${volume.toStringAsFixed(2)}');
+  }
+
+  @override
+  Future<bool> setPreferredDevice(String? deviceId) async {
+    events.add('preferred:$deviceId');
+    return deviceId != 'missing';
   }
 
   @override

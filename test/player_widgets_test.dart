@@ -70,6 +70,9 @@ class _TestAudioPlayerService implements AudioPlayerService {
   Future<void> setVolume(double value) async {}
 
   @override
+  Future<bool> setPreferredOutputDevice(String? deviceId) async => false;
+
+  @override
   Future<void> setSpeed(double value) async {}
 
   @override

@@ -4,6 +4,7 @@ import 'package:media_kit/media_kit.dart';
 
 import 'audio_player_service.dart';
 import 'equalizer_models.dart';
+import 'playback_debug_log.dart';
 import 'smtc_windows_integration.dart';
 
 class MediaKitAudioPlayerService implements AudioPlayerService {
@@ -287,6 +288,15 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
         _ignoreVolumeStream = false;
       }
     }
+  }
+
+  @override
+  Future<bool> setPreferredOutputDevice(String? deviceId) {
+    playbackDebugLog.add(
+      'setPreferredDevice: deviceId=$deviceId not supported '
+      '(media_kit pipeline)',
+    );
+    return Future<bool>.value(false);
   }
 
   @override
