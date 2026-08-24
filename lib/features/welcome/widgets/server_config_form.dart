@@ -146,6 +146,25 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
     });
   }
 
+  void _handleHostChanged(String value) {
+    final text = value.trim();
+    if (text.contains('://') || (text.contains(':') && !text.contains(' '))) {
+      final parts = decomposeBaseUrl(text);
+      if (parts.host.isNotEmpty && parts.host != text) {
+        setState(() {
+          _scheme = parts.scheme;
+          if (parts.port != null && parts.port!.isNotEmpty) {
+            _portController.text = parts.port!;
+          }
+          _hostController.text = parts.host;
+          _hostController.selection = TextSelection.collapsed(
+            offset: parts.host.length,
+          );
+        });
+      }
+    }
+  }
+
   Future<bool> _testConnection({bool silentSuccess = false}) async {
     if (!_formKey.currentState!.validate()) {
       return false;
@@ -344,21 +363,33 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
                 ? context.l10n.pleaseInputServerName
                 : null,
           ),
-          const SizedBox(height: 14),
-          Text(
-            context.l10n.serverAddress,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
-            ),
+          _InputField(
+            controller: _hostController,
+            labelText: context.l10n.serverAddress,
+            hintText: 'music.example.com',
+            prefixIcon: Icons.link_rounded,
+            keyboardType: TextInputType.url,
+            onChanged: _handleHostChanged,
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              if (text.isEmpty) {
+                return context.l10n.pleaseInputServerAddress;
+              }
+              if (text.contains('://')) {
+                return context.l10n.hostNoScheme;
+              }
+              if (text.contains(':')) {
+                return context.l10n.portInRightField;
+              }
+              return null;
+            },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
+              SizedBox(
+                height: 48,
                 child: SegmentedButton<String>(
                   segments: const <ButtonSegment<String>>[
                     ButtonSegment<String>(value: 'https', label: Text('HTTPS')),
@@ -382,46 +413,29 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
                           : Colors.white70;
                     }),
                     side: WidgetStatePropertyAll(
-                      BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    shape: WidgetStatePropertyAll(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     textStyle: const WidgetStatePropertyAll(
-                      TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     padding: const WidgetStatePropertyAll(
-                      EdgeInsets.symmetric(horizontal: 10, vertical: 22),
+                      EdgeInsets.symmetric(horizontal: 12),
                     ),
                   ),
                 ),
               ),
+              const SizedBox(width: 12),
               Expanded(
-                child: _InputField(
-                  controller: _hostController,
-                  labelText: context.l10n.hostLabel,
-                  hintText: 'music.example.com',
-                  prefixIcon: Icons.link_rounded,
-                  keyboardType: TextInputType.url,
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-                    if (text.isEmpty) {
-                      return context.l10n.pleaseInputServerAddress;
-                    }
-                    if (text.contains('://')) {
-                      return context.l10n.hostNoScheme;
-                    }
-                    if (text.contains(':')) {
-                      return context.l10n.portInRightField;
-                    }
-                    return null;
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 88,
                 child: _InputField(
                   controller: _portController,
                   labelText: context.l10n.portLabel,
                   hintText: _scheme == 'https' ? '443' : '80',
+                  prefixIcon: Icons.tag_rounded,
                   keyboardType: TextInputType.number,
                   inputFormatters: <TextInputFormatter>[
                     FilteringTextInputFormatter.digitsOnly,
@@ -578,6 +592,7 @@ class _InputField extends StatelessWidget {
     this.keyboardType,
     this.inputFormatters,
     this.validator,
+    this.onChanged,
   });
 
   final TextEditingController controller;
@@ -588,6 +603,7 @@ class _InputField extends StatelessWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -596,6 +612,7 @@ class _InputField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
+      onChanged: onChanged,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: labelText,
