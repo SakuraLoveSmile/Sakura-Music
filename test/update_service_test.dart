@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sakuramusic/core/update/update_models.dart';
 import 'package:sakuramusic/core/update/update_service.dart';
 
@@ -199,5 +200,130 @@ void main() {
       ).exists(),
       isFalse,
     );
+  });
+
+  group('checkForUpdate', () {
+    PackageInfo packageInfo() => PackageInfo(
+          appName: 'SakuraMusic',
+          packageName: 'com.example.sakuramusic',
+          version: '1.0.0',
+          buildNumber: '1',
+        );
+
+    Map<String, dynamic> releaseJson(String tag) => <String, dynamic>{
+          'tag_name': tag,
+          'html_url':
+              'https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/$tag',
+          'body': '',
+          'published_at': '2026-08-24T00:00:00Z',
+          'assets': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'name': 'SakuraMusic-android-universal.apk',
+              'browser_download_url':
+                  'https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/$tag/SakuraMusic-android-universal.apk',
+              'size': 123456,
+              'digest': 'sha256:${'a' * 64}',
+            },
+          ],
+        };
+
+    Future<HttpServer> startServer(
+      void Function(HttpRequest) handler,
+    ) async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen(handler);
+      return server;
+    }
+
+    test('falls back to a mirror manifest when the primary returns 403',
+        () async {
+      final primary = await startServer((request) {
+        request.response
+          ..statusCode = HttpStatus.forbidden
+          ..close();
+      });
+      final mirror = await startServer((request) {
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(releaseJson('v9.9.9')))
+          ..close();
+      });
+      addTearDown(() async {
+        await primary.close(force: true);
+        await mirror.close(force: true);
+      });
+
+      final service = UpdateService(
+        dio: Dio(),
+        packageInfoLoader: () async => packageInfo(),
+        latestReleaseUrl: 'http://127.0.0.1:${primary.port}/latest',
+        manifestMirrorUrls: <String>[
+          'http://127.0.0.1:${mirror.port}/latest.json',
+        ],
+      );
+
+      final release = await service.checkForUpdate();
+      expect(release, isNotNull);
+      expect(release!.version, equals('v9.9.9'));
+      expect(release.assets.single.sha256, equals('a' * 64));
+    });
+
+    test('throws when both the primary source and the mirror fail', () async {
+      final primary = await startServer((request) {
+        request.response
+          ..statusCode = HttpStatus.forbidden
+          ..close();
+      });
+      final mirror = await startServer((request) {
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..close();
+      });
+      addTearDown(() async {
+        await primary.close(force: true);
+        await mirror.close(force: true);
+      });
+
+      final service = UpdateService(
+        dio: Dio(),
+        packageInfoLoader: () async => packageInfo(),
+        latestReleaseUrl: 'http://127.0.0.1:${primary.port}/latest',
+        manifestMirrorUrls: <String>[
+          'http://127.0.0.1:${mirror.port}/latest.json',
+        ],
+      );
+
+      await expectLater(
+        service.checkForUpdate(),
+        throwsA(isA<DioException>()),
+      );
+    });
+
+    test('sends a User-Agent header on the primary request', () async {
+      String? receivedUserAgent;
+      final server = await startServer((request) {
+        receivedUserAgent = request.headers.value('user-agent');
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(releaseJson('v9.9.9')))
+          ..close();
+      });
+      addTearDown(() async {
+        await server.close(force: true);
+      });
+
+      final service = UpdateService(
+        dio: Dio(),
+        packageInfoLoader: () async => packageInfo(),
+        latestReleaseUrl: 'http://127.0.0.1:${server.port}/latest',
+        manifestMirrorUrls: const <String>[],
+      );
+
+      final release = await service.checkForUpdate();
+      expect(release, isNotNull);
+      expect(receivedUserAgent, startsWith('SakuraMusic/'));
+    });
   });
 }

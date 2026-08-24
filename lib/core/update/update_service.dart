@@ -24,6 +24,8 @@ class UpdateService {
     Dio? dio,
     PackageInfoLoader? packageInfoLoader,
     TemporaryDirectoryLoader? temporaryDirectoryLoader,
+    this.latestReleaseUrl = defaultLatestReleaseUrl,
+    this.manifestMirrorUrls = defaultManifestMirrorUrls,
   }) : _dio =
            dio ??
            Dio(
@@ -37,35 +39,83 @@ class UpdateService {
        _temporaryDirectoryLoader =
            temporaryDirectoryLoader ?? getTemporaryDirectory;
 
-  static const latestReleaseUrl =
+  /// GitHub Releases API endpoint for the latest published release.
+  static const defaultLatestReleaseUrl =
       'https://api.github.com/repos/SakuraLoveSmile/Sakura-Music/releases/latest';
+
+  /// Mirror manifest URLs used as fallbacks when the GitHub API is rate
+  /// limited (HTTP 403/429) or unreachable. Each URL must serve a
+  /// `release/latest.json` manifest whose JSON shape matches the GitHub
+  /// Releases API (see [AppRelease.fromJson]). jsDelivr caches `@main`
+  /// references for up to ~12h, so these mirror the latest *published* release
+  /// with a bounded lag and are only consulted after the primary source fails.
+  static const defaultManifestMirrorUrls = <String>[
+    'https://cdn.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/latest.json',
+    'https://fastly.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/latest.json',
+  ];
 
   final Dio _dio;
   final PackageInfoLoader _packageInfoLoader;
   final TemporaryDirectoryLoader _temporaryDirectoryLoader;
+  final String latestReleaseUrl;
+  final List<String> manifestMirrorUrls;
 
   Future<AppRelease?> checkForUpdate() async {
     final packageInfo = await _packageInfoLoader();
-    final response = await _dio.get<Object?>(
-      latestReleaseUrl,
-      options: Options(
-        headers: const <String, String>{
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-      ),
-    );
-    final data = response.data;
-    if (data is! Map) {
-      throw const UpdateException('GitHub 返回的版本信息格式无效');
+    final userAgent = 'SakuraMusic/${packageInfo.version}';
+
+    AppRelease? parseRelease(Response<Object?> response) {
+      final data = response.data;
+      if (data is! Map) {
+        throw const UpdateException('GitHub 返回的版本信息格式无效');
+      }
+      final release = AppRelease.fromJson(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+      return compareVersions(packageInfo.version, release.version) < 0
+          ? release
+          : null;
     }
 
-    final release = AppRelease.fromJson(
-      data.map((key, value) => MapEntry(key.toString(), value)),
-    );
-    return compareVersions(packageInfo.version, release.version) < 0
-        ? release
-        : null;
+    Future<Response<Object?>> fetch(
+      String url,
+      Map<String, String> headers,
+    ) =>
+        _dio.get<Object?>(url, options: Options(headers: headers));
+
+    const primaryHeaders = <String, String>{
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+
+    // 1. Primary: GitHub API. A missing User-Agent triggers GitHub's
+    //    60 req/h/IP anonymous limit, which returns HTTP 403 on shared/NAT
+    //    egress IPs, so we always send one.
+    try {
+      return parseRelease(
+        await fetch(
+          latestReleaseUrl,
+          <String, String>{...primaryHeaders, 'User-Agent': userAgent},
+        ),
+      );
+    } on DioException {
+      // Fall through to the mirror manifests.
+    }
+
+    // 2. Mirrors: take the first successful manifest response.
+    Object? lastError = const UpdateException('无法获取版本更新信息');
+    for (final url in manifestMirrorUrls) {
+      try {
+        final response = await fetch(
+          url,
+          <String, String>{'User-Agent': userAgent},
+        );
+        return parseRelease(response);
+      } on Object catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError!;
   }
 
   Future<File> downloadUpdate(
