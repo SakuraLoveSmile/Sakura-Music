@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies (root)
+        run: flutter pub get
+
+      - name: Run flutter analyze (root)
+        run: flutter analyze
+
+      - name: Install dependencies (subsonic_api)
+        working-directory: packages/subsonic_api
+        run: flutter pub get
+
+      - name: Run flutter analyze (subsonic_api)
+        working-directory: packages/subsonic_api
+        run: flutter analyze
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies (root)
+        run: flutter pub get
+
+      - name: Run flutter test (root)
+        run: flutter test
+
+      - name: Install dependencies (subsonic_api)
+        working-directory: packages/subsonic_api
+        run: flutter pub get
+
+      - name: Run flutter test (subsonic_api)
+        working-directory: packages/subsonic_api
+        run: flutter test
