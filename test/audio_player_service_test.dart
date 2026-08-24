@@ -1,10 +1,32 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:sakuramusic/audio/audio_player_service.dart';
+import 'package:sakuramusic/audio/equalizer_controller.dart';
 import 'package:sakuramusic/audio/just_audio_service.dart';
+import 'package:sakuramusic/audio/playback_debug_log.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // `setQueue` resolves a cache directory via path_provider, which has no
+  // native implementation under `flutter test`. Stub the channel so the
+  // equalizer retry path can be exercised without a platform plugin.
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('plugins.flutter.io/path_provider'),
+    (call) async {
+      if (call.method == 'getTemporaryDirectory') {
+        return Directory.systemTemp
+            .createTempSync('sakuramusic_audio_cache_test')
+            .path;
+      }
+      return null;
+    },
+  );
 
   const item = PlayableItem(
     id: 'song-1',
@@ -99,10 +121,81 @@ void main() {
       lessThan(player.events.indexOf('play')),
     );
   });
+
+  test(
+    'retries the equalizer after ready when setQueue timed out',
+    () async {
+      final fake = _FakeEqualizer(timeoutPattern: const <bool>[true, false]);
+      final player = _RecordingAudioPlayer();
+      final service = JustAudioPlayerService.withController(fake, player: player);
+      addTearDown(service.dispose);
+
+      // setQueue applies the equalizer, which times out because the native
+      // effect is not ready yet; the retry marker must be armed.
+      await service.setQueue(<PlayableItem>[item]);
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      expect(service.equalizerRetryPendingForTest, isTrue);
+      expect(fake.parametersCalls, 1);
+
+      // Once the player reaches ready, the pending retry fires exactly once.
+      player.emitPlayerState(PlayerState(true, ProcessingState.ready));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(fake.parametersCalls, 2);
+      expect(service.equalizerRetryPendingForTest, isFalse);
+      expect(
+        playbackDebugLog.entries
+            .any((e) => e.message == 'setEqualizer: re-applied after ready'),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'setQueue resets the equalizer retry marker',
+    () async {
+      // First two equalizer calls time out (covering setQueue + the ready
+      // retry), the third succeeds.
+      final fake = _FakeEqualizer(
+        timeoutPattern: const <bool>[true, true, false],
+      );
+      final player = _RecordingAudioPlayer();
+      final service = JustAudioPlayerService.withController(fake, player: player);
+      addTearDown(service.dispose);
+
+      await service.setQueue(<PlayableItem>[item]);
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      player.emitPlayerState(PlayerState(true, ProcessingState.ready));
+      // The retry re-arms the marker only after its own 250ms timeout elapses.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      // A still-pending marker (re-armed by the failed retry).
+      expect(service.equalizerRetryPendingForTest, isTrue);
+
+      // A new queue must clear the marker; this time the call succeeds so the
+      // marker stays cleared, proving setQueue reset the previous pending state.
+      await service.setQueue(<PlayableItem>[item]);
+      expect(service.equalizerRetryPendingForTest, isFalse);
+      expect(fake.parametersCalls, 3);
+    },
+  );
 }
 
 class _RecordingAudioPlayer extends AudioPlayer {
   final events = <String>[];
+
+  final StreamController<PlayerState> _playerStateController =
+      StreamController<PlayerState>.broadcast();
+  PlayerState _injectedState = PlayerState(false, ProcessingState.idle);
+
+  @override
+  Stream<PlayerState> get playerStateStream => _playerStateController.stream;
+
+  @override
+  PlayerState get playerState => _injectedState;
+
+  void emitPlayerState(PlayerState state) {
+    _injectedState = state;
+    _playerStateController.add(state);
+  }
 
   @override
   Future<Duration?> setAudioSources(
@@ -138,6 +231,60 @@ class _RecordingAudioPlayer extends AudioPlayer {
   Future<void> play() async {
     events.add('play');
   }
+}
+
+class _FakeEqualizer implements EqualizerController {
+  _FakeEqualizer({this.timeoutPattern = const <bool>[true]});
+
+  final List<bool> timeoutPattern;
+
+  int parametersCalls = 0;
+  int setEnabledCalls = 0;
+
+  final EqualizerParameters _parameters = _FakeEqualizerParameters();
+
+  @override
+  Future<void> setEnabled(bool enabled) async => setEnabledCalls++;
+
+  @override
+  Future<EqualizerParameters> get parameters {
+    parametersCalls++;
+    final shouldTimeout = parametersCalls - 1 < timeoutPattern.length
+        ? timeoutPattern[parametersCalls - 1]
+        : false;
+    if (shouldTimeout) {
+      // Never completes within the 250ms timeout applied by the service.
+      return Future<void>.delayed(const Duration(milliseconds: 400))
+          .then((_) => throw TimeoutException('fake timeout'));
+    }
+    return Future<EqualizerParameters>.value(_parameters);
+  }
+}
+
+class _FakeEqualizerParameters implements EqualizerParameters {
+  _FakeEqualizerParameters();
+
+  @override
+  final double minDecibels = -12;
+
+  @override
+  final double maxDecibels = 12;
+
+  @override
+  final List<EqualizerBand> bands = <EqualizerBand>[
+    _FakeEqualizerBand(),
+    _FakeEqualizerBand(),
+    _FakeEqualizerBand(),
+    _FakeEqualizerBand(),
+    _FakeEqualizerBand(),
+  ];
+}
+
+class _FakeEqualizerBand implements EqualizerBand {
+  const _FakeEqualizerBand();
+
+  @override
+  Future<void> setGain(double gain) async {}
 }
 
 extension on PlayerSnapshot {
