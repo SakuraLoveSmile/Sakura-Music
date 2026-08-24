@@ -97,6 +97,12 @@ class Settings extends Table {
 
   /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
   TextColumn get localeCode => text().withDefault(const Constant('zh'))();
+
+  BoolColumn get membershipActive =>
+      boolean().withDefault(const Constant(false))();
+
+  // null = 未激活；'code' = 激活码；'star' = Star 诚信开关
+  TextColumn get membershipMethod => text().nullable()();
 }
 
 class Downloads extends Table {

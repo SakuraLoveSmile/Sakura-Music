@@ -1836,6 +1836,32 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     requiredDuringInsert: false,
     defaultValue: const Constant('zh'),
   );
+  static const VerificationMeta _membershipActiveMeta = const VerificationMeta(
+    'membershipActive',
+  );
+  @override
+  late final GeneratedColumn<bool> membershipActive = GeneratedColumn<bool>(
+    'membership_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("membership_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _membershipMethodMeta = const VerificationMeta(
+    'membershipMethod',
+  );
+  @override
+  late final GeneratedColumn<String> membershipMethod = GeneratedColumn<String>(
+    'membership_method',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1849,6 +1875,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     lyricsOverlayEnabled,
     safeAudioMode,
     localeCode,
+    membershipActive,
+    membershipMethod,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1949,6 +1977,24 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         localeCode.isAcceptableOrUnknown(data['locale_code']!, _localeCodeMeta),
       );
     }
+    if (data.containsKey('membership_active')) {
+      context.handle(
+        _membershipActiveMeta,
+        membershipActive.isAcceptableOrUnknown(
+          data['membership_active']!,
+          _membershipActiveMeta,
+        ),
+      );
+    }
+    if (data.containsKey('membership_method')) {
+      context.handle(
+        _membershipMethodMeta,
+        membershipMethod.isAcceptableOrUnknown(
+          data['membership_method']!,
+          _membershipMethodMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2002,6 +2048,14 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.string,
         data['${effectivePrefix}locale_code'],
       )!,
+      membershipActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}membership_active'],
+      )!,
+      membershipMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}membership_method'],
+      ),
     );
   }
 
@@ -2029,6 +2083,8 @@ class Setting extends DataClass implements Insertable<Setting> {
 
   /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
   final String localeCode;
+  final bool membershipActive;
+  final String? membershipMethod;
   const Setting({
     required this.id,
     required this.themeMode,
@@ -2041,6 +2097,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     required this.lyricsOverlayEnabled,
     required this.safeAudioMode,
     required this.localeCode,
+    required this.membershipActive,
+    this.membershipMethod,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2058,6 +2116,10 @@ class Setting extends DataClass implements Insertable<Setting> {
     map['lyrics_overlay_enabled'] = Variable<bool>(lyricsOverlayEnabled);
     map['safe_audio_mode'] = Variable<bool>(safeAudioMode);
     map['locale_code'] = Variable<String>(localeCode);
+    map['membership_active'] = Variable<bool>(membershipActive);
+    if (!nullToAbsent || membershipMethod != null) {
+      map['membership_method'] = Variable<String>(membershipMethod);
+    }
     return map;
   }
 
@@ -2076,6 +2138,10 @@ class Setting extends DataClass implements Insertable<Setting> {
       lyricsOverlayEnabled: Value(lyricsOverlayEnabled),
       safeAudioMode: Value(safeAudioMode),
       localeCode: Value(localeCode),
+      membershipActive: Value(membershipActive),
+      membershipMethod: membershipMethod == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipMethod),
     );
   }
 
@@ -2104,6 +2170,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       ),
       safeAudioMode: serializer.fromJson<bool>(json['safeAudioMode']),
       localeCode: serializer.fromJson<String>(json['localeCode']),
+      membershipActive: serializer.fromJson<bool>(json['membershipActive']),
+      membershipMethod: serializer.fromJson<String?>(json['membershipMethod']),
     );
   }
   @override
@@ -2121,6 +2189,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       'lyricsOverlayEnabled': serializer.toJson<bool>(lyricsOverlayEnabled),
       'safeAudioMode': serializer.toJson<bool>(safeAudioMode),
       'localeCode': serializer.toJson<String>(localeCode),
+      'membershipActive': serializer.toJson<bool>(membershipActive),
+      'membershipMethod': serializer.toJson<String?>(membershipMethod),
     };
   }
 
@@ -2136,6 +2206,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     bool? lyricsOverlayEnabled,
     bool? safeAudioMode,
     String? localeCode,
+    bool? membershipActive,
+    Value<String?> membershipMethod = const Value.absent(),
   }) => Setting(
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
@@ -2150,6 +2222,10 @@ class Setting extends DataClass implements Insertable<Setting> {
     lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
     safeAudioMode: safeAudioMode ?? this.safeAudioMode,
     localeCode: localeCode ?? this.localeCode,
+    membershipActive: membershipActive ?? this.membershipActive,
+    membershipMethod: membershipMethod.present
+        ? membershipMethod.value
+        : this.membershipMethod,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2182,6 +2258,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       localeCode: data.localeCode.present
           ? data.localeCode.value
           : this.localeCode,
+      membershipActive: data.membershipActive.present
+          ? data.membershipActive.value
+          : this.membershipActive,
+      membershipMethod: data.membershipMethod.present
+          ? data.membershipMethod.value
+          : this.membershipMethod,
     );
   }
 
@@ -2198,7 +2280,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
           ..write('safeAudioMode: $safeAudioMode, ')
-          ..write('localeCode: $localeCode')
+          ..write('localeCode: $localeCode, ')
+          ..write('membershipActive: $membershipActive, ')
+          ..write('membershipMethod: $membershipMethod')
           ..write(')'))
         .toString();
   }
@@ -2216,6 +2300,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     lyricsOverlayEnabled,
     safeAudioMode,
     localeCode,
+    membershipActive,
+    membershipMethod,
   );
   @override
   bool operator ==(Object other) =>
@@ -2231,7 +2317,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.listenBrainzEnabled == this.listenBrainzEnabled &&
           other.lyricsOverlayEnabled == this.lyricsOverlayEnabled &&
           other.safeAudioMode == this.safeAudioMode &&
-          other.localeCode == this.localeCode);
+          other.localeCode == this.localeCode &&
+          other.membershipActive == this.membershipActive &&
+          other.membershipMethod == this.membershipMethod);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2246,6 +2334,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<bool> lyricsOverlayEnabled;
   final Value<bool> safeAudioMode;
   final Value<String> localeCode;
+  final Value<bool> membershipActive;
+  final Value<String?> membershipMethod;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
@@ -2258,6 +2348,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.lyricsOverlayEnabled = const Value.absent(),
     this.safeAudioMode = const Value.absent(),
     this.localeCode = const Value.absent(),
+    this.membershipActive = const Value.absent(),
+    this.membershipMethod = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2271,6 +2363,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.lyricsOverlayEnabled = const Value.absent(),
     this.safeAudioMode = const Value.absent(),
     this.localeCode = const Value.absent(),
+    this.membershipActive = const Value.absent(),
+    this.membershipMethod = const Value.absent(),
   });
   static Insertable<Setting> custom({
     Expression<int>? id,
@@ -2284,6 +2378,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<bool>? lyricsOverlayEnabled,
     Expression<bool>? safeAudioMode,
     Expression<String>? localeCode,
+    Expression<bool>? membershipActive,
+    Expression<String>? membershipMethod,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2300,6 +2396,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         'lyrics_overlay_enabled': lyricsOverlayEnabled,
       if (safeAudioMode != null) 'safe_audio_mode': safeAudioMode,
       if (localeCode != null) 'locale_code': localeCode,
+      if (membershipActive != null) 'membership_active': membershipActive,
+      if (membershipMethod != null) 'membership_method': membershipMethod,
     });
   }
 
@@ -2315,6 +2413,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<bool>? lyricsOverlayEnabled,
     Value<bool>? safeAudioMode,
     Value<String>? localeCode,
+    Value<bool>? membershipActive,
+    Value<String?>? membershipMethod,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
@@ -2328,6 +2428,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
       safeAudioMode: safeAudioMode ?? this.safeAudioMode,
       localeCode: localeCode ?? this.localeCode,
+      membershipActive: membershipActive ?? this.membershipActive,
+      membershipMethod: membershipMethod ?? this.membershipMethod,
     );
   }
 
@@ -2369,6 +2471,12 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (localeCode.present) {
       map['locale_code'] = Variable<String>(localeCode.value);
     }
+    if (membershipActive.present) {
+      map['membership_active'] = Variable<bool>(membershipActive.value);
+    }
+    if (membershipMethod.present) {
+      map['membership_method'] = Variable<String>(membershipMethod.value);
+    }
     return map;
   }
 
@@ -2385,7 +2493,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
           ..write('safeAudioMode: $safeAudioMode, ')
-          ..write('localeCode: $localeCode')
+          ..write('localeCode: $localeCode, ')
+          ..write('membershipActive: $membershipActive, ')
+          ..write('membershipMethod: $membershipMethod')
           ..write(')'))
         .toString();
   }
@@ -4720,6 +4830,8 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<bool> lyricsOverlayEnabled,
       Value<bool> safeAudioMode,
       Value<String> localeCode,
+      Value<bool> membershipActive,
+      Value<String?> membershipMethod,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
@@ -4734,6 +4846,8 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<bool> lyricsOverlayEnabled,
       Value<bool> safeAudioMode,
       Value<String> localeCode,
+      Value<bool> membershipActive,
+      Value<String?> membershipMethod,
     });
 
 class $$SettingsTableFilterComposer
@@ -4797,6 +4911,16 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<String> get localeCode => $composableBuilder(
     column: $table.localeCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get membershipActive => $composableBuilder(
+    column: $table.membershipActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get membershipMethod => $composableBuilder(
+    column: $table.membershipMethod,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4864,6 +4988,16 @@ class $$SettingsTableOrderingComposer
     column: $table.localeCode,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get membershipActive => $composableBuilder(
+    column: $table.membershipActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get membershipMethod => $composableBuilder(
+    column: $table.membershipMethod,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SettingsTableAnnotationComposer
@@ -4925,6 +5059,16 @@ class $$SettingsTableAnnotationComposer
     column: $table.localeCode,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get membershipActive => $composableBuilder(
+    column: $table.membershipActive,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get membershipMethod => $composableBuilder(
+    column: $table.membershipMethod,
+    builder: (column) => column,
+  );
 }
 
 class $$SettingsTableTableManager
@@ -4966,6 +5110,8 @@ class $$SettingsTableTableManager
                 Value<bool> lyricsOverlayEnabled = const Value.absent(),
                 Value<bool> safeAudioMode = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
+                Value<bool> membershipActive = const Value.absent(),
+                Value<String?> membershipMethod = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 themeMode: themeMode,
@@ -4978,6 +5124,8 @@ class $$SettingsTableTableManager
                 lyricsOverlayEnabled: lyricsOverlayEnabled,
                 safeAudioMode: safeAudioMode,
                 localeCode: localeCode,
+                membershipActive: membershipActive,
+                membershipMethod: membershipMethod,
               ),
           createCompanionCallback:
               ({
@@ -4992,6 +5140,8 @@ class $$SettingsTableTableManager
                 Value<bool> lyricsOverlayEnabled = const Value.absent(),
                 Value<bool> safeAudioMode = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
+                Value<bool> membershipActive = const Value.absent(),
+                Value<String?> membershipMethod = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 themeMode: themeMode,
@@ -5004,6 +5154,8 @@ class $$SettingsTableTableManager
                 lyricsOverlayEnabled: lyricsOverlayEnabled,
                 safeAudioMode: safeAudioMode,
                 localeCode: localeCode,
+                membershipActive: membershipActive,
+                membershipMethod: membershipMethod,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

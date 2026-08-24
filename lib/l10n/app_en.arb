@@ -60,6 +60,22 @@
   "back": "Back",
   "switchLibrary": "Switch library",
   "membership": "Membership",
+  "membershipActivated": "Activated",
+  "activateMembership": "Activate Membership",
+  "activateMembershipSubtitle": "Activate full member benefits via activation code or starring our GitHub repository",
+  "membershipActiveBannerTitle": "Membership Active",
+  "activationCodeTitle": "Activation Code",
+  "activationCodeHint": "Enter activation code",
+  "activateButton": "Activate",
+  "activationSuccess": "Activated successfully! Member features enabled.",
+  "activationCodeInvalid": "Invalid activation code. Please check and try again.",
+  "starActivationTitle": "Star on GitHub",
+  "starActivationDesc": "If you have starred this project on GitHub, turn on this switch to activate membership. No check is performed; this operates on the honor system.",
+  "goToStar": "Go to Star",
+  "activatedViaCode": "Activated via: Activation Code",
+  "activatedViaStar": "Activated via: GitHub Star (Honor System)",
+  "deactivateMembership": "Deactivate",
+  "deactivatedSuccess": "Membership deactivated",
   "notActivated": "Not activated",
   "sectionPlayback": "Playback",
   "autoPlayOnLaunch": "Auto-play on launch",
@@ -119,12 +135,8 @@
   "artistAlbumCount": "{count, plural, =1{1 album} other{{count} albums}}",
   "artistsLoadFailed": "Failed to load artists: {error}",
   "assetInfo": "Package: {name} · {size}",
-  "betaTrialActive": "Beta trial",
-  "betaTrialDays": "{days} days of beta trial left — all member features included",
-  "betaTrialRemaining": "{days} days of trial left",
   "browse": "Browse",
   "cancelDownload": "Cancel download",
-  "cancelTrial": "Cancel trial",
   "cast": "Cast",
   "clear": "Clear",
   "clearHistory": "Clear history",
@@ -250,7 +262,6 @@
   "refreshSongs": "Refresh songs",
   "releaseNotes": "Release notes",
   "restartAndInstall": "Restart & install",
-  "restartTrial": "Restart trial",
   "searchFailed": "Search failed: {error}",
   "searchHint": "Search songs, albums, artists...",
   "searchHistory": "Search history",
@@ -276,8 +287,6 @@
   "sortRecent": "Recently added",
   "sortTitle": "Title",
   "starFailed": "Favorite failed: {error}",
-  "trialCancelled": "Trial cancelled",
-  "trialResumed": "Beta trial resumed",
   "unfavorite": "Unfavorite",
   "unknownArtist": "Unknown artist",
   "unmute": "Unmute",
@@ -292,20 +301,6 @@
   "@artistAlbumCount": {
     "placeholders": {
       "count": {
-        "type": "int"
-      }
-    }
-  },
-  "@betaTrialDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "@betaTrialRemaining": {
-    "placeholders": {
-      "days": {
         "type": "int"
       }
     }

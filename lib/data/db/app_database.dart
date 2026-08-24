@@ -22,7 +22,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,6 +73,10 @@ class AppDatabase extends _$AppDatabase {
       if (from >= 4 && from < 10) {
         // V10 diagnostic toggle: disables the Android equalizer pipeline.
         await m.addColumn(settings, settings.safeAudioMode);
+      }
+      if (from >= 4 && from < 11) {
+        await m.addColumn(settings, settings.membershipActive);
+        await m.addColumn(settings, settings.membershipMethod);
       }
     },
   );
@@ -281,6 +285,9 @@ class AppDatabase extends _$AppDatabase {
     bool? lyricsOverlayEnabled,
     bool? safeAudioMode,
     String? localeCode,
+    bool? membershipActive,
+    String? membershipMethod,
+    bool clearMembershipMethod = false,
   }) async {
     final current = await getSettings();
     await into(settings).insertOnConflictUpdate(
@@ -314,6 +321,14 @@ class AppDatabase extends _$AppDatabase {
           safeAudioMode ?? current?.safeAudioMode ?? false,
         ),
         localeCode: Value(localeCode ?? current?.localeCode ?? 'zh'),
+        membershipActive: Value(
+          membershipActive ?? current?.membershipActive ?? false,
+        ),
+        membershipMethod: Value(
+          clearMembershipMethod
+              ? null
+              : membershipMethod ?? current?.membershipMethod,
+        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import '../../l10n/l10n.dart';
 import '../../core/update/update_providers.dart';
 import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
+import '../../data/settings_repository.dart';
 import '../../features/lyrics_overlay/lyrics_overlay_controller.dart';
 import '../player/equalizer_panel.dart';
 
@@ -328,6 +329,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildVIPCard(BuildContext context) {
+    final membership = ref.watch(membershipControllerProvider).value;
+    final isActivated = membership?.active ?? false;
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1B1C22),
@@ -368,10 +372,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 Text(
-                  context.l10n.notActivated,
+                  isActivated
+                      ? context.l10n.membershipActivated
+                      : context.l10n.notActivated,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: isActivated
+                        ? const Color(0xFFFF9500)
+                        : Colors.white.withValues(alpha: 0.4),
                     fontSize: 13,
+                    fontWeight:
+                        isActivated ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
                 const SizedBox(width: 4),
