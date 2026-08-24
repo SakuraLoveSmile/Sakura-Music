@@ -26,9 +26,9 @@ class _NavMenuItem {
   final IconData selectedIcon;
 }
 
-/// Bottom-bar destinations map to shell branches: favorites and downloads
-/// live at branch 6/7 behind artists/genres/radios.
-const List<int> _bottomNavBranches = <int>[0, 1, 2, 6, 7];
+/// Bottom-bar destinations map to shell branches: favorites lives at branch
+/// 6 and artists at branch 3 (this is not the order they appear in the bar).
+const List<int> _bottomNavBranches = <int>[0, 1, 2, 6, 3];
 
 /// Nav labels resolve from the route path so the menu items stay const.
 String _navLabel(BuildContext context, String path) {
@@ -159,9 +159,9 @@ class AppShell extends ConsumerWidget {
             MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
             if (!isWide)
               NavigationBar(
-                // The bar shows a subset of the shell branches: favorites and
-                // downloads sit behind artists/genres/radios at branch 6/7, so
-                // destination indexes must map through _bottomNavBranches.
+                // The bar shows a subset of the shell branches: favorites
+                // lives at branch 6 and artists at branch 3, so destination
+                // indexes must map through _bottomNavBranches.
                 selectedIndex: bottomNavIndex < 0 ? 0 : bottomNavIndex,
                 onDestinationSelected: (index) {
                   final branch = _bottomNavBranches[index];
@@ -192,9 +192,9 @@ class AppShell extends ConsumerWidget {
                     label: context.l10n.navLiked,
                   ),
                   NavigationDestination(
-                    icon: const Icon(Icons.download_outlined),
-                    selectedIcon: const Icon(Icons.download_done_rounded),
-                    label: context.l10n.navDownloadsShort,
+                    icon: const Icon(Icons.person_outline_rounded),
+                    selectedIcon: const Icon(Icons.person_rounded),
+                    label: context.l10n.navArtists,
                   ),
                 ],
               ),
