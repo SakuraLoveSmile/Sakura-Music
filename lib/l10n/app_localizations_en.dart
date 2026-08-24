@@ -1020,13 +1020,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updatingFavorite => 'Updating favorite';
 
   @override
-  String get viewAlbum => 'View album';
+  String get viewAlbum => 'View Album';
 
   @override
   String get viewAll => 'View all ->';
 
   @override
-  String get viewArtist => 'View artist';
+  String get viewArtist => 'View Artist';
 
   @override
   String get debugDiagnostics => 'Debug & diagnostics';
@@ -1211,4 +1211,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discography => 'Discography';
+
+  @override
+  String get playbackSpeed => 'Playback Speed';
+
+  @override
+  String get speedNormal => 'Normal (1.0x)';
+
+  @override
+  String get endOfSong => 'End of Current Track';
+
+  @override
+  String get coverView => 'Cover View';
+
+  @override
+  String get lyricsView => 'Lyrics View';
+
+  @override
+  String get songInfo => 'Song Info';
+
+  @override
+  String get trackDetails => 'Track Details';
+
+  @override
+  String get audioQuality => 'Audio Quality';
+
+  @override
+  String get cancelSleepTimer => 'Cancel Sleep Timer';
+
+  @override
+  String get sleepTimerCancelled => 'Sleep timer cancelled';
 }

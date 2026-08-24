@@ -68,7 +68,11 @@ class LibraryScreen extends ConsumerWidget {
                     client: client,
                     ref: ref,
                   ),
-                  _FavoriteArtists(artists: value.artists, ref: ref),
+                  _FavoriteArtists(
+                    artists: value.artists,
+                    client: client,
+                    ref: ref,
+                  ),
                 ],
               ),
             ),
@@ -205,9 +209,14 @@ class _FavoriteAlbums extends StatelessWidget {
 }
 
 class _FavoriteArtists extends StatelessWidget {
-  const _FavoriteArtists({required this.artists, required this.ref});
+  const _FavoriteArtists({
+    required this.artists,
+    required this.client,
+    required this.ref,
+  });
 
   final List<Artist> artists;
+  final SubsonicClient client;
   final WidgetRef ref;
 
   @override
@@ -222,6 +231,7 @@ class _FavoriteArtists extends StatelessWidget {
         final artist = artists[index];
         return ArtistListTile(
           artist: artist,
+          client: client,
           isFavorite: true,
           onFavorite: () async {
             try {

@@ -553,5 +553,17 @@
   "showLess": "收起",
   "noSimilarArtists": "暂无相似艺术家",
   "filterArtistsHint": "过滤艺术家...",
-  "discography": "音乐作品"
+  "discography": "音乐作品",
+  "playbackSpeed": "播放速度",
+  "speedNormal": "标准 (1.0x)",
+  "endOfSong": "播完当前歌曲后关闭",
+  "coverView": "封面模式",
+  "lyricsView": "歌词模式",
+  "viewArtist": "查看艺术家",
+  "viewAlbum": "查看专辑",
+  "songInfo": "歌曲信息",
+  "trackDetails": "曲目详情",
+  "audioQuality": "音质",
+  "cancelSleepTimer": "取消定时关闭",
+  "sleepTimerCancelled": "已取消定时关闭"
 }

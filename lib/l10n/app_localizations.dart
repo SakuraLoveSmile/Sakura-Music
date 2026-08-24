@@ -2209,6 +2209,66 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'音乐作品'**
   String get discography;
+
+  /// No description provided for @playbackSpeed.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放速度'**
+  String get playbackSpeed;
+
+  /// No description provided for @speedNormal.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准 (1.0x)'**
+  String get speedNormal;
+
+  /// No description provided for @endOfSong.
+  ///
+  /// In zh, this message translates to:
+  /// **'播完当前歌曲后关闭'**
+  String get endOfSong;
+
+  /// No description provided for @coverView.
+  ///
+  /// In zh, this message translates to:
+  /// **'封面模式'**
+  String get coverView;
+
+  /// No description provided for @lyricsView.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词模式'**
+  String get lyricsView;
+
+  /// No description provided for @songInfo.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌曲信息'**
+  String get songInfo;
+
+  /// No description provided for @trackDetails.
+  ///
+  /// In zh, this message translates to:
+  /// **'曲目详情'**
+  String get trackDetails;
+
+  /// No description provided for @audioQuality.
+  ///
+  /// In zh, this message translates to:
+  /// **'音质'**
+  String get audioQuality;
+
+  /// No description provided for @cancelSleepTimer.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消定时关闭'**
+  String get cancelSleepTimer;
+
+  /// No description provided for @sleepTimerCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消定时关闭'**
+  String get sleepTimerCancelled;
 }
 
 class _AppLocalizationsDelegate

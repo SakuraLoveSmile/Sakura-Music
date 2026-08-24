@@ -1138,4 +1138,34 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get discography => '音乐作品';
+
+  @override
+  String get playbackSpeed => '播放速度';
+
+  @override
+  String get speedNormal => '标准 (1.0x)';
+
+  @override
+  String get endOfSong => '播完当前歌曲后关闭';
+
+  @override
+  String get coverView => '封面模式';
+
+  @override
+  String get lyricsView => '歌词模式';
+
+  @override
+  String get songInfo => '歌曲信息';
+
+  @override
+  String get trackDetails => '曲目详情';
+
+  @override
+  String get audioQuality => '音质';
+
+  @override
+  String get cancelSleepTimer => '取消定时关闭';
+
+  @override
+  String get sleepTimerCancelled => '已取消定时关闭';
 }

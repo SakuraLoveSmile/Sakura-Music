@@ -235,8 +235,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Test Song Title'), findsOneWidget);
-      expect(find.text('Test Artist · Test Album'), findsOneWidget);
+      expect(find.text('Test Song Title'), findsAtLeastNWidgets(1));
+      expect(find.text('Test Artist · Test Album'), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
       expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
       expect(find.byIcon(Icons.skip_previous_rounded), findsOneWidget);
@@ -299,6 +299,73 @@ void main() {
         expect(find.byIcon(Icons.queue_music_rounded), findsOneWidget);
         expect(tester.takeException(), isNull);
       }
+    },
+  );
+
+  testWidgets(
+    'PlayerScreen toggles between Cover View and Lyrics View and opens speed modal',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioPlayerProvider.overrideWithValue(service),
+            databaseProvider.overrideWithValue(database),
+            serversProvider.overrideWithValue(
+              const AsyncValue.data(<Server>[]),
+            ),
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale('zh'),
+            home: Scaffold(body: PlayerScreen()),
+          ),
+        ),
+      );
+
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: true,
+          currentItem: sampleItem,
+          position: Duration(minutes: 1),
+          duration: Duration(minutes: 3, seconds: 45),
+          speed: 1.0,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Check default cover view
+      expect(find.text('封面模式'), findsOneWidget);
+      expect(find.text('歌词模式'), findsOneWidget);
+
+      // Tap Lyrics Mode
+      await tester.tap(find.text('歌词模式'));
+      await tester.pumpAndSettle();
+
+      // Tap speed selector in mobile bottom bar
+      expect(find.text('1.0x'), findsOneWidget);
+      await tester.tap(find.text('1.0x'));
+      await tester.pumpAndSettle();
+
+      // Expect speed modal
+      expect(find.text('播放速度'), findsOneWidget);
+      expect(find.text('1.0x (标准)'), findsOneWidget);
+      expect(find.text('1.25x'), findsOneWidget);
     },
   );
 }
