@@ -47,6 +47,10 @@ app.*.map.json
 # Android Gradle build output
 /android/build/
 
+# Android release signing key (decoded from CI secret; never commit)
+/android/app/keystore.jks
+/android/app/key.properties
+
 # Mimosa security scan working files
 .mimosa/
 **/.mimosa/

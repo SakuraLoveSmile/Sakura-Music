@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -19,6 +21,33 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    // Stable release signing so APKs share one key and can overlay-install older
+    // builds. CI decodes the keystore into android/app/keystore.jks and writes
+    // android/app/key.properties; locally the same keystore is reused. Without
+    // key.properties it falls back to the debug key so `flutter run --release` works.
+    val keystoreProperties =
+        if (file("key.properties").exists()) {
+            Properties().apply {
+                file("key.properties").inputStream().use { load(it) }
+            }
+        } else {
+            null
+        }
+
+    signingConfigs {
+        create("release") {
+            val props = keystoreProperties
+            if (props != null) {
+                storeFile = file(props.getProperty("storeFile")!!)
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            } else {
+                initWith(signingConfigs.getByName("debug"))
+            }
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.sakuramusic.app"
@@ -32,9 +61,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
