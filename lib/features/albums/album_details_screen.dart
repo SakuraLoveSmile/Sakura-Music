@@ -101,7 +101,7 @@ class AlbumDetailsScreen extends ConsumerWidget {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 36),
                       sliver: SliverList.builder(
                         itemCount: value.songs.length,
                         itemBuilder: (context, index) {
@@ -118,6 +118,17 @@ class AlbumDetailsScreen extends ConsumerWidget {
                             onFavorite: () => ref
                                 .read(starredProvider.notifier)
                                 .toggleSong(song),
+                            onMore: () {
+                              if (client == null) {
+                                return;
+                              }
+                              showSongActionBottomSheet(
+                                context: context,
+                                ref: ref,
+                                song: song,
+                                client: client,
+                              );
+                            },
                             onTap: () => _playSongs(context, ref, value, index),
                           );
                         },
@@ -154,9 +165,132 @@ class _AlbumHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 600;
+
+    final coverWidget = SizedBox.square(
+      dimension: isWide ? 140 : 105,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: imageUrl == null
+            ? Container(
+                color: const Color(0xFF22242D),
+                child: const Icon(
+                  Icons.album_rounded,
+                  size: 56,
+                  color: Colors.white24,
+                ),
+              )
+            : CachedNetworkImage(
+                imageUrl: imageUrl!,
+                cacheKey: 'cover_${album.coverArt}_400',
+                fit: BoxFit.cover,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                errorWidget: (context, url, error) => Container(
+                  color: const Color(0xFF22242D),
+                  child: const Icon(
+                    Icons.album_rounded,
+                    size: 56,
+                    color: Colors.white24,
+                  ),
+                ),
+              ),
+      ),
+    );
+
+    final infoWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          album.name,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isWide ? 20 : 17,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          album.artist ?? context.l10n.unknownArtist,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.75),
+            fontSize: isWide ? 14 : 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          <String>[
+            if (album.year != null) '${album.year}',
+            if (album.songCount != null)
+              context.l10n.songCountLabel(album.songCount!),
+            if (album.genre != null) album.genre!,
+            if (album.duration != null) formatSongDuration(album.duration),
+          ].join(' · '),
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+
+    final actionsWidget = Row(
+      children: <Widget>[
+        Expanded(
+          flex: isWide ? 0 : 1,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF1E7BF6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            onPressed: onPlayAll,
+            icon: const Icon(Icons.play_arrow_rounded, size: 20),
+            label: Text(
+              context.l10n.playAll,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          flex: isWide ? 0 : 1,
+          child: FilledButton.tonalIcon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF2A2C37),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            onPressed: onShuffleAll,
+            icon: const Icon(Icons.shuffle_rounded, size: 18),
+            label: Text(context.l10n.shufflePlay),
+          ),
+        ),
+        const SizedBox(width: 8),
+        StarButton(
+          isStarred: isFavorite,
+          size: 22,
+          onPressed: onFavorite,
+        ),
+      ],
+    );
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.fromLTRB(isWide ? 16 : 10, 8, isWide ? 16 : 10, 10),
+      padding: EdgeInsets.all(isWide ? 20 : 14),
       decoration: BoxDecoration(
         color: const Color(0xFF1B1C23),
         borderRadius: BorderRadius.circular(16),
@@ -172,130 +306,39 @@ class _AlbumHeader extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          // Cover
-          SizedBox.square(
-            dimension: 140,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imageUrl == null
-                  ? Container(
-                      color: const Color(0xFF22242D),
-                      child: const Icon(
-                        Icons.album_rounded,
-                        size: 64,
-                        color: Colors.white24,
-                      ),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: imageUrl!,
-                      cacheKey: 'cover_${album.coverArt}_400',
-                      fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => Container(
-                        color: const Color(0xFF22242D),
-                        child: const Icon(
-                          Icons.album_rounded,
-                          size: 64,
-                          color: Colors.white24,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 20),
-
-          // Metadata & Controls
-          Expanded(
-            child: Column(
+      child: isWide
+          ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  album.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                coverWidget,
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      infoWidget,
+                      const SizedBox(height: 18),
+                      actionsWidget,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  album.artist ?? context.l10n.unknownArtist,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  <String>[
-                    if (album.year != null) '${album.year}',
-                    if (album.songCount != null)
-                      context.l10n.songCountLabel(album.songCount!),
-                    if (album.genre != null) album.genre!,
-                    if (album.duration != null)
-                      formatSongDuration(album.duration),
-                  ].join(' · '),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Play & Shuffle Pills
-                Row(
-                  children: <Widget>[
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E7BF6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: onPlayAll,
-                      icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                      label: Text(
-                        context.l10n.playAll,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF2A2C37),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: onShuffleAll,
-                      icon: const Icon(Icons.shuffle_rounded, size: 18),
-                      label: Text(context.l10n.shufflePlay),
-                    ),
-                    const SizedBox(width: 10),
-                    StarButton(
-                      isStarred: isFavorite,
-                      size: 22,
-                      onPressed: onFavorite,
-                    ),
-                  ],
                 ),
               ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    coverWidget,
+                    const SizedBox(width: 14),
+                    Expanded(child: infoWidget),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                actionsWidget,
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }

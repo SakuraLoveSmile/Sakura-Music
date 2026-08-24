@@ -103,6 +103,7 @@ class ArtistDetailsScreen extends ConsumerWidget {
                           itemBuilder: (context, index) {
                             final song = songs[index];
                             return SongListTile(
+                              index: index + 1,
                               song: song,
                               client: client,
                               onTap: () =>
@@ -126,6 +127,14 @@ class ArtistDetailsScreen extends ConsumerWidget {
                                     );
                                   }
                                 }
+                              },
+                              onMore: () {
+                                showSongActionBottomSheet(
+                                  context: context,
+                                  ref: ref,
+                                  song: song,
+                                  client: client,
+                                );
                               },
                             );
                           },

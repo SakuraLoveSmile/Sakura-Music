@@ -1,9 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-
-import '../../l10n/l10n.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:subsonic_api/subsonic_api.dart';
+
+import '../../audio/audio_player_provider.dart';
+import '../../audio/playable_item_builder.dart';
+import '../../core/providers.dart';
+import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 
 String formatSongDuration(int? seconds) {
   if (seconds == null || seconds <= 0) {
@@ -301,9 +306,18 @@ class SongGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 600;
     final imageUrl = client == null || song.coverArt == null
         ? null
         : client!.coverArtUrl(song.coverArt!, size: 120);
+
+    final metadataParts = <String>[
+      if (song.artist != null && song.artist!.trim().isNotEmpty) song.artist!,
+      if (song.album != null && song.album!.trim().isNotEmpty) song.album!,
+      if (!isWide && song.duration != null && song.duration! > 0)
+        formatSongDuration(song.duration),
+    ];
+    final subtitleText = metadataParts.join(' · ');
 
     return Material(
       color: Colors.transparent,
@@ -338,6 +352,8 @@ class SongGridTile extends StatelessWidget {
                           imageUrl: imageUrl,
                           cacheKey: 'cover_${song.coverArt}_120',
                           fit: BoxFit.cover,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
                           errorWidget: (context, url, error) => Container(
                             color: const Color(0xFF22242D),
                             child: const Icon(
@@ -396,60 +412,81 @@ class SongGridTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                         ],
-                        Expanded(
-                          child: Text(
-                            [song.artist, song.album]
-                                .whereType<String>()
-                                .where((s) => s.isNotEmpty)
-                                .join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: Colors.white.withValues(alpha: 0.55),
+                        if (subtitleText.isNotEmpty)
+                          Expanded(
+                            child: Text(
+                              subtitleText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Colors.white.withValues(alpha: 0.55),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ],
                 ),
               ),
 
-              // Duration
-              if (song.duration != null && song.duration! > 0)
-                Padding(
-                  padding: const EdgeInsets.only(left: 6, right: 4),
-                  child: Text(
-                    formatSongDuration(song.duration),
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: Colors.white.withValues(alpha: 0.38),
+              if (isWide) ...[
+                // Duration
+                if (song.duration != null && song.duration! > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6, right: 4),
+                    child: Text(
+                      formatSongDuration(song.duration),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.white.withValues(alpha: 0.38),
+                      ),
                     ),
                   ),
-                ),
 
-              // Favorite Heart
-              if (onFavorite != null)
-                StarButton(
-                  isStarred: isFavorite,
-                  onPressed: onFavorite!,
-                  size: 16,
-                ),
-
-              // More Options
-              if (onMore != null)
-                IconButton(
-                  tooltip: context.l10n.more,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
-                    size: 18,
-                    color: Colors.white.withValues(alpha: 0.5),
+                // Favorite Heart
+                if (onFavorite != null)
+                  StarButton(
+                    isStarred: isFavorite,
+                    onPressed: onFavorite!,
+                    size: 16,
                   ),
-                  onPressed: onMore,
-                ),
+
+                // More Options
+                if (onMore != null)
+                  IconButton(
+                    tooltip: context.l10n.more,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 28, height: 28),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                    onPressed: onMore,
+                  ),
+              ] else ...[
+                if (onMore != null)
+                  IconButton(
+                    tooltip: context.l10n.more,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 28, height: 28),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                    onPressed: onMore,
+                  )
+                else if (onFavorite != null)
+                  StarButton(
+                    isStarred: isFavorite,
+                    onPressed: onFavorite!,
+                    size: 16,
+                  ),
+              ],
             ],
           ),
         ),
@@ -484,9 +521,18 @@ class SongListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 600;
     final imageUrl = client == null || song.coverArt == null
         ? null
         : client!.coverArtUrl(song.coverArt!, size: 96);
+
+    final metadataParts = <String>[
+      if (song.artist != null && song.artist!.trim().isNotEmpty) song.artist!,
+      if (song.album != null && song.album!.trim().isNotEmpty) song.album!,
+      if (!isWide && song.duration != null && song.duration! > 0)
+        formatSongDuration(song.duration),
+    ];
+    final subtitleText = metadataParts.join(' · ');
 
     return Material(
       color: Colors.transparent,
@@ -494,7 +540,10 @@ class SongListTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          padding: EdgeInsets.symmetric(
+            horizontal: isWide ? 10 : 6,
+            vertical: 7,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: isPlaying
@@ -505,11 +554,11 @@ class SongListTile extends StatelessWidget {
             children: <Widget>[
               if (index != null)
                 SizedBox(
-                  width: 28,
+                  width: isWide ? 28 : 22,
                   child: Text(
                     '$index',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: isWide ? 13 : 12,
                       color: isPlaying
                           ? const Color(0xFF34C759)
                           : Colors.white.withValues(alpha: 0.35),
@@ -519,7 +568,7 @@ class SongListTile extends StatelessWidget {
                   ),
                 ),
               SizedBox.square(
-                dimension: 44,
+                dimension: isWide ? 44 : 42,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: imageUrl == null
@@ -535,6 +584,8 @@ class SongListTile extends StatelessWidget {
                           imageUrl: imageUrl,
                           cacheKey: 'cover_${song.coverArt}_96',
                           fit: BoxFit.cover,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
                           errorWidget: (context, url, error) => Container(
                             color: const Color(0xFF22242D),
                             child: const Icon(
@@ -546,7 +597,7 @@ class SongListTile extends StatelessWidget {
                         ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: isWide ? 12 : 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,8 +607,8 @@ class SongListTile extends StatelessWidget {
                       children: <Widget>[
                         if (isPlaying) ...[
                           Container(
-                            width: 7,
-                            height: 7,
+                            width: 6,
+                            height: 6,
                             margin: const EdgeInsets.only(right: 6),
                             decoration: const BoxDecoration(
                               color: Color(0xFF34C759),
@@ -571,7 +622,7 @@ class SongListTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: isWide ? 14 : 13.5,
                               fontWeight: FontWeight.w600,
                               color: isPlaying
                                   ? const Color(0xFF5BA4FF)
@@ -591,72 +642,340 @@ class SongListTile extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                         ],
-                        Expanded(
-                          child: Text(
-                            [song.artist, song.album]
-                                .whereType<String>()
-                                .where((s) => s.isNotEmpty)
-                                .join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.55),
+                        if (subtitleText.isNotEmpty)
+                          Expanded(
+                            child: Text(
+                              subtitleText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: Colors.white.withValues(alpha: 0.55),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              if (song.duration != null && song.duration! > 0)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    formatSongDuration(song.duration),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.4),
+              if (isWide) ...[
+                if (song.duration != null && song.duration! > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      formatSongDuration(song.duration),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.4),
+                      ),
                     ),
                   ),
-                ),
-              if (onDownload != null)
-                IconButton(
-                  tooltip: context.l10n.download,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-                  onPressed: onDownload,
-                  icon: Icon(
-                    Icons.download_outlined,
-                    size: 18,
-                    color: Colors.white.withValues(alpha: 0.6),
+                if (onDownload != null)
+                  IconButton(
+                    tooltip: context.l10n.download,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    onPressed: onDownload,
+                    icon: Icon(
+                      Icons.download_outlined,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
-              if (onFavorite != null)
-                StarButton(
-                  isStarred: isFavorite,
-                  onPressed: onFavorite!,
-                  size: 18,
-                ),
-              if (onMore != null)
-                IconButton(
-                  tooltip: context.l10n.more,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
+                if (onFavorite != null)
+                  StarButton(
+                    isStarred: isFavorite,
+                    onPressed: onFavorite!,
                     size: 18,
-                    color: Colors.white.withValues(alpha: 0.5),
                   ),
-                  onPressed: onMore,
-                ),
+                if (onMore != null)
+                  IconButton(
+                    tooltip: context.l10n.more,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                    onPressed: onMore,
+                  ),
+              ] else ...[
+                if (onMore != null)
+                  IconButton(
+                    tooltip: context.l10n.more,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 19,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                    onPressed: onMore,
+                  )
+                else if (onFavorite != null)
+                  StarButton(
+                    isStarred: isFavorite,
+                    onPressed: onFavorite!,
+                    size: 18,
+                  )
+                else if (onDownload != null)
+                  IconButton(
+                    tooltip: context.l10n.download,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    onPressed: onDownload,
+                    icon: Icon(
+                      Icons.download_outlined,
+                      size: 18,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+}
+
+void showSongActionBottomSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Song song,
+  required SubsonicClient client,
+}) {
+  final coverUrl = song.coverArt == null
+      ? null
+      : client.coverArtUrl(song.coverArt!, size: 160);
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF1E2028),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (sheetContext) {
+      return Consumer(
+        builder: (context, ref, _) {
+          final liveStarred = ref.watch(starredIdsProvider);
+          final liveIsFavorite = liveStarred.songs.contains(song.id);
+
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 4),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox.square(
+                        dimension: 46,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: coverUrl == null
+                              ? Container(
+                                  color: const Color(0xFF2B2D38),
+                                  child: const Icon(
+                                    Icons.music_note_rounded,
+                                    color: Colors.white30,
+                                    size: 24,
+                                  ),
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: coverUrl,
+                                  cacheKey: 'cover_${song.coverArt}_160',
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(
+                                    color: const Color(0xFF2B2D38),
+                                    child: const Icon(
+                                      Icons.music_note_rounded,
+                                      color: Colors.white30,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Text(
+                              song.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              [song.artist, song.album]
+                                  .whereType<String>()
+                                  .where((s) => s.isNotEmpty)
+                                  .join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(color: Colors.white12, height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.playlist_play_rounded,
+                    color: Colors.white70,
+                  ),
+                  title: Text(
+                    context.l10n.playNext,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    final item = await playableItemForSongWithLocalFile(
+                      client,
+                      ref.read(downloadManagerProvider),
+                      song,
+                    );
+                    await ref.read(audioPlayerProvider).insertNext(item);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.l10n.addedToPlayNext(song.title),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    liveIsFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: liveIsFavorite
+                        ? const Color(0xFFFF453A)
+                        : Colors.white70,
+                  ),
+                  title: Text(
+                    liveIsFavorite
+                        ? context.l10n.unfavorite
+                        : context.l10n.favorite,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    try {
+                      await ref
+                          .read(starredProvider.notifier)
+                          .toggleSong(song);
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.starFailed(error.toString()),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.download_outlined,
+                    color: Colors.white70,
+                  ),
+                  title: Text(
+                    context.l10n.downloadSong,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    final manager = ref.read(downloadManagerProvider);
+                    if (manager != null) {
+                      await manager.downloadSong(song);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.addedToDownloads(song.title),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+                if (song.albumId != null)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.album_outlined,
+                      color: Colors.white70,
+                    ),
+                    title: Text(
+                      context.l10n.viewAlbum,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      context.go('/albums/${song.albumId}');
+                    },
+                  ),
+                if (song.artistId != null)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.person_outline_rounded,
+                      color: Colors.white70,
+                    ),
+                    title: Text(
+                      context.l10n.viewArtist,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      context.go('/artists/${song.artistId}');
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }
 
 class ArtistListTile extends StatelessWidget {

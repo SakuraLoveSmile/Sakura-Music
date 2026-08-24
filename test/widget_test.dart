@@ -135,6 +135,22 @@ void main() {
     await tester.tap(find.text('测试连接'));
     await tester.pumpAndSettle();
     expect(find.text('请输入服务器名称'), findsOneWidget);
+
+    // Verify pasting a full URL auto-populates host, port, and scheme
+    final hostInput = find.widgetWithText(TextFormField, '服务器地址');
+    expect(hostInput, findsOneWidget);
+    await tester.enterText(hostInput, 'http://192.168.1.100:4533');
+    await tester.pumpAndSettle();
+
+    // Host should be extracted without scheme and port
+    final hostField = tester.widget<TextFormField>(hostInput);
+    expect(hostField.controller?.text, '192.168.1.100');
+
+    // Port input should have 4533
+    final portInput = find.widgetWithText(TextFormField, '端口');
+    expect(portInput, findsOneWidget);
+    final portField = tester.widget<TextFormField>(portInput);
+    expect(portField.controller?.text, '4533');
   });
 
   testWidgets('renders PrivacyPolicyDialog properly', (

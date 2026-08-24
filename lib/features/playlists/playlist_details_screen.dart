@@ -118,6 +118,7 @@ class PlaylistDetailsScreen extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final song = value.songs[index];
                         return SongListTile(
+                          index: index + 1,
                           song: song,
                           client: client,
                           onTap: () async {
@@ -136,6 +137,14 @@ class PlaylistDetailsScreen extends ConsumerWidget {
                           onFavorite: () => ref
                               .read(starredProvider.notifier)
                               .toggleSong(song),
+                          onMore: () {
+                            showSongActionBottomSheet(
+                              context: context,
+                              ref: ref,
+                              song: song,
+                              client: client,
+                            );
+                          },
                           key: ValueKey(song.id),
                         );
                       },
