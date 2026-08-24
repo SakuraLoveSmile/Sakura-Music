@@ -273,7 +273,11 @@ class UpdateController extends Notifier<UpdateState> {
           error.type == DioExceptionType.receiveTimeout) {
         return '网络连接失败，请检查网络后重试';
       }
-      return 'GitHub 请求失败（HTTP ${error.response?.statusCode ?? '未知'}）';
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 403 || statusCode == 429) {
+        return 'GitHub 请求过于频繁或访问受限，请稍后重试';
+      }
+      return 'GitHub 请求失败（HTTP ${statusCode ?? '未知'}）';
     }
     return '更新失败，请稍后重试';
   }
