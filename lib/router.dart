@@ -16,7 +16,9 @@ import 'features/player/app_shell.dart';
 import 'features/player/player_screen.dart';
 import 'features/search/search_screen.dart';
 import 'features/settings/membership_screen.dart';
+import 'features/debug/debug_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/welcome/add_server_screen.dart';
 import 'features/welcome/welcome_screen.dart';
 
 import 'features/genres/genres_screen.dart';
@@ -205,6 +207,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: SettingsScreen()),
+      ),
+      GoRoute(
+        path: '/debug',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: DebugScreen()),
+      ),
+      GoRoute(
+        path: '/add-server',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: AddServerScreen()),
+      ),
+      GoRoute(
+        path: '/add-server/config',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) => MaterialPage(
+          child: AddServerConfigScreen(
+            args: state.extra is AddServerConfigArgs
+                ? state.extra as AddServerConfigArgs
+                : null,
+          ),
+        ),
       ),
       // Keep the player above the shell so it has no rail, bottom navigation,
       // or mini-player duplication while it is open.

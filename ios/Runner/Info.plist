@@ -30,6 +30,13 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>需要访问局域网以发现音乐服务器</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_navidrome._tcp</string>
+		<string>_subsonic._tcp</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

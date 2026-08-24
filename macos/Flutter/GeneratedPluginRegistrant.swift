@@ -10,6 +10,7 @@ import audio_session
 import device_info_plus
 import just_audio
 import media_kit_libs_macos_audio
+import nsd_macos
 import package_info_plus
 import screen_retriever_macos
 import sqflite_darwin
@@ -23,6 +24,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   DeviceInfoPlusMacosPlugin.register(with: registry.registrar(forPlugin: "DeviceInfoPlusMacosPlugin"))
   JustAudioPlugin.register(with: registry.registrar(forPlugin: "JustAudioPlugin"))
   MediaKitLibsMacosAudioPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosAudioPlugin"))
+  NsdMacosPlugin.register(with: registry.registrar(forPlugin: "NsdMacosPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
