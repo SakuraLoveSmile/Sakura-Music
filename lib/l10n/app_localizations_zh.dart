@@ -1053,6 +1053,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get debugSessionUnknown => '未知';
 
   @override
+  String get debugOutputDeviceDefault => '跟随系统默认';
+
+  @override
+  String debugOutputDeviceApplied(Object name) {
+    return '输出设备：$name';
+  }
+
+  @override
+  String get debugOutputDeviceFailed => '切换输出设备失败';
+
+  @override
   String get addServerTitle => '添加服务器';
 
   @override

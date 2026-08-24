@@ -352,6 +352,14 @@ class JustAudioPlayerService implements AudioPlayerService {
     _appliedVolume = value;
   }
 
+  @override
+  Future<bool> setPreferredOutputDevice(int? deviceId) async {
+    playbackDebugLog.add('setPreferredDevice: deviceId=$deviceId');
+    final applied = await _player.setPreferredDevice(deviceId);
+    playbackDebugLog.add('setPreferredDevice: applied=$applied');
+    return applied;
+  }
+
   Future<void> _fadeTo(double target) async {
     await _volumeFader.fade(
       from: _appliedVolume,

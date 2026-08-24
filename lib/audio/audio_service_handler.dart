@@ -144,6 +144,12 @@ class AudioServiceHandler extends BaseAudioHandler
   }
 
   @override
+  Future<bool> setPreferredOutputDevice(int? deviceId) {
+    playbackDebugLog.add('AudioServiceHandler.setPreferredDevice');
+    return _delegate.setPreferredOutputDevice(deviceId);
+  }
+
+  @override
   Future<void> setEqualizer(EqualizerSettings settings) {
     playbackDebugLog.add('AudioServiceHandler.setEqualizer');
     return _delegate.setEqualizer(settings);

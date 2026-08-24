@@ -23,6 +23,7 @@ class DebugScreen extends ConsumerStatefulWidget {
 
 class _DebugScreenState extends ConsumerState<DebugScreen> {
   List<AudioDevice> _outputDevices = <AudioDevice>[];
+  int? _selectedDeviceId;
   StreamSubscription<Set<AudioDevice>>? _devicesSub;
 
   bool _safeAudioMode = false;
@@ -51,15 +52,53 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
         setState(() => _outputDevices = devices.where((d) => d.isOutput).toList());
       }
       _devicesSub = session.devicesStream.listen((set) {
-        if (mounted) {
-          setState(
-            () => _outputDevices = set.where((d) => d.isOutput).toList(),
-          );
+        if (!mounted) {
+          return;
         }
+        final outputs = set.where((d) => d.isOutput).toList();
+        setState(() {
+          _outputDevices = outputs;
+          // A disconnected device automatically falls back to the system
+          // default route, so the UI selection follows.
+          if (_selectedDeviceId != null &&
+              !outputs.any((d) => int.tryParse(d.id) == _selectedDeviceId)) {
+            _selectedDeviceId = null;
+          }
+        });
       });
     } catch (error) {
       playbackDebugLog.add('DebugScreen devices init failed: $error');
     }
+  }
+
+  Future<void> _selectOutputDevice(AudioDevice? device) async {
+    final name = device?.name ?? context.l10n.debugOutputDeviceDefault;
+    // audio_session exposes Android device ids as strings; the native
+    // just_audio channel expects the underlying integer id.
+    final deviceId = device == null ? null : int.tryParse(device.id);
+    playbackDebugLog.add('DebugScreen select output device: $name');
+    final applied = await ref
+        .read(audioPlayerProvider)
+        .setPreferredOutputDevice(deviceId);
+    playbackDebugLog.add(
+      'DebugScreen select output device applied: $applied',
+    );
+    if (!mounted) {
+      return;
+    }
+    if (applied) {
+      setState(() => _selectedDeviceId = deviceId);
+    }
+    final l10n = context.l10n;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          applied
+              ? l10n.debugOutputDeviceApplied(name)
+              : l10n.debugOutputDeviceFailed,
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleSafeAudioMode(bool value) async {
@@ -158,7 +197,11 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
         children: <Widget>[
           _SnapshotCard(),
           const SizedBox(height: 16),
-          _AudioSessionCard(devices: _outputDevices),
+          _AudioSessionCard(
+            devices: _outputDevices,
+            selectedDeviceId: _selectedDeviceId,
+            onSelect: _selectOutputDevice,
+          ),
           const SizedBox(height: 16),
           _SafeAudioCard(
             value: _safeAudioMode,
@@ -218,16 +261,19 @@ class _SnapshotCard extends ConsumerWidget {
 }
 
 class _AudioSessionCard extends StatelessWidget {
-  const _AudioSessionCard({required this.devices});
+  const _AudioSessionCard({
+    required this.devices,
+    required this.selectedDeviceId,
+    required this.onSelect,
+  });
 
   final List<AudioDevice> devices;
+  final int? selectedDeviceId;
+  final ValueChanged<AudioDevice?> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final names = devices.isEmpty
-        ? <String>[l10n.debugSessionUnknown]
-        : devices.map((d) => d.name).toList();
 
     return _Card(
       title: l10n.debugAudioSession,
@@ -239,28 +285,85 @@ class _AudioSessionCard extends StatelessWidget {
             value: devices.length.toString(),
           ),
           const SizedBox(height: 8),
-          ...names.map(
-            (name) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.volume_up,
-                    size: 14,
-                    color: Colors.white54,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                  ),
-                ],
+          _DeviceTile(
+            icon: Icons.speaker,
+            name: l10n.debugOutputDeviceDefault,
+            selected: selectedDeviceId == null,
+            onTap: () => onSelect(null),
+          ),
+          if (devices.isEmpty)
+            const _DeviceTile(
+              icon: Icons.volume_up,
+              name: '—',
+              selected: false,
+              onTap: null,
+            )
+          else
+            ...devices.map(
+              (device) => _DeviceTile(
+                icon: Icons.volume_up,
+                name: device.name,
+                selected: selectedDeviceId == int.tryParse(device.id),
+                onTap: () => onSelect(device),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _DeviceTile extends StatelessWidget {
+  const _DeviceTile({
+    required this.icon,
+    required this.name,
+    required this.selected,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String name;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlightColor = const Color(0xFF64D2FF);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFF0A84FF).withValues(alpha: 0.16)
+                : null,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(
+                icon,
+                size: 14,
+                color: selected ? highlightColor : Colors.white54,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    color: selected ? Colors.white : Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check, size: 14, color: highlightColor),
+            ],
+          ),
+        ),
       ),
     );
   }

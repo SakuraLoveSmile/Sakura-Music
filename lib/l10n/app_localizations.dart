@@ -2048,6 +2048,24 @@ abstract class AppLocalizations {
   /// **'未知'**
   String get debugSessionUnknown;
 
+  /// No description provided for @debugOutputDeviceDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随系统默认'**
+  String get debugOutputDeviceDefault;
+
+  /// No description provided for @debugOutputDeviceApplied.
+  ///
+  /// In zh, this message translates to:
+  /// **'输出设备：{name}'**
+  String debugOutputDeviceApplied(Object name);
+
+  /// No description provided for @debugOutputDeviceFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换输出设备失败'**
+  String get debugOutputDeviceFailed;
+
   /// No description provided for @addServerTitle.
   ///
   /// In zh, this message translates to:

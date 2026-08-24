@@ -200,6 +200,11 @@ abstract class AudioPlayerService {
 
   Future<void> setSpeed(double value);
 
+  /// Routes playback to a specific output device, or restores the system
+  /// default routing when [deviceId] is null. Returns whether the platform
+  /// applied the request.
+  Future<bool> setPreferredOutputDevice(int? deviceId);
+
   Future<void> setEqualizer(EqualizerSettings settings);
 
   Future<void> dispose();

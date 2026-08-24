@@ -459,6 +459,11 @@
       "error": {}
     }
   },
+  "@debugOutputDeviceApplied": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "debugDiagnostics": "Debug & diagnostics",
   "debugTitle": "Debug & diagnostics",
   "debugSnapshot": "Live snapshot",
@@ -486,6 +491,9 @@
   "debugActive": "Session active",
   "debugOutputDevices": "Output devices",
   "debugSessionUnknown": "Unknown",
+  "debugOutputDeviceDefault": "Follow system default",
+  "debugOutputDeviceApplied": "Output device: {name}",
+  "debugOutputDeviceFailed": "Failed to switch output device",
   "addServerTitle": "Add server",
   "lanDiscovery": "LAN discovery",
   "lanRefresh": "Refresh LAN search",
