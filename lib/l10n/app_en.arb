@@ -531,5 +531,17 @@
   "showLess": "Show less",
   "noSimilarArtists": "No similar artists",
   "filterArtistsHint": "Filter artists...",
-  "discography": "Discography"
+  "discography": "Discography",
+  "playbackSpeed": "Playback Speed",
+  "speedNormal": "Normal (1.0x)",
+  "endOfSong": "End of Current Track",
+  "coverView": "Cover View",
+  "lyricsView": "Lyrics View",
+  "viewArtist": "View Artist",
+  "viewAlbum": "View Album",
+  "songInfo": "Song Info",
+  "trackDetails": "Track Details",
+  "audioQuality": "Audio Quality",
+  "cancelSleepTimer": "Cancel Sleep Timer",
+  "sleepTimerCancelled": "Sleep timer cancelled"
 }

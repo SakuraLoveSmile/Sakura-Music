@@ -979,10 +979,261 @@ void showSongActionBottomSheet({
   );
 }
 
+/// Helper to resolve the best image URL for an artist from SubsonicClient
+String? resolveArtistImageUrl({
+  required Artist artist,
+  SubsonicClient? client,
+  int size = 300,
+}) {
+  if (artist.artistImageUrl != null && artist.artistImageUrl!.trim().isNotEmpty) {
+    final url = artist.artistImageUrl!.trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+  }
+  if (client != null) {
+    if (artist.coverArt != null && artist.coverArt!.isNotEmpty) {
+      return client.coverArtUrl(artist.coverArt!, size: size);
+    }
+    if (artist.artistImageUrl != null && artist.artistImageUrl!.isNotEmpty) {
+      return client.coverArtUrl(artist.artistImageUrl!, size: size);
+    }
+    if (artist.id.isNotEmpty) {
+      return client.coverArtUrl(artist.id, size: size);
+    }
+  }
+  return null;
+}
+
+/// Generates a consistent, attractive gradient for an artist placeholder based on their name hash
+LinearGradient artistPlaceholderGradient(String name) {
+  final hash = name.codeUnits.fold(0, (acc, c) => (acc * 31 + c) & 0xFFFFFF);
+  const palettes = <List<Color>>[
+    [Color(0xFF1E3A5F), Color(0xFF3498DB)],
+    [Color(0xFF1E3C72), Color(0xFF2A5298)],
+    [Color(0xFF2C3E50), Color(0xFF4CA1AF)],
+    [Color(0xFF3B1E54), Color(0xFF9B59B6)],
+    [Color(0xFF0F2027), Color(0xFF203A43)],
+    [Color(0xFF2C3E50), Color(0xFFE74C3C)],
+    [Color(0xFF134E5E), Color(0xFF71B280)],
+    [Color(0xFF4B1248), Color(0xFFF0C27B)],
+    [Color(0xFF283048), Color(0xFF859398)],
+    [Color(0xFF16222A), Color(0xFF3A6073)],
+    [Color(0xFF1D2671), Color(0xFFC33764)],
+    [Color(0xFF4A00E0), Color(0xFF8E2DE2)],
+  ];
+  final colors = palettes[hash % palettes.length];
+  return LinearGradient(
+    colors: colors,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+class ArtistAvatar extends StatelessWidget {
+  const ArtistAvatar({
+    required this.artist,
+    this.client,
+    this.imageUrl,
+    this.radius = 28,
+    this.showBorder = true,
+    this.borderColor,
+    this.borderWidth = 1.2,
+    super.key,
+  });
+
+  final Artist artist;
+  final SubsonicClient? client;
+  final String? imageUrl;
+  final double radius;
+  final bool showBorder;
+  final Color? borderColor;
+  final double borderWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveImageUrl = imageUrl ??
+        resolveArtistImageUrl(
+          artist: artist,
+          client: client,
+          size: (radius * 3).toInt().clamp(120, 600),
+        );
+
+    final initial = artist.name.trim().isEmpty
+        ? '?'
+        : artist.name.trim().characters.first.toUpperCase();
+
+    Widget placeholder = Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: artistPlaceholderGradient(artist.name),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: radius * 0.72,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+          ),
+        ),
+      ),
+    );
+
+    Widget imageContent = effectiveImageUrl == null
+        ? placeholder
+        : CachedNetworkImage(
+            imageUrl: effectiveImageUrl,
+            cacheKey: 'artist_${artist.id}_${(radius * 2).toInt()}',
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 150),
+            fadeOutDuration: Duration.zero,
+            placeholder: (context, url) => placeholder,
+            errorWidget: (context, url, error) => placeholder,
+          );
+
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: showBorder
+            ? Border.all(
+                color: borderColor ?? Colors.white.withValues(alpha: 0.12),
+                width: borderWidth,
+              )
+            : null,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: imageContent,
+      ),
+    );
+  }
+}
+
+class ArtistCard extends StatelessWidget {
+  const ArtistCard({
+    required this.artist,
+    required this.onTap,
+    this.client,
+    this.imageUrl,
+    this.onFavorite,
+    this.isFavorite = false,
+    this.showSubtitle = true,
+    super.key,
+  });
+
+  final Artist artist;
+  final VoidCallback onTap;
+  final SubsonicClient? client;
+  final String? imageUrl;
+  final Future<void> Function()? onFavorite;
+  final bool isFavorite;
+  final bool showSubtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final avatarSize =
+                      (constraints.maxWidth * 0.74).clamp(56.0, 140.0);
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      ArtistAvatar(
+                        artist: artist,
+                        client: client,
+                        imageUrl: imageUrl,
+                        radius: avatarSize / 2,
+                      ),
+                      if (onFavorite != null)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color:
+                                  const Color(0xFF1E2028).withValues(alpha: 0.9),
+                              shape: BoxShape.circle,
+                              boxShadow: <BoxShadow>[
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: StarButton(
+                              isStarred: isFavorite,
+                              onPressed: onFavorite!,
+                              size: 15,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              Text(
+                artist.name.isEmpty ? context.l10n.unknownArtist : artist.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              if (showSubtitle &&
+                  artist.albumCount != null &&
+                  artist.albumCount! > 0) ...[
+                const SizedBox(height: 3),
+                Text(
+                  context.l10n.artistAlbumCount(artist.albumCount!),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ArtistListTile extends StatelessWidget {
   const ArtistListTile({
     required this.artist,
     required this.onTap,
+    this.client,
+    this.imageUrl,
     this.onFavorite,
     this.isFavorite = false,
     super.key,
@@ -990,30 +1241,87 @@ class ArtistListTile extends StatelessWidget {
 
   final Artist artist;
   final VoidCallback onTap;
+  final SubsonicClient? client;
+  final String? imageUrl;
   final Future<void> Function()? onFavorite;
   final bool isFavorite;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: const Color(0xFF242630),
-        child: Text(
-          artist.name.isEmpty ? '?' : artist.name.substring(0, 1).toUpperCase(),
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: <Widget>[
+              ArtistAvatar(
+                artist: artist,
+                client: client,
+                imageUrl: imageUrl,
+                radius: 25,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      artist.name.isEmpty
+                          ? context.l10n.unknownArtist
+                          : artist.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    if (artist.albumCount != null &&
+                        artist.albumCount! > 0) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.album_outlined,
+                            size: 13,
+                            color: Colors.white.withValues(alpha: 0.45),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            context.l10n.artistAlbumCount(artist.albumCount!),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (onFavorite != null)
+                StarButton(
+                  isStarred: isFavorite,
+                  onPressed: onFavorite!,
+                  size: 18,
+                ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: Colors.white.withValues(alpha: 0.25),
+              ),
+            ],
+          ),
         ),
       ),
-      title: Text(artist.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-      subtitle: artist.albumCount == null
-          ? null
-          : Text(
-              context.l10n.artistAlbumCount(artist.albumCount!),
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
-            ),
-      trailing: onFavorite == null
-          ? null
-          : StarButton(isStarred: isFavorite, onPressed: onFavorite!),
-      onTap: onTap,
     );
   }
 }

@@ -183,6 +183,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               final artist = value.artists[index];
                               return ArtistListTile(
                                 artist: artist,
+                                client: client,
                                 isFavorite: starredIds.artists.contains(
                                   artist.id,
                                 ),
