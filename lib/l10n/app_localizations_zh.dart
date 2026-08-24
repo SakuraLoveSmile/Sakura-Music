@@ -136,7 +136,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hostNoScheme => '无需填写协议，请只输入主机';
 
   @override
-  String get portInRightField => '端口请填写在右侧';
+  String get portInRightField => '端口请填写在端口输入框';
 
   @override
   String get portLabel => '端口';
