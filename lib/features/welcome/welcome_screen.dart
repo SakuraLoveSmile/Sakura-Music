@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/server_repository.dart';
-import 'widgets/add_server_dialog.dart';
 import 'widgets/feature_cards.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'widgets/server_picker_view.dart';
@@ -31,32 +29,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   Future<void> _openAddServerDialog() async {
-    final added = await AddServerDialog.show(context);
-    if (added != true || !mounted) {
-      return;
-    }
-
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
-    if (isWide) {
-      final active = ref.read(activeServerProvider);
-      if (active != null) {
-        context.go('/home');
-      }
-      return;
-    }
-
-    // Narrow screens stay on the picker and point the user at the new card
-    // instead of jumping straight into the app.
-    setState(() => _highlightServerId = ref.read(selectedServerIdProvider));
-    _highlightTimer?.cancel();
-    _highlightTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _highlightServerId = null);
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.addedTapCardHint)),
-    );
+    await context.push('/add-server');
   }
 
   @override

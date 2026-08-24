@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   media_kit_libs_windows_audio
+  nsd_windows
   permission_handler_windows
   screen_retriever_windows
   sqlite3_flutter_libs
