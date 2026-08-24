@@ -803,7 +803,8 @@ void showSongActionBottomSheet({
                                   imageUrl: coverUrl,
                                   cacheKey: 'cover_${song.coverArt}_160',
                                   fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Container(
+                                  errorWidget: (context, url, error) =>
+                                      Container(
                                     color: const Color(0xFF2B2D38),
                                     child: const Icon(
                                       Icons.music_note_rounded,

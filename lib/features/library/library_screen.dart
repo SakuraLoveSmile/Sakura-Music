@@ -101,6 +101,7 @@ class _FavoriteSongs extends StatelessWidget {
       itemBuilder: (context, index) {
         final song = songs[index];
         return SongListTile(
+          index: index + 1,
           song: song,
           client: client,
           isFavorite: true,
@@ -120,6 +121,14 @@ class _FavoriteSongs extends StatelessWidget {
                 );
               }
             }
+          },
+          onMore: () {
+            showSongActionBottomSheet(
+              context: context,
+              ref: ref,
+              song: song,
+              client: client,
+            );
           },
           onTap: () async {
             final items = await playableItemsForSongsWithLocalFiles(

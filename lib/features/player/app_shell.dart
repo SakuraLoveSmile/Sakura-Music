@@ -345,12 +345,16 @@ class _TopActionBar extends StatelessWidget {
                       color: Color(0xFF1E7BF6),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      activeServer!.name,
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        activeServer!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
