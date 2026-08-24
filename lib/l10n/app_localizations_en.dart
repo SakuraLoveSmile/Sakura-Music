@@ -1113,6 +1113,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugSessionUnknown => 'Unknown';
 
   @override
+  String get debugOutputDeviceDefault => 'Follow system default';
+
+  @override
+  String debugOutputDeviceApplied(Object name) {
+    return 'Output device: $name';
+  }
+
+  @override
+  String get debugOutputDeviceFailed => 'Failed to switch output device';
+
+  @override
   String get addServerTitle => 'Add server';
 
   @override

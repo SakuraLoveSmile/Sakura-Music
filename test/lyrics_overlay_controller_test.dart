@@ -99,6 +99,9 @@ class _FakePlayerService implements AudioPlayerService {
   Future<void> setSpeed(double value) async {}
 
   @override
+  Future<bool> setPreferredOutputDevice(int? deviceId) async => false;
+
+  @override
   Future<void> setEqualizer(EqualizerSettings settings) async {}
 
   @override
