@@ -10,6 +10,7 @@ import 'package:just_audio/just_audio.dart';
 
 import 'audio_cache_manager.dart';
 import 'audio_player_service.dart';
+import 'equalizer_controller.dart';
 import 'equalizer_models.dart';
 import 'playback_debug_log.dart';
 
@@ -24,16 +25,35 @@ class JustAudioPlayerService implements AudioPlayerService {
               : null,
         );
 
-  JustAudioPlayerService._withEqualizer(AudioPlayer? player, this._equalizer)
-    : _player =
-          player ??
-          AudioPlayer(
-            audioPipeline: _equalizer == null
-                ? null
-                : AudioPipeline(
-                    androidAudioEffects: <AndroidAudioEffect>[_equalizer],
-                  ),
-          ) {
+  JustAudioPlayerService._withEqualizer(
+    AudioPlayer? player,
+    AndroidEqualizer? realEqualizer,
+  )   : _player = player ??
+            AudioPlayer(
+              audioPipeline: realEqualizer == null
+                  ? null
+                  : AudioPipeline(
+                      androidAudioEffects: <AndroidAudioEffect>[realEqualizer],
+                    ),
+            ),
+        _equalizer =
+            realEqualizer == null ? null : AndroidEqualizerController(realEqualizer) {
+    _init();
+  }
+
+  /// Test-only constructor that injects a [EqualizerController] (a fake in
+  /// tests) so the equalizer retry path can be exercised without a native
+  /// audio engine.
+  @visibleForTesting
+  JustAudioPlayerService.withController(
+    EqualizerController? equalizer, {
+    AudioPlayer? player,
+  })  : _player = player ?? AudioPlayer(),
+        _equalizer = equalizer {
+    _init();
+  }
+
+  void _init() {
     _snapshotEmitter = PlayerSnapshotEmitter(_snapshotController.add);
     addSubscription(_subscriptions, _player.playerStateStream, (_) => _emit());
     addSubscription(
@@ -46,7 +66,7 @@ class JustAudioPlayerService implements AudioPlayerService {
     addSubscription(
       _subscriptions,
       _player.playerStateStream,
-      _logPlayerState,
+      _onPlayerState,
     );
     unawaited(_initSessionLogging());
   }
@@ -56,6 +76,31 @@ class JustAudioPlayerService implements AudioPlayerService {
     final processing = state.processingState;
     playbackDebugLog.add(
       'playerState: processing=$processing playing=$playing',
+    );
+  }
+
+  /// Logs player-state transitions and retries the equalizer once the player
+  /// reaches `ready` if a previous [setQueue] attempt timed out.
+  void _onPlayerState(dynamic state) {
+    _logPlayerState(state);
+    final processing = state.processingState;
+    if (processing == ProcessingState.ready && _equalizerRetryPending) {
+      unawaited(_retryEqualizerAfterReady());
+    }
+  }
+
+  Future<void> _retryEqualizerAfterReady() async {
+    if (!_equalizerRetryPending) {
+      return;
+    }
+    // Consume the pending marker so a single ready transition triggers exactly
+    // one retry; a failed retry re-arms the marker for the next transition.
+    _equalizerRetryPending = false;
+    final success = await _applyEqualizer();
+    playbackDebugLog.add(
+      success
+          ? 'setEqualizer: re-applied after ready'
+          : 'setEqualizer: still not ready after ready',
     );
   }
 
@@ -82,7 +127,12 @@ class JustAudioPlayerService implements AudioPlayerService {
   }
 
   final AudioPlayer _player;
-  final AndroidEqualizer? _equalizer;
+  final EqualizerController? _equalizer;
+  bool _equalizerRetryPending = false;
+
+  @visibleForTesting
+  bool get equalizerRetryPendingForTest => _equalizerRetryPending;
+
   final StreamController<PlayerSnapshot> _snapshotController =
       StreamController<PlayerSnapshot>.broadcast();
   late final PlayerSnapshotEmitter _snapshotEmitter;
@@ -117,6 +167,7 @@ class JustAudioPlayerService implements AudioPlayerService {
     playbackDebugLog.add(
       'setQueue: ${items.length} items startIndex=$startIndex',
     );
+    _equalizerRetryPending = false;
     _queue = List<PlayableItem>.unmodifiable(items);
     if (_queue.isEmpty) {
       await _player.stop();
@@ -125,7 +176,15 @@ class JustAudioPlayerService implements AudioPlayerService {
     }
     final index = startIndex.clamp(0, _queue.length - 1);
     final cacheDirectory = await AudioCacheManager.directory();
-    unawaited(AudioCacheManager.trim(cacheDirectory).catchError((_) {}));
+    final exclude = _queue
+        .map(
+          (item) =>
+              AudioCacheManager.fileFor(cacheDirectory, item.streamUrl).path,
+        )
+        .toSet();
+    unawaited(
+      AudioCacheManager.trim(cacheDirectory, exclude: exclude).catchError((_) {}),
+    );
     final sources = _queue
         .map(
           (item) => LockCachingAudioSource(
@@ -161,7 +220,11 @@ class JustAudioPlayerService implements AudioPlayerService {
     _volumeFader.cancel();
     await _applyVolume(0);
     await _player.play();
-    unawaited(_fadeTo(_volume));
+    unawaited(_fadeTo(_volume).then((_) {
+      playbackDebugLog.add(
+        'play: fade-in done volume=${_appliedVolume.toStringAsFixed(2)}',
+      );
+    }));
   }
 
   @override
@@ -229,7 +292,11 @@ class JustAudioPlayerService implements AudioPlayerService {
     await _fadeTo(0);
     await _player.seek(Duration.zero, index: index);
     await _player.play();
-    unawaited(_fadeTo(_volume));
+    unawaited(_fadeTo(_volume).then((_) {
+      playbackDebugLog.add(
+        'play: fade-in done volume=${_appliedVolume.toStringAsFixed(2)}',
+      );
+    }));
   }
 
   @override
@@ -314,11 +381,19 @@ class JustAudioPlayerService implements AudioPlayerService {
     await _applyEqualizer();
   }
 
-  Future<void> _applyEqualizer() async {
+  /// Applies the current [_equalizerSettings] to the native effect.
+  ///
+  /// The Android effect only reports its parameters once the first audio
+  /// source has activated, so a call during [setQueue] can legitimately time
+  /// out. When that happens (or a [PlatformException] is thrown) we return
+  /// `false` and mark [_equalizerRetryPending]; the player-state subscription
+  /// retries exactly once after the player reaches `ready`. Returns `true`
+  /// when the settings were applied (or when there is no effect to apply).
+  Future<bool> _applyEqualizer() async {
     final equalizer = _equalizer;
     if (equalizer == null) {
       playbackDebugLog.add('setEqualizer: no equalizer (pipeline disabled)');
-      return;
+      return true;
     }
     try {
       await equalizer.setEnabled(_equalizerSettings.enabled);
@@ -340,14 +415,19 @@ class JustAudioPlayerService implements AudioPlayerService {
       playbackDebugLog.add(
         'setEqualizer: applied ${parameters.bands.length} bands',
       );
+      return true;
     } on TimeoutException {
-      // The native effect becomes ready with the first audio source; setQueue
-      // calls this method again after that activation.
+      // The native effect becomes ready with the first audio source; the
+      // player-state subscription retries once the player reaches `ready`.
       playbackDebugLog.add('setEqualizer: parameters not ready (timeout)');
+      _equalizerRetryPending = true;
+      return false;
     } on PlatformException catch (error) {
       // Some Android audio effect implementations are not ready yet. A
       // missing equalizer must not prevent the queue from being loaded.
       playbackDebugLog.add('setEqualizer: PlatformException $error');
+      _equalizerRetryPending = true;
+      return false;
     }
   }
 
