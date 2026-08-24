@@ -26,6 +26,10 @@ class SettingsRepository {
     return database.saveSettings(lyricsOverlayEnabled: enabled);
   }
 
+  Future<void> updateSafeAudioMode({required bool enabled}) {
+    return database.saveSettings(safeAudioMode: enabled);
+  }
+
   Future<void> updateLocale({required String localeCode}) {
     return database.saveSettings(localeCode: localeCode);
   }

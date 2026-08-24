@@ -90,6 +90,11 @@ class Settings extends Table {
   BoolColumn get lyricsOverlayEnabled =>
       boolean().withDefault(const Constant(false))();
 
+  /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
+  /// audio player. Used as a diagnostic toggle to rule out the equalizer as the
+  /// cause of silent playback on some devices.
+  BoolColumn get safeAudioMode => boolean().withDefault(const Constant(false))();
+
   /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
   TextColumn get localeCode => text().withDefault(const Constant('zh'))();
 }

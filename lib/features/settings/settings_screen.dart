@@ -12,7 +12,6 @@ import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
 import '../../features/lyrics_overlay/lyrics_overlay_controller.dart';
 import '../player/equalizer_panel.dart';
-import '../welcome/widgets/add_server_dialog.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -196,6 +195,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: context.l10n.equalizerSettings,
                   onTap: () => showEqualizerPanel(context),
                 ),
+                _buildDivider(),
+                _buildActionTile(
+                  icon: Icons.bug_report_rounded,
+                  iconColor: const Color(0xFF64D2FF),
+                  title: context.l10n.debugDiagnostics,
+                  onTap: () => context.push('/debug'),
+                ),
                 if (Platform.isAndroid) ...<Widget>[
                   _buildDivider(),
                   _buildSwitchTile(
@@ -250,7 +256,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.add_circle_outline_rounded,
                   iconColor: const Color(0xFF34C759),
                   title: context.l10n.addNewServer,
-                  onTap: () => AddServerDialog.show(context),
+                  onTap: () => context.push('/add-server'),
                 ),
                 _buildDivider(),
                 _buildActionTile(

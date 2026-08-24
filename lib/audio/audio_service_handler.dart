@@ -5,11 +5,17 @@ import 'package:audio_service/audio_service.dart';
 import 'audio_player_service.dart';
 import 'equalizer_models.dart';
 import 'just_audio_service.dart';
+import 'playback_debug_log.dart';
 
 class AudioServiceHandler extends BaseAudioHandler
     implements AudioPlayerService {
-  AudioServiceHandler({JustAudioPlayerService? delegate})
-    : _delegate = delegate ?? JustAudioPlayerService() {
+  AudioServiceHandler({
+    JustAudioPlayerService? delegate,
+    bool disableEqualizerPipeline = false,
+  }) : _delegate = delegate ??
+            JustAudioPlayerService(
+              disableEqualizerPipeline: disableEqualizerPipeline,
+            ) {
     _subscription = _delegate.snapshot.listen(_publishSnapshot);
   }
 
@@ -24,6 +30,7 @@ class AudioServiceHandler extends BaseAudioHandler
 
   @override
   Future<void> setQueue(List<PlayableItem> items, {int startIndex = 0}) async {
+    playbackDebugLog.add('AudioServiceHandler.setQueue');
     _stopped = false;
     queue.add(items.map(_mediaItemFor).toList(growable: false));
     await _delegate.setQueue(items, startIndex: startIndex);
@@ -31,39 +38,68 @@ class AudioServiceHandler extends BaseAudioHandler
 
   @override
   Future<void> play() {
+    playbackDebugLog.add('AudioServiceHandler.play');
     _stopped = false;
     return _delegate.play();
   }
 
   @override
-  Future<void> pause() => _delegate.pause();
+  Future<void> pause() {
+    playbackDebugLog.add('AudioServiceHandler.pause');
+    return _delegate.pause();
+  }
 
   @override
-  Future<void> next() => _delegate.next();
+  Future<void> next() {
+    playbackDebugLog.add('AudioServiceHandler.next');
+    return _delegate.next();
+  }
 
   @override
-  Future<void> previous() => _delegate.previous();
+  Future<void> previous() {
+    playbackDebugLog.add('AudioServiceHandler.previous');
+    return _delegate.previous();
+  }
 
   @override
-  Future<void> skipToNext() => next();
+  Future<void> skipToNext() {
+    playbackDebugLog.add('AudioServiceHandler.skipToNext');
+    return next();
+  }
 
   @override
-  Future<void> skipToPrevious() => previous();
+  Future<void> skipToPrevious() {
+    playbackDebugLog.add('AudioServiceHandler.skipToPrevious');
+    return previous();
+  }
 
   @override
-  Future<void> seek(Duration position) => _delegate.seek(position);
+  Future<void> seek(Duration position) {
+    playbackDebugLog.add('AudioServiceHandler.seek');
+    return _delegate.seek(position);
+  }
 
   @override
-  Future<void> setLoopMode(AppLoopMode mode) => _delegate.setLoopMode(mode);
+  Future<void> setLoopMode(AppLoopMode mode) {
+    playbackDebugLog.add('AudioServiceHandler.setLoopMode');
+    return _delegate.setLoopMode(mode);
+  }
 
   @override
-  Future<void> setShuffle(bool enabled) => _delegate.setShuffle(enabled);
+  Future<void> setShuffle(bool enabled) {
+    playbackDebugLog.add('AudioServiceHandler.setShuffle');
+    return _delegate.setShuffle(enabled);
+  }
 
   @override
-  Future<void> playAt(int index) => _delegate.playAt(index);
+  Future<void> playAt(int index) {
+    playbackDebugLog.add('AudioServiceHandler.playAt');
+    return _delegate.playAt(index);
+  }
 
   @override
   Future<void> stop() async {
+    playbackDebugLog.add('AudioServiceHandler.stop');
     _stopped = true;
     await _delegate.pause();
     playbackState.add(
@@ -76,31 +112,42 @@ class AudioServiceHandler extends BaseAudioHandler
 
   @override
   Future<void> insertNext(PlayableItem item) async {
+    playbackDebugLog.add('AudioServiceHandler.insertNext');
     await _delegate.insertNext(item);
     _syncQueue(_lastQueue);
   }
 
   @override
   Future<void> removeAt(int index) async {
+    playbackDebugLog.add('AudioServiceHandler.removeAt');
     await _delegate.removeAt(index);
     _syncQueue(_lastQueue);
   }
 
   @override
   Future<void> moveItem(int from, int to) async {
+    playbackDebugLog.add('AudioServiceHandler.moveItem');
     await _delegate.moveItem(from, to);
     _syncQueue(_lastQueue);
   }
 
   @override
-  Future<void> setVolume(double value) => _delegate.setVolume(value);
+  Future<void> setVolume(double value) {
+    playbackDebugLog.add('AudioServiceHandler.setVolume');
+    return _delegate.setVolume(value);
+  }
 
   @override
-  Future<void> setSpeed(double speed) => _delegate.setSpeed(speed);
+  Future<void> setSpeed(double speed) {
+    playbackDebugLog.add('AudioServiceHandler.setSpeed');
+    return _delegate.setSpeed(speed);
+  }
 
   @override
-  Future<void> setEqualizer(EqualizerSettings settings) =>
-      _delegate.setEqualizer(settings);
+  Future<void> setEqualizer(EqualizerSettings settings) {
+    playbackDebugLog.add('AudioServiceHandler.setEqualizer');
+    return _delegate.setEqualizer(settings);
+  }
 
   List<PlayableItem> _lastQueue = const <PlayableItem>[];
   bool _stopped = false;
