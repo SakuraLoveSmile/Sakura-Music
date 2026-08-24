@@ -40,6 +40,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final hasServer = ref.read(activeServerProvider) != null;
       final isSettings = path == '/settings' || path.startsWith('/settings/');
       final isWelcome = path == '/welcome';
+      final isAddServer = path == '/add-server' || path.startsWith('/add-server/');
 
       // Keep the initial home route visible while the local server list is
       // still loading; the refresh listener below will redirect once the
@@ -48,7 +49,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      if (!hasServer && !isWelcome && !isSettings) {
+      if (!hasServer && !isWelcome && !isSettings && !isAddServer) {
         return '/welcome';
       }
       if (path == '/' || path == '/library') {
