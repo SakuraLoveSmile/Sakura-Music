@@ -207,6 +207,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String get membership => 'Membership';
 
   @override
+  String get membershipActivated => 'Activated';
+
+  @override
+  String get activateMembership => 'Activate Membership';
+
+  @override
+  String get activateMembershipSubtitle =>
+      'Activate full member benefits via activation code or starring our GitHub repository';
+
+  @override
+  String get membershipActiveBannerTitle => 'Membership Active';
+
+  @override
+  String get activationCodeTitle => 'Activation Code';
+
+  @override
+  String get activationCodeHint => 'Enter activation code';
+
+  @override
+  String get activateButton => 'Activate';
+
+  @override
+  String get activationSuccess =>
+      'Activated successfully! Member features enabled.';
+
+  @override
+  String get activationCodeInvalid =>
+      'Invalid activation code. Please check and try again.';
+
+  @override
+  String get starActivationTitle => 'Star on GitHub';
+
+  @override
+  String get starActivationDesc =>
+      'If you have starred this project on GitHub, turn on this switch to activate membership. No check is performed; this operates on the honor system.';
+
+  @override
+  String get goToStar => 'Go to Star';
+
+  @override
+  String get activatedViaCode => 'Activated via: Activation Code';
+
+  @override
+  String get activatedViaStar => 'Activated via: GitHub Star (Honor System)';
+
+  @override
+  String get deactivateMembership => 'Deactivate';
+
+  @override
+  String get deactivatedSuccess => 'Membership deactivated';
+
+  @override
   String get notActivated => 'Not activated';
 
   @override
@@ -406,26 +458,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get betaTrialActive => 'Beta trial';
-
-  @override
-  String betaTrialDays(int days) {
-    return '$days days of beta trial left — all member features included';
-  }
-
-  @override
-  String betaTrialRemaining(int days) {
-    return '$days days of trial left';
-  }
-
-  @override
   String get browse => 'Browse';
 
   @override
   String get cancelDownload => 'Cancel download';
-
-  @override
-  String get cancelTrial => 'Cancel trial';
 
   @override
   String get cast => 'Cast';
@@ -859,9 +895,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restartAndInstall => 'Restart & install';
 
   @override
-  String get restartTrial => 'Restart trial';
-
-  @override
   String searchFailed(Object error) {
     return 'Search failed: $error';
   }
@@ -957,12 +990,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String starFailed(Object error) {
     return 'Favorite failed: $error';
   }
-
-  @override
-  String get trialCancelled => 'Trial cancelled';
-
-  @override
-  String get trialResumed => 'Beta trial resumed';
 
   @override
   String get unfavorite => 'Unfavorite';
