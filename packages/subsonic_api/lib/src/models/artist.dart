@@ -6,6 +6,7 @@ class Artist {
     required this.id,
     required this.name,
     this.albumCount,
+    this.coverArt,
     this.artistImageUrl,
     this.albums = const <Album>[],
   });
@@ -15,6 +16,7 @@ class Artist {
       id: asString(json['id']) ?? '',
       name: asString(json['name']) ?? '',
       albumCount: asInt(json['albumCount']),
+      coverArt: asString(json['coverArt']),
       artistImageUrl: asString(json['artistImageUrl']),
       albums: asList(json['album'] ?? json['albums'])
           .map(asMap)
@@ -27,6 +29,7 @@ class Artist {
   final String id;
   final String name;
   final int? albumCount;
+  final String? coverArt;
   final String? artistImageUrl;
   final List<Album> albums;
 
@@ -34,6 +37,7 @@ class Artist {
     'id': id,
     'name': name,
     'albumCount': albumCount,
+    'coverArt': coverArt,
     'artistImageUrl': artistImageUrl,
     'album': albums.map((album) => album.toJson()).toList(growable: false),
   };

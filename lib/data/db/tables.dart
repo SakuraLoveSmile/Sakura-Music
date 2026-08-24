@@ -93,7 +93,7 @@ class Settings extends Table {
   /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
   /// audio player. Used as a diagnostic toggle to rule out the equalizer as the
   /// cause of silent playback on some devices.
-  BoolColumn get safeAudioMode => boolean().withDefault(const Constant(false))();
+  BoolColumn get safeAudioMode => boolean().withDefault(const Constant(true))();
 
   /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
   TextColumn get localeCode => text().withDefault(const Constant('zh'))();

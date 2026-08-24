@@ -1147,4 +1147,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get comingSoon => 'Coming soon';
+
+  @override
+  String artistCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artists',
+      one: '1 artist',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String artistSongCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs',
+      one: '1 song',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get similarArtists => 'Similar Artists';
+
+  @override
+  String get artistBio => 'About Artist';
+
+  @override
+  String get viewGrid => 'Grid View';
+
+  @override
+  String get viewList => 'List View';
+
+  @override
+  String get sortNameAsc => 'Name (A-Z)';
+
+  @override
+  String get sortNameDesc => 'Name (Z-A)';
+
+  @override
+  String get sortAlbumCount => 'Album Count';
+
+  @override
+  String get sortYearDesc => 'Year (Newest)';
+
+  @override
+  String get sortYearAsc => 'Year (Oldest)';
+
+  @override
+  String get showMore => 'Show more';
+
+  @override
+  String get showLess => 'Show less';
+
+  @override
+  String get noSimilarArtists => 'No similar artists';
+
+  @override
+  String get filterArtistsHint => 'Filter artists...';
+
+  @override
+  String get discography => 'Discography';
 }

@@ -2113,6 +2113,102 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'即将支持'**
   String get comingSoon;
+
+  /// No description provided for @artistCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'共 {count} 位艺术家'**
+  String artistCount(int count);
+
+  /// No description provided for @artistSongCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'共 {count} 首歌曲'**
+  String artistSongCount(int count);
+
+  /// No description provided for @similarArtists.
+  ///
+  /// In zh, this message translates to:
+  /// **'相似艺术家'**
+  String get similarArtists;
+
+  /// No description provided for @artistBio.
+  ///
+  /// In zh, this message translates to:
+  /// **'关于艺术家'**
+  String get artistBio;
+
+  /// No description provided for @viewGrid.
+  ///
+  /// In zh, this message translates to:
+  /// **'网格视图'**
+  String get viewGrid;
+
+  /// No description provided for @viewList.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表视图'**
+  String get viewList;
+
+  /// No description provided for @sortNameAsc.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称 (A-Z)'**
+  String get sortNameAsc;
+
+  /// No description provided for @sortNameDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'名称 (Z-A)'**
+  String get sortNameDesc;
+
+  /// No description provided for @sortAlbumCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'专辑数量'**
+  String get sortAlbumCount;
+
+  /// No description provided for @sortYearDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'发行年份 (最新)'**
+  String get sortYearDesc;
+
+  /// No description provided for @sortYearAsc.
+  ///
+  /// In zh, this message translates to:
+  /// **'发行年份 (最早)'**
+  String get sortYearAsc;
+
+  /// No description provided for @showMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开更多'**
+  String get showMore;
+
+  /// No description provided for @showLess.
+  ///
+  /// In zh, this message translates to:
+  /// **'收起'**
+  String get showLess;
+
+  /// No description provided for @noSimilarArtists.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无相似艺术家'**
+  String get noSimilarArtists;
+
+  /// No description provided for @filterArtistsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'过滤艺术家...'**
+  String get filterArtistsHint;
+
+  /// No description provided for @discography.
+  ///
+  /// In zh, this message translates to:
+  /// **'音乐作品'**
+  String get discography;
 }
 
 class _AppLocalizationsDelegate

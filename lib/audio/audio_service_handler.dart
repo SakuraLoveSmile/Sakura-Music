@@ -11,7 +11,7 @@ class AudioServiceHandler extends BaseAudioHandler
     implements AudioPlayerService {
   AudioServiceHandler({
     JustAudioPlayerService? delegate,
-    bool disableEqualizerPipeline = false,
+    bool disableEqualizerPipeline = true,
   }) : _delegate = delegate ??
             JustAudioPlayerService(
               disableEqualizerPipeline: disableEqualizerPipeline,

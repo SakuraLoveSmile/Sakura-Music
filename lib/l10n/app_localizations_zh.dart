@@ -1086,4 +1086,56 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get comingSoon => '即将支持';
+
+  @override
+  String artistCount(int count) {
+    return '共 $count 位艺术家';
+  }
+
+  @override
+  String artistSongCount(int count) {
+    return '共 $count 首歌曲';
+  }
+
+  @override
+  String get similarArtists => '相似艺术家';
+
+  @override
+  String get artistBio => '关于艺术家';
+
+  @override
+  String get viewGrid => '网格视图';
+
+  @override
+  String get viewList => '列表视图';
+
+  @override
+  String get sortNameAsc => '名称 (A-Z)';
+
+  @override
+  String get sortNameDesc => '名称 (Z-A)';
+
+  @override
+  String get sortAlbumCount => '专辑数量';
+
+  @override
+  String get sortYearDesc => '发行年份 (最新)';
+
+  @override
+  String get sortYearAsc => '发行年份 (最早)';
+
+  @override
+  String get showMore => '展开更多';
+
+  @override
+  String get showLess => '收起';
+
+  @override
+  String get noSimilarArtists => '暂无相似艺术家';
+
+  @override
+  String get filterArtistsHint => '过滤艺术家...';
+
+  @override
+  String get discography => '音乐作品';
 }

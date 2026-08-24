@@ -523,5 +523,35 @@
   "noServersFound": "未发现任何服务器",
   "ensureSameNetwork": "请确认设备处于同一局域网",
   "manualAdd": "手动添加",
-  "comingSoon": "即将支持"
+  "comingSoon": "即将支持",
+  "artistCount": "共 {count} 位艺术家",
+  "@artistCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "artistSongCount": "共 {count} 首歌曲",
+  "@artistSongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "similarArtists": "相似艺术家",
+  "artistBio": "关于艺术家",
+  "viewGrid": "网格视图",
+  "viewList": "列表视图",
+  "sortNameAsc": "名称 (A-Z)",
+  "sortNameDesc": "名称 (Z-A)",
+  "sortAlbumCount": "专辑数量",
+  "sortYearDesc": "发行年份 (最新)",
+  "sortYearAsc": "发行年份 (最早)",
+  "showMore": "展开更多",
+  "showLess": "收起",
+  "noSimilarArtists": "暂无相似艺术家",
+  "filterArtistsHint": "过滤艺术家...",
+  "discography": "音乐作品"
 }
