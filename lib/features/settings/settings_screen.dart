@@ -1,10 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-import '../../core/appearance.dart';
+import '../../core/locale.dart';
+import '../../l10n/l10n.dart';
+import '../../core/update/update_providers.dart';
 import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
+import '../../features/lyrics_overlay/lyrics_overlay_controller.dart';
 import '../player/equalizer_panel.dart';
 import '../welcome/widgets/add_server_dialog.dart';
 
@@ -19,13 +25,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _autoPlayOnLaunch = false;
   bool _fadeTransition = false;
   bool _musicRoaming = false;
-  String _downloadNetwork = '仅 Wi-Fi';
-  String _audioQuality = '无损 / 自动';
+  int _downloadNetworkIndex = 0;
+  int _audioQualityIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final activeServer = ref.watch(activeServerProvider);
     final serversAsync = ref.watch(serversProvider);
+    final appVersion = ref.watch(appVersionProvider);
+    final updateState = ref.watch(updateControllerProvider);
+    final localeCode = ref.watch(localeCodeProvider);
+    final downloadNetworkOptions = <String>[
+      context.l10n.downloadWifiOnly,
+      context.l10n.downloadAnyNetwork,
+      context.l10n.downloadOff,
+    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFF131418),
@@ -38,7 +52,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             size: 28,
             color: Colors.white,
           ),
-          tooltip: '返回',
+          tooltip: context.l10n.back,
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -47,9 +61,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             }
           },
         ),
-        title: const Text(
-          '设置',
-          style: TextStyle(
+        title: Text(
+          context.l10n.settings,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -58,7 +72,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: <Widget>[
           if (activeServer != null)
             PopupMenuButton<Server>(
-              tooltip: '切换音乐库',
+              tooltip: context.l10n.switchLibrary,
               offset: const Offset(0, 40),
               color: const Color(0xFF22252E),
               shape: RoundedRectangleBorder(
@@ -116,7 +130,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 size: 18,
                 color: Color(0xFF1E7BF6),
               ),
-              tooltip: '设置',
+              tooltip: context.l10n.settings,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               onPressed: () {},
@@ -135,12 +149,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 24),
 
               // 2. Playback Section (播放)
-              _buildSectionTitle('播放'),
+              _buildSectionTitle(context.l10n.sectionPlayback),
               _buildCardContainer(<Widget>[
                 _buildSwitchTile(
                   icon: Icons.play_arrow_rounded,
                   iconColor: const Color(0xFF0A84FF),
-                  title: '启动后自动播放',
+                  title: context.l10n.autoPlayOnLaunch,
                   value: _autoPlayOnLaunch,
                   onChanged: (val) => setState(() => _autoPlayOnLaunch = val),
                 ),
@@ -148,7 +162,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildSwitchTile(
                   icon: Icons.volume_up_rounded,
                   iconColor: const Color(0xFF5856D6),
-                  title: '淡入淡出',
+                  title: context.l10n.fadeTransition,
                   value: _fadeTransition,
                   onChanged: (val) => setState(() => _fadeTransition = val),
                 ),
@@ -156,7 +170,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildSwitchTile(
                   icon: Icons.directions_walk_rounded,
                   iconColor: const Color(0xFF30B0C7),
-                  title: '音樂漫遊',
+                  title: context.l10n.musicRoaming,
                   value: _musicRoaming,
                   onChanged: (val) => setState(() => _musicRoaming = val),
                 ),
@@ -164,75 +178,88 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildActionTile(
                   icon: Icons.headphones_rounded,
                   iconColor: const Color(0xFFFF9500),
-                  title: '有聲書/播客',
+                  title: context.l10n.audiobooksPodcasts,
                   onTap: () => context.go('/radios'),
                 ),
                 _buildDivider(),
                 _buildActionTile(
                   icon: Icons.graphic_eq_rounded,
                   iconColor: const Color(0xFFAF52DE),
-                  title: '在线播放音质',
-                  trailingText: _audioQuality,
+                  title: context.l10n.streamingQuality,
+                  trailingText: _qualityLabels()[_audioQualityIndex],
                   onTap: () => _showAudioQualityDialog(),
                 ),
                 _buildDivider(),
                 _buildActionTile(
                   icon: Icons.equalizer_rounded,
                   iconColor: const Color(0xFF34C759),
-                  title: '均衡器设置',
+                  title: context.l10n.equalizerSettings,
                   onTap: () => showEqualizerPanel(context),
                 ),
+                if (Platform.isAndroid) ...<Widget>[
+                  _buildDivider(),
+                  _buildSwitchTile(
+                    icon: Icons.lyrics_rounded,
+                    iconColor: const Color(0xFF1E7BF6),
+                    title: context.l10n.lyricsOverlay,
+                    value: ref.watch(lyricsOverlayControllerProvider),
+                    onChanged: _toggleLyricsOverlay,
+                  ),
+                ],
               ]),
               const SizedBox(height: 24),
 
               // 3. Network Section (网络)
-              _buildSectionTitle('网络'),
+              _buildSectionTitle(context.l10n.sectionNetwork),
               _buildCardContainer(<Widget>[
                 _buildDropdownTile(
                   icon: Icons.download_rounded,
                   iconColor: const Color(0xFF34C759),
-                  title: '后台下载',
-                  value: _downloadNetwork,
-                  options: const <String>['仅 Wi-Fi', '所有网络', '关闭'],
+                  title: context.l10n.backgroundDownload,
+                  value: downloadNetworkOptions[_downloadNetworkIndex],
+                  options: downloadNetworkOptions,
                   onChanged: (val) {
-                    if (val != null) setState(() => _downloadNetwork = val);
+                    final index = downloadNetworkOptions.indexOf(val ?? '');
+                    if (index >= 0) {
+                      setState(() => _downloadNetworkIndex = index);
+                    }
                   },
                 ),
                 _buildDivider(),
                 _buildActionTile(
                   icon: Icons.language_rounded,
                   iconColor: const Color(0xFF32ADE6),
-                  title: '网络代理',
+                  title: context.l10n.networkProxy,
                   onTap: () => _showProxyDialog(),
                 ),
               ]),
               const SizedBox(height: 24),
 
               // 4. Storage & Servers Section (存储与服务器)
-              _buildSectionTitle('存储与服务'),
+              _buildSectionTitle(context.l10n.sectionStorage),
               _buildCardContainer(<Widget>[
                 _buildActionTile(
                   icon: Icons.dns_rounded,
                   iconColor: const Color(0xFF1E7BF6),
-                  title: '服务器管理',
-                  trailingText: activeServer?.name ?? '未连接',
+                  title: context.l10n.serverManagement,
+                  trailingText: activeServer?.name ?? context.l10n.notConnected,
                   onTap: () => context.go('/welcome'),
                 ),
                 _buildDivider(),
                 _buildActionTile(
                   icon: Icons.add_circle_outline_rounded,
                   iconColor: const Color(0xFF34C759),
-                  title: '添加新服务器',
+                  title: context.l10n.addNewServer,
                   onTap: () => AddServerDialog.show(context),
                 ),
                 _buildDivider(),
                 _buildActionTile(
                   icon: Icons.cleaning_services_rounded,
                   iconColor: const Color(0xFFFF453A),
-                  title: '清除歌曲缓存',
+                  title: context.l10n.clearCache,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('已清除本地临时缓存数据')),
+                      SnackBar(content: Text(context.l10n.cacheCleared)),
                     );
                   },
                 ),
@@ -240,13 +267,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 24),
 
               // 5. Appearance Section
-              _buildSectionTitle('外观'),
+              _buildSectionTitle(context.l10n.sectionAppearance),
               _buildCardContainer(<Widget>[
                 _buildActionTile(
-                  icon: Icons.palette_outlined,
-                  iconColor: const Color(0xFFFF2D55),
-                  title: '主题与颜色',
-                  onTap: () => _showAppearanceDialog(context),
+                  icon: Icons.translate_rounded,
+                  iconColor: const Color(0xFF5856D6),
+                  title: context.l10n.language,
+                  trailingText: switch (localeCode) {
+                    'system' => context.l10n.followSystem,
+                    'en' => 'English',
+                    _ => '简体中文',
+                  },
+                  onTap: _showLanguageDialog,
+                ),
+              ]),
+              const SizedBox(height: 24),
+
+              // 6. About Section
+              _buildSectionTitle(context.l10n.sectionAbout),
+              _buildCardContainer(<Widget>[
+                _buildActionTile(
+                  icon: Icons.info_outline_rounded,
+                  iconColor: const Color(0xFF5E5CE6),
+                  title: context.l10n.currentVersion,
+                  trailingText: appVersion.when(
+                    data: (info) => '${info.version}+${info.buildNumber}',
+                    loading: () => context.l10n.loading,
+                    error: (_, _) => context.l10n.unknown,
+                  ),
+                  onTap: () {},
+                ),
+                _buildDivider(),
+                _buildActionTile(
+                  icon: Icons.system_update_alt_rounded,
+                  iconColor: const Color(0xFF1E7BF6),
+                  title: context.l10n.checkUpdates,
+                  trailingText: _updateStatusText(updateState),
+                  trailingWidget: updateState.status == UpdateStatus.checking
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : null,
+                  onTap: _checkForUpdates,
                 ),
               ]),
               const SizedBox(height: 36),
@@ -287,10 +351,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(width: 14),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    '会员',
-                    style: TextStyle(
+                    context.l10n.membership,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -298,7 +362,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 Text(
-                  '未开通',
+                  context.l10n.notActivated,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 13,
@@ -392,6 +456,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required Color iconColor,
     required String title,
     String? trailingText,
+    Widget? trailingWidget,
     required VoidCallback onTap,
   }) {
     return Material(
@@ -415,7 +480,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
-              if (trailingText != null) ...[
+              if (trailingWidget != null) ...[
+                trailingWidget,
+                const SizedBox(width: 8),
+              ] else if (trailingText != null) ...[
                 Text(
                   trailingText,
                   style: TextStyle(
@@ -435,6 +503,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleLyricsOverlay(bool enabled) async {
+    if (!enabled) {
+      await ref
+          .read(lyricsOverlayControllerProvider.notifier)
+          .setEnabled(false);
+      return;
+    }
+    var status = await Permission.systemAlertWindow.status;
+    if (!status.isGranted) {
+      status = await Permission.systemAlertWindow.request();
+    }
+    if (!status.isGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.lyricsOverlayPermissionNeeded)),
+        );
+      }
+      return;
+    }
+    await ref.read(lyricsOverlayControllerProvider.notifier).setEnabled(true);
+  }
+
+  String? _updateStatusText(UpdateState state) {
+    return switch (state.status) {
+      UpdateStatus.available => context.l10n.updateAvailable,
+      UpdateStatus.downloading => context.l10n.downloading,
+      UpdateStatus.downloaded => context.l10n.downloaded,
+      UpdateStatus.installing => context.l10n.installing,
+      UpdateStatus.error => context.l10n.retry,
+      _ => null,
+    };
+  }
+
+  Future<void> _checkForUpdates() async {
+    await ref.read(updateControllerProvider.notifier).check();
+    if (!mounted) return;
+    final state = ref.read(updateControllerProvider);
+    if (state.status == UpdateStatus.idle) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.upToDate)));
+    } else if (state.status == UpdateStatus.error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage ?? context.l10n.updateCheckFailed),
+        ),
+      );
+    }
   }
 
   Widget _buildDropdownTile({
@@ -501,28 +621,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  List<String> _qualityLabels() {
+    return <String>[
+      context.l10n.qualityLosslessAuto,
+      context.l10n.qualityFlacWav,
+      context.l10n.quality320,
+      context.l10n.quality192,
+      context.l10n.quality128,
+    ];
+  }
+
   void _showAudioQualityDialog() {
+    final labels = _qualityLabels();
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E2028),
-        title: const Text('在线播放音质', style: TextStyle(color: Colors.white)),
+        title: Text(
+          context.l10n.streamingQuality,
+          style: const TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _qualityOption('无损 / 自动 (优先原始音频流)'),
-            _qualityOption('FLAC / WAV 极高音质'),
-            _qualityOption('320 kbps MP3 高音质'),
-            _qualityOption('192 kbps MP3 标准音质'),
-            _qualityOption('128 kbps MP3 流畅节省流量'),
+            for (final (index, label) in labels.indexed)
+              _qualityOption(index, label),
           ],
         ),
       ),
     );
   }
 
-  Widget _qualityOption(String label) {
-    final selected = _audioQuality.startsWith(label.split(' ').first);
+  Widget _qualityOption(int index, String label) {
+    final selected = _audioQualityIndex == index;
     return ListTile(
       title: Text(
         label,
@@ -532,8 +663,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ? const Icon(Icons.check, color: Color(0xFF1E7BF6))
           : null,
       onTap: () {
-        setState(() => _audioQuality = label.split(' (').first);
+        setState(() => _audioQualityIndex = index);
         Navigator.of(context).pop();
+      },
+    );
+  }
+
+  void _showLanguageDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2028),
+        title: Text(
+          dialogContext.l10n.language,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            _languageOption(
+              dialogContext,
+              code: 'system',
+              label: dialogContext.l10n.followSystem,
+            ),
+            _languageOption(dialogContext, code: 'zh', label: '简体中文'),
+            _languageOption(dialogContext, code: 'en', label: 'English'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _languageOption(
+    BuildContext dialogContext, {
+    required String code,
+    required String label,
+  }) {
+    final selected = ref.read(localeCodeProvider) == code;
+    return ListTile(
+      title: Text(
+        label,
+        style: TextStyle(
+          color: selected ? Colors.white : Colors.white70,
+          fontSize: 13.5,
+        ),
+      ),
+      trailing: selected
+          ? const Icon(Icons.check, color: Color(0xFF1E7BF6))
+          : null,
+      onTap: () {
+        ref.read(localeCodeProvider.notifier).setLocale(code);
+        Navigator.of(dialogContext).pop();
       },
     );
   }
@@ -541,16 +721,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showProxyDialog() {
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E2028),
-        title: const Text('网络代理设置', style: TextStyle(color: Colors.white)),
-        content: const Column(
+        title: Text(dialogContext.l10n.proxyDialogTitle, style: const TextStyle(color: Colors.white)),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             TextField(
-              style: TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'HTTP / SOCKS5 代理地址',
+                labelText: dialogContext.l10n.proxyAddressLabel,
                 hintText: '127.0.0.1:7890',
               ),
             ),
@@ -558,70 +738,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         actions: <Widget>[
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('取消'),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(dialogContext.l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('网络代理设置已保存')));
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(dialogContext).showSnackBar(
+                SnackBar(content: Text(dialogContext.l10n.proxySaved)),
+              );
             },
-            child: const Text('保存'),
+            child: Text(dialogContext.l10n.save),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showAppearanceDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2028),
-        title: const Text('主题外观', style: TextStyle(color: Colors.white)),
-        content: Consumer(
-          builder: (context, ref, _) {
-            final appearance =
-                ref.watch(appearanceProvider).value ?? const AppAppearance();
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                ListTile(
-                  title: const Text(
-                    '深色模式',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  trailing: appearance.themeMode == ThemeMode.dark
-                      ? const Icon(Icons.check, color: Color(0xFF1E7BF6))
-                      : null,
-                  onTap: () {
-                    ref
-                        .read(appearanceProvider.notifier)
-                        .setThemeMode(ThemeMode.dark);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                ListTile(
-                  title: const Text(
-                    '跟随系统',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  trailing: appearance.themeMode == ThemeMode.system
-                      ? const Icon(Icons.check, color: Color(0xFF1E7BF6))
-                      : null,
-                  onTap: () {
-                    ref
-                        .read(appearanceProvider.notifier)
-                        .setThemeMode(ThemeMode.system);
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        ),
       ),
     );
   }

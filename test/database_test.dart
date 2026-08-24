@@ -28,6 +28,23 @@ void main() {
     await database.recordRecentPlay(songId: 'song-1', serverId: serverId);
     expect(await database.select(database.recentPlays).get(), hasLength(1));
 
+    // Play again with metadata: the row keeps one entry but stores the title
+    // and artist recorded by the player.
+    await database.recordRecentPlay(
+      songId: 'song-1',
+      serverId: serverId,
+      title: 'First Song',
+      artist: 'Artist',
+    );
+    final playsWithMeta = await database.getRecentPlays(serverId: serverId);
+    expect(playsWithMeta, hasLength(1));
+    expect(playsWithMeta.single.title, 'First Song');
+    expect(playsWithMeta.single.artist, 'Artist');
+    expect(
+      await database.getRecentPlayIds(serverId: serverId),
+      <String>['song-1'],
+    );
+
     await database.recordSearch('  sakura  ');
     await database.recordSearch('j-pop');
     await database.recordSearch('sakura');

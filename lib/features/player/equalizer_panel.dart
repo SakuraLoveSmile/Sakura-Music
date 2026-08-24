@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/equalizer_models.dart';
 import '../../audio/equalizer_service.dart';
+import '../../l10n/l10n.dart';
 
 Future<void> showEqualizerPanel(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -34,7 +35,8 @@ class EqualizerControls extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         child: value.when(
           loading: () => const LinearProgressIndicator(),
-          error: (error, stackTrace) => Text('读取均衡器设置失败：$error'),
+          error: (error, stackTrace) =>
+              Text(context.l10n.equalizerLoadFailed(error.toString())),
           data: (settings) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -42,18 +44,18 @@ class EqualizerControls extends ConsumerWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      '均衡器',
+                      context.l10n.equalizerTitle,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
                   if (!supported)
-                    const Text('iOS 暂不支持', style: TextStyle(fontSize: 12)),
+                    Text(context.l10n.iosNotSupported, style: const TextStyle(fontSize: 12)),
                 ],
               ),
               const SizedBox(height: 8),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('启用均衡器'),
+                title: Text(context.l10n.enableEqualizer),
                 value: settings.enabled,
                 onChanged: supported
                     ? (enabled) => ref
@@ -63,12 +65,12 @@ class EqualizerControls extends ConsumerWidget {
               ),
               DropdownButtonFormField<EqualizerPreset>(
                 initialValue: settings.preset,
-                decoration: const InputDecoration(labelText: '预设'),
+                decoration: InputDecoration(labelText: context.l10n.presetLabel),
                 items: EqualizerPreset.values
                     .map(
                       (preset) => DropdownMenuItem<EqualizerPreset>(
                         value: preset,
-                        child: Text(preset.label),
+                        child: Text(_presetLabel(context, preset)),
                       ),
                     )
                     .toList(growable: false),
@@ -113,6 +115,16 @@ class EqualizerControls extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _presetLabel(BuildContext context, EqualizerPreset preset) {
+  return switch (preset) {
+    EqualizerPreset.flat => context.l10n.presetFlat,
+    EqualizerPreset.pop => context.l10n.presetPop,
+    EqualizerPreset.rock => context.l10n.presetRock,
+    EqualizerPreset.classical => context.l10n.presetClassical,
+    EqualizerPreset.vocal => context.l10n.presetVocal,
+  };
 }
 
 String _frequencyLabel(int index) {

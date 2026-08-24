@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class PlaylistsScreen extends ConsumerWidget {
@@ -22,11 +23,11 @@ class PlaylistsScreen extends ConsumerWidget {
         child: CustomScrollView(
           slivers: <Widget>[
             SliverAppBar(
-              title: const Text('歌单'),
+              title: Text(context.l10n.playlistsLabel),
               floating: true,
               actions: <Widget>[
                 IconButton(
-                  tooltip: '刷新',
+                  tooltip: context.l10n.refresh,
                   onPressed: () => ref.invalidate(playlistsProvider),
                   icon: const Icon(Icons.refresh),
                 ),
@@ -39,12 +40,16 @@ class PlaylistsScreen extends ConsumerWidget {
               ),
               error: (error, stackTrace) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text('加载歌单失败：$error')),
+                child: Center(
+                  child: Text(
+                    context.l10n.playlistsLoadFailed(error.toString()),
+                  ),
+                ),
               ),
               data: (items) => items.isEmpty
-                  ? const SliverFillRemaining(
+                  ? SliverFillRemaining(
                       hasScrollBody: false,
-                      child: Center(child: Text('还没有歌单。')),
+                      child: Center(child: Text(context.l10n.emptyPlaylists)),
                     )
                   : SliverPadding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -109,7 +114,10 @@ class PlaylistsScreen extends ConsumerWidget {
                                       ),
                                     ),
                                     Text(
-                                      '${playlist.songCount ?? playlist.songs.length} 首歌曲',
+                                      context.l10n.songCountLabel(
+                                        playlist.songCount ??
+                                            playlist.songs.length,
+                                      ),
                                       style: Theme.of(
                                         context,
                                       ).textTheme.bodySmall,

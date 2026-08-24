@@ -483,6 +483,24 @@ class $RecentPlaysTable extends RecentPlays
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _artistMeta = const VerificationMeta('artist');
+  @override
+  late final GeneratedColumn<String> artist = GeneratedColumn<String>(
+    'artist',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _playedAtMeta = const VerificationMeta(
     'playedAt',
   );
@@ -496,7 +514,14 @@ class $RecentPlaysTable extends RecentPlays
     defaultValue: currentDateAndTime,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, songId, serverId, playedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    songId,
+    serverId,
+    title,
+    artist,
+    playedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -528,6 +553,18 @@ class $RecentPlaysTable extends RecentPlays
     } else if (isInserting) {
       context.missing(_serverIdMeta);
     }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('artist')) {
+      context.handle(
+        _artistMeta,
+        artist.isAcceptableOrUnknown(data['artist']!, _artistMeta),
+      );
+    }
     if (data.containsKey('played_at')) {
       context.handle(
         _playedAtMeta,
@@ -555,6 +592,14 @@ class $RecentPlaysTable extends RecentPlays
         DriftSqlType.int,
         data['${effectivePrefix}server_id'],
       )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      ),
+      artist: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}artist'],
+      ),
       playedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}played_at'],
@@ -572,11 +617,15 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
   final int id;
   final String songId;
   final int serverId;
+  final String? title;
+  final String? artist;
   final DateTime playedAt;
   const RecentPlay({
     required this.id,
     required this.songId,
     required this.serverId,
+    this.title,
+    this.artist,
     required this.playedAt,
   });
   @override
@@ -585,6 +634,12 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     map['id'] = Variable<int>(id);
     map['song_id'] = Variable<String>(songId);
     map['server_id'] = Variable<int>(serverId);
+    if (!nullToAbsent || title != null) {
+      map['title'] = Variable<String>(title);
+    }
+    if (!nullToAbsent || artist != null) {
+      map['artist'] = Variable<String>(artist);
+    }
     map['played_at'] = Variable<DateTime>(playedAt);
     return map;
   }
@@ -594,6 +649,12 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       id: Value(id),
       songId: Value(songId),
       serverId: Value(serverId),
+      title: title == null && nullToAbsent
+          ? const Value.absent()
+          : Value(title),
+      artist: artist == null && nullToAbsent
+          ? const Value.absent()
+          : Value(artist),
       playedAt: Value(playedAt),
     );
   }
@@ -607,6 +668,8 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       id: serializer.fromJson<int>(json['id']),
       songId: serializer.fromJson<String>(json['songId']),
       serverId: serializer.fromJson<int>(json['serverId']),
+      title: serializer.fromJson<String?>(json['title']),
+      artist: serializer.fromJson<String?>(json['artist']),
       playedAt: serializer.fromJson<DateTime>(json['playedAt']),
     );
   }
@@ -617,6 +680,8 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       'id': serializer.toJson<int>(id),
       'songId': serializer.toJson<String>(songId),
       'serverId': serializer.toJson<int>(serverId),
+      'title': serializer.toJson<String?>(title),
+      'artist': serializer.toJson<String?>(artist),
       'playedAt': serializer.toJson<DateTime>(playedAt),
     };
   }
@@ -625,11 +690,15 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     int? id,
     String? songId,
     int? serverId,
+    Value<String?> title = const Value.absent(),
+    Value<String?> artist = const Value.absent(),
     DateTime? playedAt,
   }) => RecentPlay(
     id: id ?? this.id,
     songId: songId ?? this.songId,
     serverId: serverId ?? this.serverId,
+    title: title.present ? title.value : this.title,
+    artist: artist.present ? artist.value : this.artist,
     playedAt: playedAt ?? this.playedAt,
   );
   RecentPlay copyWithCompanion(RecentPlaysCompanion data) {
@@ -637,6 +706,8 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       id: data.id.present ? data.id.value : this.id,
       songId: data.songId.present ? data.songId.value : this.songId,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      title: data.title.present ? data.title.value : this.title,
+      artist: data.artist.present ? data.artist.value : this.artist,
       playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
     );
   }
@@ -647,13 +718,16 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
           ..write('id: $id, ')
           ..write('songId: $songId, ')
           ..write('serverId: $serverId, ')
+          ..write('title: $title, ')
+          ..write('artist: $artist, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, songId, serverId, playedAt);
+  int get hashCode =>
+      Object.hash(id, songId, serverId, title, artist, playedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -661,6 +735,8 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
           other.id == this.id &&
           other.songId == this.songId &&
           other.serverId == this.serverId &&
+          other.title == this.title &&
+          other.artist == this.artist &&
           other.playedAt == this.playedAt);
 }
 
@@ -668,17 +744,23 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
   final Value<int> id;
   final Value<String> songId;
   final Value<int> serverId;
+  final Value<String?> title;
+  final Value<String?> artist;
   final Value<DateTime> playedAt;
   const RecentPlaysCompanion({
     this.id = const Value.absent(),
     this.songId = const Value.absent(),
     this.serverId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.artist = const Value.absent(),
     this.playedAt = const Value.absent(),
   });
   RecentPlaysCompanion.insert({
     this.id = const Value.absent(),
     required String songId,
     required int serverId,
+    this.title = const Value.absent(),
+    this.artist = const Value.absent(),
     this.playedAt = const Value.absent(),
   }) : songId = Value(songId),
        serverId = Value(serverId);
@@ -686,12 +768,16 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     Expression<int>? id,
     Expression<String>? songId,
     Expression<int>? serverId,
+    Expression<String>? title,
+    Expression<String>? artist,
     Expression<DateTime>? playedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (songId != null) 'song_id': songId,
       if (serverId != null) 'server_id': serverId,
+      if (title != null) 'title': title,
+      if (artist != null) 'artist': artist,
       if (playedAt != null) 'played_at': playedAt,
     });
   }
@@ -700,12 +786,16 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     Value<int>? id,
     Value<String>? songId,
     Value<int>? serverId,
+    Value<String?>? title,
+    Value<String?>? artist,
     Value<DateTime>? playedAt,
   }) {
     return RecentPlaysCompanion(
       id: id ?? this.id,
       songId: songId ?? this.songId,
       serverId: serverId ?? this.serverId,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
       playedAt: playedAt ?? this.playedAt,
     );
   }
@@ -722,6 +812,12 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     if (serverId.present) {
       map['server_id'] = Variable<int>(serverId.value);
     }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (artist.present) {
+      map['artist'] = Variable<String>(artist.value);
+    }
     if (playedAt.present) {
       map['played_at'] = Variable<DateTime>(playedAt.value);
     }
@@ -734,6 +830,8 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
           ..write('id: $id, ')
           ..write('songId: $songId, ')
           ..write('serverId: $serverId, ')
+          ..write('title: $title, ')
+          ..write('artist: $artist, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
@@ -1697,6 +1795,32 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _lyricsOverlayEnabledMeta =
+      const VerificationMeta('lyricsOverlayEnabled');
+  @override
+  late final GeneratedColumn<bool> lyricsOverlayEnabled = GeneratedColumn<bool>(
+    'lyrics_overlay_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("lyrics_overlay_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _localeCodeMeta = const VerificationMeta(
+    'localeCode',
+  );
+  @override
+  late final GeneratedColumn<String> localeCode = GeneratedColumn<String>(
+    'locale_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('zh'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1707,6 +1831,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     equalizerPreset,
     listenBrainzToken,
     listenBrainzEnabled,
+    lyricsOverlayEnabled,
+    localeCode,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1783,6 +1909,21 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
       );
     }
+    if (data.containsKey('lyrics_overlay_enabled')) {
+      context.handle(
+        _lyricsOverlayEnabledMeta,
+        lyricsOverlayEnabled.isAcceptableOrUnknown(
+          data['lyrics_overlay_enabled']!,
+          _lyricsOverlayEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('locale_code')) {
+      context.handle(
+        _localeCodeMeta,
+        localeCode.isAcceptableOrUnknown(data['locale_code']!, _localeCodeMeta),
+      );
+    }
     return context;
   }
 
@@ -1824,6 +1965,14 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.bool,
         data['${effectivePrefix}listen_brainz_enabled'],
       )!,
+      lyricsOverlayEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}lyrics_overlay_enabled'],
+      )!,
+      localeCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale_code'],
+      )!,
     );
   }
 
@@ -1842,6 +1991,10 @@ class Setting extends DataClass implements Insertable<Setting> {
   final String equalizerPreset;
   final String? listenBrainzToken;
   final bool listenBrainzEnabled;
+  final bool lyricsOverlayEnabled;
+
+  /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
+  final String localeCode;
   const Setting({
     required this.id,
     required this.themeMode,
@@ -1851,6 +2004,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     required this.equalizerPreset,
     this.listenBrainzToken,
     required this.listenBrainzEnabled,
+    required this.lyricsOverlayEnabled,
+    required this.localeCode,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1865,6 +2020,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       map['listen_brainz_token'] = Variable<String>(listenBrainzToken);
     }
     map['listen_brainz_enabled'] = Variable<bool>(listenBrainzEnabled);
+    map['lyrics_overlay_enabled'] = Variable<bool>(lyricsOverlayEnabled);
+    map['locale_code'] = Variable<String>(localeCode);
     return map;
   }
 
@@ -1880,6 +2037,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           ? const Value.absent()
           : Value(listenBrainzToken),
       listenBrainzEnabled: Value(listenBrainzEnabled),
+      lyricsOverlayEnabled: Value(lyricsOverlayEnabled),
+      localeCode: Value(localeCode),
     );
   }
 
@@ -1903,6 +2062,10 @@ class Setting extends DataClass implements Insertable<Setting> {
       listenBrainzEnabled: serializer.fromJson<bool>(
         json['listenBrainzEnabled'],
       ),
+      lyricsOverlayEnabled: serializer.fromJson<bool>(
+        json['lyricsOverlayEnabled'],
+      ),
+      localeCode: serializer.fromJson<String>(json['localeCode']),
     );
   }
   @override
@@ -1917,6 +2080,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       'equalizerPreset': serializer.toJson<String>(equalizerPreset),
       'listenBrainzToken': serializer.toJson<String?>(listenBrainzToken),
       'listenBrainzEnabled': serializer.toJson<bool>(listenBrainzEnabled),
+      'lyricsOverlayEnabled': serializer.toJson<bool>(lyricsOverlayEnabled),
+      'localeCode': serializer.toJson<String>(localeCode),
     };
   }
 
@@ -1929,6 +2094,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     String? equalizerPreset,
     Value<String?> listenBrainzToken = const Value.absent(),
     bool? listenBrainzEnabled,
+    bool? lyricsOverlayEnabled,
+    String? localeCode,
   }) => Setting(
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
@@ -1940,6 +2107,8 @@ class Setting extends DataClass implements Insertable<Setting> {
         ? listenBrainzToken.value
         : this.listenBrainzToken,
     listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
+    lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
+    localeCode: localeCode ?? this.localeCode,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -1963,6 +2132,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       listenBrainzEnabled: data.listenBrainzEnabled.present
           ? data.listenBrainzEnabled.value
           : this.listenBrainzEnabled,
+      lyricsOverlayEnabled: data.lyricsOverlayEnabled.present
+          ? data.lyricsOverlayEnabled.value
+          : this.lyricsOverlayEnabled,
+      localeCode: data.localeCode.present
+          ? data.localeCode.value
+          : this.localeCode,
     );
   }
 
@@ -1976,7 +2151,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('equalizerGainsJson: $equalizerGainsJson, ')
           ..write('equalizerPreset: $equalizerPreset, ')
           ..write('listenBrainzToken: $listenBrainzToken, ')
-          ..write('listenBrainzEnabled: $listenBrainzEnabled')
+          ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
+          ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
+          ..write('localeCode: $localeCode')
           ..write(')'))
         .toString();
   }
@@ -1991,6 +2168,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     equalizerPreset,
     listenBrainzToken,
     listenBrainzEnabled,
+    lyricsOverlayEnabled,
+    localeCode,
   );
   @override
   bool operator ==(Object other) =>
@@ -2003,7 +2182,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.equalizerGainsJson == this.equalizerGainsJson &&
           other.equalizerPreset == this.equalizerPreset &&
           other.listenBrainzToken == this.listenBrainzToken &&
-          other.listenBrainzEnabled == this.listenBrainzEnabled);
+          other.listenBrainzEnabled == this.listenBrainzEnabled &&
+          other.lyricsOverlayEnabled == this.lyricsOverlayEnabled &&
+          other.localeCode == this.localeCode);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2015,6 +2196,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<String> equalizerPreset;
   final Value<String?> listenBrainzToken;
   final Value<bool> listenBrainzEnabled;
+  final Value<bool> lyricsOverlayEnabled;
+  final Value<String> localeCode;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
@@ -2024,6 +2207,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.equalizerPreset = const Value.absent(),
     this.listenBrainzToken = const Value.absent(),
     this.listenBrainzEnabled = const Value.absent(),
+    this.lyricsOverlayEnabled = const Value.absent(),
+    this.localeCode = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2034,6 +2219,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.equalizerPreset = const Value.absent(),
     this.listenBrainzToken = const Value.absent(),
     this.listenBrainzEnabled = const Value.absent(),
+    this.lyricsOverlayEnabled = const Value.absent(),
+    this.localeCode = const Value.absent(),
   });
   static Insertable<Setting> custom({
     Expression<int>? id,
@@ -2044,6 +2231,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<String>? equalizerPreset,
     Expression<String>? listenBrainzToken,
     Expression<bool>? listenBrainzEnabled,
+    Expression<bool>? lyricsOverlayEnabled,
+    Expression<String>? localeCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2056,6 +2245,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (listenBrainzToken != null) 'listen_brainz_token': listenBrainzToken,
       if (listenBrainzEnabled != null)
         'listen_brainz_enabled': listenBrainzEnabled,
+      if (lyricsOverlayEnabled != null)
+        'lyrics_overlay_enabled': lyricsOverlayEnabled,
+      if (localeCode != null) 'locale_code': localeCode,
     });
   }
 
@@ -2068,6 +2260,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<String>? equalizerPreset,
     Value<String?>? listenBrainzToken,
     Value<bool>? listenBrainzEnabled,
+    Value<bool>? lyricsOverlayEnabled,
+    Value<String>? localeCode,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
@@ -2078,6 +2272,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       equalizerPreset: equalizerPreset ?? this.equalizerPreset,
       listenBrainzToken: listenBrainzToken ?? this.listenBrainzToken,
       listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
+      lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
+      localeCode: localeCode ?? this.localeCode,
     );
   }
 
@@ -2108,6 +2304,14 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (listenBrainzEnabled.present) {
       map['listen_brainz_enabled'] = Variable<bool>(listenBrainzEnabled.value);
     }
+    if (lyricsOverlayEnabled.present) {
+      map['lyrics_overlay_enabled'] = Variable<bool>(
+        lyricsOverlayEnabled.value,
+      );
+    }
+    if (localeCode.present) {
+      map['locale_code'] = Variable<String>(localeCode.value);
+    }
     return map;
   }
 
@@ -2121,7 +2325,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('equalizerGainsJson: $equalizerGainsJson, ')
           ..write('equalizerPreset: $equalizerPreset, ')
           ..write('listenBrainzToken: $listenBrainzToken, ')
-          ..write('listenBrainzEnabled: $listenBrainzEnabled')
+          ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
+          ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
+          ..write('localeCode: $localeCode')
           ..write(')'))
         .toString();
   }
@@ -3778,6 +3984,8 @@ typedef $$RecentPlaysTableCreateCompanionBuilder =
       Value<int> id,
       required String songId,
       required int serverId,
+      Value<String?> title,
+      Value<String?> artist,
       Value<DateTime> playedAt,
     });
 typedef $$RecentPlaysTableUpdateCompanionBuilder =
@@ -3785,6 +3993,8 @@ typedef $$RecentPlaysTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> songId,
       Value<int> serverId,
+      Value<String?> title,
+      Value<String?> artist,
       Value<DateTime> playedAt,
     });
 
@@ -3809,6 +4019,16 @@ class $$RecentPlaysTableFilterComposer
 
   ColumnFilters<int> get serverId => $composableBuilder(
     column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get artist => $composableBuilder(
+    column: $table.artist,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3842,6 +4062,16 @@ class $$RecentPlaysTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get artist => $composableBuilder(
+    column: $table.artist,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get playedAt => $composableBuilder(
     column: $table.playedAt,
     builder: (column) => ColumnOrderings(column),
@@ -3865,6 +4095,12 @@ class $$RecentPlaysTableAnnotationComposer
 
   GeneratedColumn<int> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get artist =>
+      $composableBuilder(column: $table.artist, builder: (column) => column);
 
   GeneratedColumn<DateTime> get playedAt =>
       $composableBuilder(column: $table.playedAt, builder: (column) => column);
@@ -3904,11 +4140,15 @@ class $$RecentPlaysTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> songId = const Value.absent(),
                 Value<int> serverId = const Value.absent(),
+                Value<String?> title = const Value.absent(),
+                Value<String?> artist = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => RecentPlaysCompanion(
                 id: id,
                 songId: songId,
                 serverId: serverId,
+                title: title,
+                artist: artist,
                 playedAt: playedAt,
               ),
           createCompanionCallback:
@@ -3916,11 +4156,15 @@ class $$RecentPlaysTableTableManager
                 Value<int> id = const Value.absent(),
                 required String songId,
                 required int serverId,
+                Value<String?> title = const Value.absent(),
+                Value<String?> artist = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => RecentPlaysCompanion.insert(
                 id: id,
                 songId: songId,
                 serverId: serverId,
+                title: title,
+                artist: artist,
                 playedAt: playedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -4415,6 +4659,8 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<String> equalizerPreset,
       Value<String?> listenBrainzToken,
       Value<bool> listenBrainzEnabled,
+      Value<bool> lyricsOverlayEnabled,
+      Value<String> localeCode,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
@@ -4426,6 +4672,8 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<String> equalizerPreset,
       Value<String?> listenBrainzToken,
       Value<bool> listenBrainzEnabled,
+      Value<bool> lyricsOverlayEnabled,
+      Value<String> localeCode,
     });
 
 class $$SettingsTableFilterComposer
@@ -4474,6 +4722,16 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<bool> get listenBrainzEnabled => $composableBuilder(
     column: $table.listenBrainzEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get lyricsOverlayEnabled => $composableBuilder(
+    column: $table.lyricsOverlayEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4526,6 +4784,16 @@ class $$SettingsTableOrderingComposer
     column: $table.listenBrainzEnabled,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get lyricsOverlayEnabled => $composableBuilder(
+    column: $table.lyricsOverlayEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SettingsTableAnnotationComposer
@@ -4572,6 +4840,16 @@ class $$SettingsTableAnnotationComposer
     column: $table.listenBrainzEnabled,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get lyricsOverlayEnabled => $composableBuilder(
+    column: $table.lyricsOverlayEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
+    builder: (column) => column,
+  );
 }
 
 class $$SettingsTableTableManager
@@ -4610,6 +4888,8 @@ class $$SettingsTableTableManager
                 Value<String> equalizerPreset = const Value.absent(),
                 Value<String?> listenBrainzToken = const Value.absent(),
                 Value<bool> listenBrainzEnabled = const Value.absent(),
+                Value<bool> lyricsOverlayEnabled = const Value.absent(),
+                Value<String> localeCode = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 themeMode: themeMode,
@@ -4619,6 +4899,8 @@ class $$SettingsTableTableManager
                 equalizerPreset: equalizerPreset,
                 listenBrainzToken: listenBrainzToken,
                 listenBrainzEnabled: listenBrainzEnabled,
+                lyricsOverlayEnabled: lyricsOverlayEnabled,
+                localeCode: localeCode,
               ),
           createCompanionCallback:
               ({
@@ -4630,6 +4912,8 @@ class $$SettingsTableTableManager
                 Value<String> equalizerPreset = const Value.absent(),
                 Value<String?> listenBrainzToken = const Value.absent(),
                 Value<bool> listenBrainzEnabled = const Value.absent(),
+                Value<bool> lyricsOverlayEnabled = const Value.absent(),
+                Value<String> localeCode = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 themeMode: themeMode,
@@ -4639,6 +4923,8 @@ class $$SettingsTableTableManager
                 equalizerPreset: equalizerPreset,
                 listenBrainzToken: listenBrainzToken,
                 listenBrainzEnabled: listenBrainzEnabled,
+                lyricsOverlayEnabled: lyricsOverlayEnabled,
+                localeCode: localeCode,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

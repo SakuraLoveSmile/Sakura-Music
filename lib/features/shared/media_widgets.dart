@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
+import '../../l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
@@ -109,7 +111,11 @@ class _StarButtonState extends State<StarButton> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('收藏操作失败：$error')));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.starFailed(error.toString())),
+            ),
+          );
       }
     } finally {
       if (mounted) {
@@ -120,7 +126,9 @@ class _StarButtonState extends State<StarButton> {
 
   @override
   Widget build(BuildContext context) {
-    final label = widget.isStarred ? '取消收藏' : '收藏';
+    final label = widget.isStarred
+        ? context.l10n.unfavorite
+        : context.l10n.favorite;
     final icon = _busy
         ? SizedBox.square(
             dimension: widget.size * 0.8,
@@ -132,7 +140,7 @@ class _StarButtonState extends State<StarButton> {
             color: widget.isStarred ? const Color(0xFFFF453A) : Colors.white70,
           );
     return IconButton(
-      tooltip: _busy ? '正在更新收藏' : label,
+      tooltip: _busy ? context.l10n.updatingFavorite : label,
       padding: EdgeInsets.zero,
       constraints: BoxConstraints.tightFor(width: widget.size + 14, height: widget.size + 14),
       onPressed: _busy ? null : _toggle,
@@ -245,7 +253,7 @@ class AlbumCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            album.artist ?? '未知艺术家',
+            album.artist ?? context.l10n.unknownArtist,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -432,7 +440,7 @@ class SongGridTile extends StatelessWidget {
               // More Options
               if (onMore != null)
                 IconButton(
-                  tooltip: '更多',
+                  tooltip: context.l10n.more,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(width: 28, height: 28),
                   icon: Icon(
@@ -615,7 +623,7 @@ class SongListTile extends StatelessWidget {
                 ),
               if (onDownload != null)
                 IconButton(
-                  tooltip: '下载',
+                  tooltip: context.l10n.download,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(width: 32, height: 32),
                   onPressed: onDownload,
@@ -633,7 +641,7 @@ class SongListTile extends StatelessWidget {
                 ),
               if (onMore != null)
                 IconButton(
-                  tooltip: '更多',
+                  tooltip: context.l10n.more,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(width: 32, height: 32),
                   icon: Icon(
@@ -679,7 +687,7 @@ class ArtistListTile extends StatelessWidget {
       subtitle: artist.albumCount == null
           ? null
           : Text(
-              '${artist.albumCount} 张专辑',
+              context.l10n.artistAlbumCount(artist.albumCount!),
               style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
             ),
       trailing: onFavorite == null
@@ -704,14 +712,14 @@ class NoServerView extends StatelessWidget {
             Icon(Icons.cloud_off, size: 64, color: Colors.white.withValues(alpha: 0.4)),
             const SizedBox(height: 14),
             Text(
-              '请先在服务器选择页添加或连接一个音乐库。',
+              context.l10n.noServerMessage,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: () => context.go('/welcome'),
               icon: const Icon(Icons.dns_outlined, size: 18),
-              label: const Text('前往服务器选择'),
+              label: Text(context.l10n.goToServerPicker),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1E7BF6),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

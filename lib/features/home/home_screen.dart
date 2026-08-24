@@ -7,6 +7,7 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -40,7 +41,7 @@ class HomeScreen extends ConsumerWidget {
                   ..invalidate(frequentAlbumsProvider)
                   ..invalidate(frequentSongsProvider)
                   ..invalidate(randomAlbumsProvider)
-                  ..invalidate(recentPlayIdsProvider);
+                  ..invalidate(recentPlaysProvider);
               },
               child: CustomScrollView(
                 slivers: <Widget>[
@@ -55,7 +56,7 @@ class HomeScreen extends ConsumerWidget {
                   // 最近新增 (Horizontal scroll)
                   SliverToBoxAdapter(
                     child: _HorizontalAlbumSection(
-                      title: '最近新增',
+                      title: context.l10n.recentlyAdded,
                       provider: newestAlbumsProvider,
                       client: client,
                       starred: starred,
@@ -78,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
                   // 随机专辑 (Horizontal scroll)
                   SliverToBoxAdapter(
                     child: _HorizontalAlbumSection(
-                      title: '随机专辑',
+                      title: context.l10n.randomAlbums,
                       provider: randomAlbumsProvider,
                       client: client,
                       starred: starred,
@@ -186,9 +187,9 @@ class _DailyRecommendationBanner extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        child: const Text(
-                          '每日推薦',
-                          style: TextStyle(
+                        child: Text(
+                          context.l10n.dailyRecommend,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -202,7 +203,7 @@ class _DailyRecommendationBanner extends ConsumerWidget {
                         data: (songs) {
                           final firstTitle = songs.isNotEmpty
                               ? songs.first.title
-                              : '今日私享歌单';
+                              : context.l10n.dailyMixTitle;
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
@@ -221,7 +222,7 @@ class _DailyRecommendationBanner extends ConsumerWidget {
                               Text(
                                 songs.isNotEmpty && songs.first.artist != null
                                     ? songs.first.artist!
-                                    : '根据你的收听偏好智能推荐',
+                                    : context.l10n.dailyMixSubtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -232,9 +233,9 @@ class _DailyRecommendationBanner extends ConsumerWidget {
                             ],
                           );
                         },
-                        orElse: () => const Text(
-                          '今日私享好歌',
-                          style: TextStyle(
+                        orElse: () => Text(
+                          context.l10n.dailyMixTitle,
+                          style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
@@ -253,7 +254,7 @@ class _DailyRecommendationBanner extends ConsumerWidget {
                             children: <Widget>[
                               dailySongs.maybeWhen(
                                 data: (songs) => Text(
-                                  '共 ${songs.length} 首',
+                                  context.l10n.songCountText(songs.length),
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     color: Colors.white.withValues(alpha: 0.6),
@@ -263,9 +264,9 @@ class _DailyRecommendationBanner extends ConsumerWidget {
                                 orElse: () => const SizedBox.shrink(),
                               ),
                               const SizedBox(width: 8),
-                              const Text(
-                                '查看全部 ->',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.viewAll,
+                                style: const TextStyle(
                                   fontSize: 12.5,
                                   color: Color(0xFF5BA4FF),
                                   fontWeight: FontWeight.bold,
@@ -381,7 +382,7 @@ class _HorizontalAlbumSection extends ConsumerWidget {
                       child: Row(
                         children: <Widget>[
                           Text(
-                            '更多',
+                            context.l10n.more,
                             style: TextStyle(
                               fontSize: 12.5,
                               color: Colors.white.withValues(alpha: 0.55),
@@ -400,7 +401,10 @@ class _HorizontalAlbumSection extends ConsumerWidget {
                   TextButton.icon(
                     onPressed: onRefresh,
                     icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: const Text('换一批', style: TextStyle(fontSize: 12.5)),
+                    label: Text(
+                      context.l10n.refreshBatch,
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
                   ),
               ],
             ),
@@ -420,16 +424,16 @@ class _HorizontalAlbumSection extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '加载失败：$error',
+                      context.l10n.loadFailed(error.toString()),
                       style: const TextStyle(color: Colors.white54),
                     ),
                   ),
                 ],
               ),
               data: (albums) => albums.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
-                        '暂时没有内容',
+                        context.l10n.noContentYet,
                         style: TextStyle(color: Colors.white38),
                       ),
                     )
@@ -478,7 +482,7 @@ class _TwoColumnSongsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recentPlayIds = ref.watch(recentPlayIdsProvider);
+    final recentPlays = ref.watch(recentPlaysProvider);
     final frequentSongs = ref.watch(frequentSongsProvider);
 
     return LayoutBuilder(
@@ -488,9 +492,17 @@ class _TwoColumnSongsSection extends ConsumerWidget {
         final recentColumn = _buildSongColumn(
           context: context,
           ref: ref,
-          title: '最近播放',
-          songsAsync: recentPlayIds.whenData((ids) {
-            return ids.map((id) => Song(id: id, title: id)).toList();
+          title: context.l10n.recentlyPlayed,
+          songsAsync: recentPlays.whenData((plays) {
+            return plays
+                .map(
+                  (play) => Song(
+                    id: play.songId,
+                    title: play.title ?? play.songId,
+                    artist: play.artist,
+                  ),
+                )
+                .toList();
           }),
           onMore: () => context.go('/songs'),
         );
@@ -498,7 +510,7 @@ class _TwoColumnSongsSection extends ConsumerWidget {
         final frequentColumn = _buildSongColumn(
           context: context,
           ref: ref,
-          title: '最常播放',
+          title: context.l10n.frequentlyPlayed,
           songsAsync: frequentSongs,
           onMore: () => context.go('/songs'),
         );
@@ -565,7 +577,7 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                   child: Row(
                     children: <Widget>[
                       Text(
-                        '更多',
+                        context.l10n.more,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white.withValues(alpha: 0.5),
@@ -601,7 +613,7 @@ class _TwoColumnSongsSection extends ConsumerWidget {
             error: (err, _) => Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                '暂无数据',
+                context.l10n.noData,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 12,
@@ -614,7 +626,7 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
-                      '暂无歌曲记录',
+                      context.l10n.noSongHistory,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.35),
                         fontSize: 13,
@@ -701,9 +713,9 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                   Icons.playlist_play_rounded,
                   color: Colors.white70,
                 ),
-                title: const Text(
-                  '下一首播放',
-                  style: TextStyle(color: Colors.white),
+                title: Text(
+                  context.l10n.playNext,
+                  style: const TextStyle(color: Colors.white),
                 ),
                 onTap: () async {
                   Navigator.of(sheetContext).pop();
@@ -721,9 +733,9 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                     Icons.album_outlined,
                     color: Colors.white70,
                   ),
-                  title: const Text(
-                    '查看专辑',
-                    style: TextStyle(color: Colors.white),
+                  title: Text(
+                    context.l10n.viewAlbum,
+                    style: const TextStyle(color: Colors.white),
                   ),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
@@ -736,9 +748,9 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                     Icons.person_outline_rounded,
                     color: Colors.white70,
                   ),
-                  title: const Text(
-                    '查看艺术家',
-                    style: TextStyle(color: Colors.white),
+                  title: Text(
+                    context.l10n.viewArtist,
+                    style: const TextStyle(color: Colors.white),
                   ),
                   onTap: () {
                     Navigator.of(sheetContext).pop();

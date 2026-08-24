@@ -6,6 +6,7 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class GenresScreen extends ConsumerWidget {
@@ -39,14 +40,14 @@ class GenresScreen extends ConsumerWidget {
           child: CustomScrollView(
             slivers: <Widget>[
               SliverAppBar(
-                title: const Text(
-                  '流派',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                title: Text(
+                  context.l10n.navGenres,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
                 floating: true,
                 actions: <Widget>[
                   IconButton(
-                    tooltip: '刷新',
+                    tooltip: context.l10n.refresh,
                     onPressed: () => ref.invalidate(genresProvider),
                     icon: const Icon(Icons.refresh_rounded),
                   ),
@@ -63,18 +64,18 @@ class GenresScreen extends ConsumerWidget {
                   hasScrollBody: false,
                   child: Center(
                     child: Text(
-                      '加载流派失败：$error',
+                      context.l10n.genresLoadFailed(error.toString()),
                       style: const TextStyle(color: Colors.white70),
                     ),
                   ),
                 ),
                 data: (items) {
                   if (items.isEmpty) {
-                    return const SliverFillRemaining(
+                    return SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
                         child: Text(
-                          '音乐库中还没有流派信息',
+                          context.l10n.emptyGenres,
                           style: TextStyle(color: Colors.white54),
                         ),
                       ),
@@ -146,7 +147,9 @@ class GenresScreen extends ConsumerWidget {
                                         if (genre.songCount != null &&
                                             genre.songCount! > 0)
                                           Text(
-                                            '${genre.songCount} 首歌',
+                                            context.l10n.genreSongCount(
+                                              genre.songCount ?? 0,
+                                            ),
                                             style: TextStyle(
                                               color: Colors.white.withValues(
                                                 alpha: 0.75,
@@ -158,7 +161,9 @@ class GenresScreen extends ConsumerWidget {
                                             genre.albumCount! > 0) ...[
                                           const SizedBox(width: 8),
                                           Text(
-                                            '${genre.albumCount} 专辑',
+                                            context.l10n.genreAlbumCount(
+                                              genre.albumCount ?? 0,
+                                            ),
                                             style: TextStyle(
                                               color: Colors.white.withValues(
                                                 alpha: 0.75,
@@ -260,7 +265,7 @@ class GenresScreen extends ConsumerWidget {
                                       Icons.play_arrow_rounded,
                                       size: 18,
                                     ),
-                                    label: const Text('播放全部'),
+                                    label: Text(context.l10n.playAll),
                                   ),
                             orElse: () => const SizedBox.shrink(),
                           ),
@@ -277,15 +282,15 @@ class GenresScreen extends ConsumerWidget {
                         ),
                         error: (err, stack) => Center(
                           child: Text(
-                            '加载失败：$err',
+                            context.l10n.loadFailed(err.toString()),
                             style: const TextStyle(color: Colors.white70),
                           ),
                         ),
                         data: (songs) {
                           if (songs.isEmpty) {
-                            return const Center(
+                            return Center(
                               child: Text(
-                                '该流派暂无歌曲',
+                                context.l10n.genreEmpty,
                                 style: TextStyle(color: Colors.white54),
                               ),
                             );

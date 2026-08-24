@@ -7,6 +7,7 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class LibraryScreen extends ConsumerWidget {
@@ -27,24 +28,24 @@ class LibraryScreen extends ConsumerWidget {
           child: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) => <Widget>[
               SliverAppBar(
-                title: const Text('收藏'),
+                title: Text(context.l10n.favoritesTitle),
                 floating: true,
                 pinned: true,
-                bottom: const TabBar(
+                bottom: TabBar(
                   tabs: <Widget>[
-                    Tab(text: '歌曲'),
-                    Tab(text: '专辑'),
-                    Tab(text: '歌手'),
+                    Tab(text: context.l10n.navSongs),
+                    Tab(text: context.l10n.navAlbums),
+                    Tab(text: context.l10n.navArtists),
                   ],
                 ),
                 actions: <Widget>[
                   IconButton(
-                    tooltip: '下载',
+                    tooltip: context.l10n.download,
                     onPressed: () => context.go('/downloads'),
                     icon: const Icon(Icons.download_outlined),
                   ),
                   IconButton(
-                    tooltip: '刷新',
+                    tooltip: context.l10n.refresh,
                     onPressed: () => ref.invalidate(starredProvider),
                     icon: const Icon(Icons.refresh),
                   ),
@@ -54,7 +55,11 @@ class LibraryScreen extends ConsumerWidget {
             body: starred.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stackTrace) =>
-                  Center(child: Text('加载收藏失败：$error')),
+                  Center(
+                    child: Text(
+                      context.l10n.favoritesLoadFailed(error.toString()),
+                    ),
+                  ),
               data: (value) => TabBarView(
                 children: <Widget>[
                   _FavoriteSongs(songs: value.songs, client: client, ref: ref),
@@ -88,7 +93,7 @@ class _FavoriteSongs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (songs.isEmpty) {
-      return const Center(child: Text('还没有收藏歌曲。'));
+      return Center(child: Text(context.l10n.noFavoriteSongs));
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
@@ -106,7 +111,13 @@ class _FavoriteSongs extends StatelessWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('取消收藏失败：$error')));
+                ).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context.l10n.unstarFailed(error.toString()),
+                    ),
+                  ),
+                );
               }
             }
           },
@@ -143,7 +154,7 @@ class _FavoriteAlbums extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (albums.isEmpty) {
-      return const Center(child: Text('还没有收藏专辑。'));
+      return Center(child: Text(context.l10n.noFavoriteAlbums));
     }
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
@@ -167,7 +178,13 @@ class _FavoriteAlbums extends StatelessWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('取消收藏失败：$error')));
+                ).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context.l10n.unstarFailed(error.toString()),
+                    ),
+                  ),
+                );
               }
             }
           },
@@ -187,7 +204,7 @@ class _FavoriteArtists extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (artists.isEmpty) {
-      return const Center(child: Text('还没有收藏歌手。'));
+      return Center(child: Text(context.l10n.noFavoriteArtists));
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
@@ -204,7 +221,13 @@ class _FavoriteArtists extends StatelessWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('取消收藏失败：$error')));
+                ).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context.l10n.unstarFailed(error.toString()),
+                    ),
+                  ),
+                );
               }
             }
           },

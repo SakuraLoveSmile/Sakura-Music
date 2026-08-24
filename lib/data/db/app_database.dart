@@ -22,7 +22,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,6 +57,19 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(settings, settings.listenBrainzToken);
         await m.addColumn(settings, settings.listenBrainzEnabled);
       }
+      if (from >= 4 && from < 8) {
+        // One upgrade adds both v8 columns: the lyrics-overlay switch and the
+        // UI locale. Tables created fresh (from < 4) already include them.
+        await m.addColumn(settings, settings.lyricsOverlayEnabled);
+        await m.addColumn(settings, settings.localeCode);
+      }
+      if (from < 9) {
+        // The V9 history model adds denormalized song metadata. Existing rows
+        // only carry opaque server ids, so rebuilding this development-era
+        // table is cleaner than rendering unresolvable ids forever.
+        await m.deleteTable('recent_plays');
+        await m.createTable(recentPlays);
+      }
     },
   );
 
@@ -84,13 +97,25 @@ class AppDatabase extends _$AppDatabase {
     return (delete(servers)..where((table) => table.id.equals(id))).go();
   }
 
-  Future<int> addRecentPlay({required String songId, required int serverId}) {
-    return recordRecentPlay(songId: songId, serverId: serverId);
+  Future<int> addRecentPlay({
+    required String songId,
+    required int serverId,
+    String? title,
+    String? artist,
+  }) {
+    return recordRecentPlay(
+      songId: songId,
+      serverId: serverId,
+      title: title,
+      artist: artist,
+    );
   }
 
   Future<int> recordRecentPlay({
     required String songId,
     required int serverId,
+    String? title,
+    String? artist,
   }) async {
     final now = DateTime.now();
     final cutoff = now.subtract(const Duration(minutes: 5));
@@ -114,6 +139,16 @@ class AppDatabase extends _$AppDatabase {
         RecentPlaysCompanion(playedAt: Value(now)),
       );
     }
+    // Keep the freshest metadata the player has seen for this row.
+    if (title != null || artist != null) {
+      await (update(recentPlays)..where((table) => table.id.equals(id)))
+          .write(
+        RecentPlaysCompanion(
+          title: title == null ? const Value.absent() : Value(title),
+          artist: artist == null ? const Value.absent() : Value(artist),
+        ),
+      );
+    }
 
     final all =
         await (select(recentPlays)
@@ -131,6 +166,14 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<List<String>> getRecentPlayIds({int? serverId, int limit = 20}) async {
+    final rows = await getRecentPlays(serverId: serverId, limit: limit);
+    return rows.map((row) => row.songId).toList(growable: false);
+  }
+
+  Future<List<RecentPlay>> getRecentPlays({
+    int? serverId,
+    int limit = 20,
+  }) {
     final query = select(recentPlays)
       ..orderBy(<OrderingTerm Function(RecentPlays)>[
         (table) => OrderingTerm.desc(table.playedAt),
@@ -139,8 +182,7 @@ class AppDatabase extends _$AppDatabase {
     if (serverId != null) {
       query.where((table) => table.serverId.equals(serverId));
     }
-    final rows = await query.get();
-    return rows.map((row) => row.songId).toList(growable: false);
+    return query.get();
   }
 
   Future<PlaybackState?> getPlaybackState() {
@@ -232,6 +274,8 @@ class AppDatabase extends _$AppDatabase {
     String? listenBrainzToken,
     bool? listenBrainzEnabled,
     bool clearListenBrainzToken = false,
+    bool? lyricsOverlayEnabled,
+    String? localeCode,
   }) async {
     final current = await getSettings();
     await into(settings).insertOnConflictUpdate(
@@ -258,6 +302,10 @@ class AppDatabase extends _$AppDatabase {
         listenBrainzEnabled: Value(
           listenBrainzEnabled ?? current?.listenBrainzEnabled ?? false,
         ),
+        lyricsOverlayEnabled: Value(
+          lyricsOverlayEnabled ?? current?.lyricsOverlayEnabled ?? false,
+        ),
+        localeCode: Value(localeCode ?? current?.localeCode ?? 'zh'),
       ),
     );
   }

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
 import '../../../data/db/app_database.dart';
 import '../../../data/server_repository.dart';
+import '../../../l10n/l10n.dart';
+import 'server_url.dart';
 
 class AddServerDialog extends ConsumerStatefulWidget {
   const AddServerDialog({
@@ -28,7 +31,8 @@ class AddServerDialog extends ConsumerStatefulWidget {
 class _AddServerDialogState extends ConsumerState<AddServerDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _urlController;
+  late final TextEditingController _hostController;
+  late final TextEditingController _portController;
   late final TextEditingController _usernameController;
   late final TextEditingController _passwordController;
 
@@ -37,6 +41,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
   String? _statusMessage;
   bool _statusIsError = false;
   int _selectedProtocolIndex = 0;
+  String _scheme = 'https';
 
   static const _protocols = <String>['Navidrome', 'Subsonic', 'OpenSubsonic', 'Emby'];
 
@@ -45,18 +50,46 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
     super.initState();
     final edit = widget.serverToEdit;
     _nameController = TextEditingController(text: edit?.name ?? '');
-    _urlController = TextEditingController(text: edit?.baseUrl ?? '');
+    final parts = edit == null
+        ? null
+        : decomposeBaseUrl(edit.baseUrl);
+    _hostController = TextEditingController(text: parts?.host ?? '');
+    _portController = TextEditingController(text: parts?.port ?? '');
     _usernameController = TextEditingController(text: edit?.username ?? '');
     _passwordController = TextEditingController(text: edit?.password ?? '');
+    _scheme = parts?.scheme ?? 'https';
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _urlController.dispose();
+    _hostController.dispose();
+    _portController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  String get _composedBaseUrl => composeBaseUrl(
+    scheme: _scheme,
+    host: _hostController.text,
+    port: _portController.text,
+  );
+
+  void _selectProtocol(int index) {
+    setState(() {
+      final previousDefault =
+          serverTypeDefaultPorts[_protocols[_selectedProtocolIndex]];
+      final currentPort = _portController.text.trim();
+      final nextDefault = serverTypeDefaultPorts[_protocols[index]];
+      // Only prefill when the user left the port empty or kept the previous
+      // type's default; a custom port must survive type switches.
+      if (nextDefault != null &&
+          (currentPort.isEmpty || currentPort == previousDefault)) {
+        _portController.text = nextDefault;
+      }
+      _selectedProtocolIndex = index;
+    });
   }
 
   Future<bool> _testConnection({bool silentSuccess = false}) async {
@@ -70,7 +103,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
 
     try {
       final client = SubsonicClient(
-        baseUrl: _urlController.text.trim(),
+        baseUrl: _composedBaseUrl,
         username: _usernameController.text.trim(),
         password: _passwordController.text,
       );
@@ -78,7 +111,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
       if (mounted) {
         if (!silentSuccess) {
           setState(() {
-            _statusMessage = '连接成功！服务器通信正常。';
+            _statusMessage = context.l10n.connectSuccess;
             _statusIsError = false;
           });
         }
@@ -87,7 +120,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
     } on SubsonicException catch (error) {
       if (mounted) {
         setState(() {
-          _statusMessage = '连接失败：${error.message}';
+          _statusMessage = context.l10n.connectFailed(error.message);
           _statusIsError = true;
         });
       }
@@ -95,7 +128,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _statusMessage = '连接失败：$error';
+          _statusMessage = context.l10n.connectFailed(error.toString());
           _statusIsError = true;
         });
       }
@@ -124,7 +157,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
       if (edit == null) {
         final id = await repository.addServer(
           name: _nameController.text.trim(),
-          baseUrl: _urlController.text.trim(),
+          baseUrl: _composedBaseUrl,
           username: _usernameController.text.trim(),
           password: _passwordController.text,
         );
@@ -136,7 +169,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
         final updated = await repository.updateServer(
           id: edit.id,
           name: _nameController.text.trim(),
-          baseUrl: _urlController.text.trim(),
+          baseUrl: _composedBaseUrl,
           username: _usernameController.text.trim(),
           password: _passwordController.text,
         );
@@ -151,7 +184,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _statusMessage = '保存失败：$error';
+          _statusMessage = context.l10n.saveFailed(error.toString());
           _statusIsError = true;
           _saving = false;
         });
@@ -202,7 +235,9 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          isEditing ? '编辑伺服器' : '新增伺服器',
+                          isEditing
+                              ? context.l10n.editServer
+                              : context.l10n.addServer,
                           style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.bold,
@@ -212,17 +247,17 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white70),
-                        tooltip: '关闭',
+                        tooltip: context.l10n.close,
                         onPressed: () => Navigator.of(context).pop(false),
                       ),
                     ],
                   ),
                   const SizedBox(height: 18),
 
-                  // Protocol selection pills
-                  const Text(
-                    '伺服器協定',
-                    style: TextStyle(
+                  // Server type pills
+                  Text(
+                    context.l10n.serverType,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Colors.white70,
@@ -239,7 +274,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
                         selected: selected,
                         onSelected: (val) {
                           if (val) {
-                            setState(() => _selectedProtocolIndex = index);
+                            _selectProtocol(index);
                           }
                         },
                         selectedColor: const Color(0xFF0A84FF),
@@ -266,54 +301,148 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
                   // Server name input
                   _InputField(
                     controller: _nameController,
-                    labelText: '伺服器名稱',
-                    hintText: '如：我的 Navidrome',
+                    labelText: context.l10n.serverName,
+                    hintText: context.l10n.serverNameHint,
                     prefixIcon: Icons.label_outline_rounded,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '請輸入伺服器名稱' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? context.l10n.pleaseInputServerName
+                        : null,
                   ),
                   const SizedBox(height: 14),
 
-                  // Server URL input
-                  _InputField(
-                    controller: _urlController,
-                    labelText: '伺服器位址',
-                    hintText: 'https://music.example.com',
-                    prefixIcon: Icons.link_rounded,
-                    keyboardType: TextInputType.url,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return '請輸入伺服器位址';
-                      }
-                      final uri = Uri.tryParse(value.trim());
-                      if (uri == null ||
-                          (uri.scheme != 'http' && uri.scheme != 'https') ||
-                          uri.host.isEmpty) {
-                        return '請輸入有效的 http/https 位址';
-                      }
-                      return null;
-                    },
+                  // Split address: scheme + host + port
+                  Text(
+                    context.l10n.serverAddress,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: SegmentedButton<String>(
+                          segments: const <ButtonSegment<String>>[
+                            ButtonSegment<String>(
+                              value: 'https',
+                              label: Text('HTTPS'),
+                            ),
+                            ButtonSegment<String>(
+                              value: 'http',
+                              label: Text('HTTP'),
+                            ),
+                          ],
+                          selected: <String>{_scheme},
+                          onSelectionChanged: (selection) {
+                            // Switching schemes never touches the port field.
+                            setState(() => _scheme = selection.first);
+                          },
+                          showSelectedIcon: false,
+                          style: ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              return states.contains(WidgetState.selected)
+                                  ? const Color(0xFF0A84FF)
+                                  : const Color(0xFF262933);
+                            }),
+                            foregroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              return states.contains(WidgetState.selected)
+                                  ? Colors.white
+                                  : Colors.white70;
+                            }),
+                            side: WidgetStatePropertyAll(
+                              BorderSide(
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            textStyle: const WidgetStatePropertyAll(
+                              TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                            padding: const WidgetStatePropertyAll(
+                              EdgeInsets.symmetric(horizontal: 10, vertical: 22),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: _InputField(
+                          controller: _hostController,
+                          labelText: context.l10n.hostLabel,
+                          hintText: 'music.example.com',
+                          prefixIcon: Icons.link_rounded,
+                          keyboardType: TextInputType.url,
+                          validator: (value) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) {
+                              return context.l10n.pleaseInputServerAddress;
+                            }
+                            if (text.contains('://')) {
+                              return context.l10n.hostNoScheme;
+                            }
+                            if (text.contains(':')) {
+                              return context.l10n.portInRightField;
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 88,
+                        child: _InputField(
+                          controller: _portController,
+                          labelText: context.l10n.portLabel,
+                          hintText: _scheme == 'https' ? '443' : '80',
+                          keyboardType: TextInputType.number,
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(5),
+                          ],
+                          validator: (value) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) {
+                              return null;
+                            }
+                            final port = int.tryParse(text);
+                            if (port == null || port < 1 || port > 65535) {
+                              return context.l10n.portRange;
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
 
                   // Username input
                   _InputField(
                     controller: _usernameController,
-                    labelText: '帳號 / 使用者名稱',
+                    labelText: context.l10n.username,
                     prefixIcon: Icons.person_outline_rounded,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '請輸入使用者名稱' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? context.l10n.pleaseInputUsername
+                        : null,
                   ),
                   const SizedBox(height: 14),
 
                   // Password input
                   _InputField(
                     controller: _passwordController,
-                    labelText: '密碼',
+                    labelText: context.l10n.password,
                     prefixIcon: Icons.lock_outline_rounded,
                     obscureText: true,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '請輸入密碼' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? context.l10n.pleaseInputPassword
+                        : null,
                   ),
 
                   if (_statusMessage != null) ...[
@@ -387,7 +516,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
                                   ),
                                 )
                               : const Icon(Icons.wifi_tethering, size: 18),
-                          label: const Text('測試連線'),
+                          label: Text(context.l10n.testConnection),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -411,7 +540,11 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
                                   ),
                                 )
                               : const Icon(Icons.cloud_done_rounded, size: 18),
-                          label: Text(isEditing ? '儲存修改' : '儲存並連線'),
+                          label: Text(
+                            isEditing
+                                ? context.l10n.saveChanges
+                                : context.l10n.saveAndConnect,
+                          ),
                         ),
                       ),
                     ],
@@ -430,19 +563,21 @@ class _InputField extends StatelessWidget {
   const _InputField({
     required this.controller,
     required this.labelText,
-    required this.prefixIcon,
+    this.prefixIcon,
     this.hintText,
     this.obscureText = false,
     this.keyboardType,
+    this.inputFormatters,
     this.validator,
   });
 
   final TextEditingController controller;
   final String labelText;
   final String? hintText;
-  final IconData prefixIcon;
+  final IconData? prefixIcon;
   final bool obscureText;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final FormFieldValidator<String>? validator;
 
   @override
@@ -451,13 +586,16 @@ class _InputField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
         labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-        prefixIcon: Icon(prefixIcon, color: Colors.white60, size: 20),
+        prefixIcon: prefixIcon == null
+            ? null
+            : Icon(prefixIcon, color: Colors.white60, size: 20),
         filled: true,
         fillColor: const Color(0xFF262933),
         contentPadding:

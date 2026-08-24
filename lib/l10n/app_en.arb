@@ -1,0 +1,467 @@
+{
+  "@@locale": "en",
+  "appName": "SakuraMusic",
+  "viewSwitch": "Switch view",
+  "settings": "Settings",
+  "welcomeTagline": "Connect to your music",
+  "privacyPrefix": "By continuing you agree to the ",
+  "privacyPolicy": "Privacy Policy",
+  "addedTapCardHint": "Added. Tap the card to enter",
+  "featureMultiSource": "Multi-source",
+  "featureMultiSourceDesc": "Supports Navidrome, Emby and more server protocols",
+  "featureLossless": "Lossless playback",
+  "featureLosslessDesc": "Hi-Res audio",
+  "featureNative": "Native experience",
+  "featureNativeDesc": "Built with native UI",
+  "featureCrossPlatform": "All platforms",
+  "featureCrossPlatformDesc": "iOS, macOS, tvOS and beyond",
+  "search": "Search",
+  "welcomeNav": "Welcome",
+  "serversSection": "Servers",
+  "loadFailed": "Failed to load: {message}",
+  "noServers": "No servers yet",
+  "noSearchResults": "No matches",
+  "addServer": "Add server",
+  "more": "More",
+  "edit": "Edit",
+  "delete": "Delete",
+  "chooseLibrary": "Choose a library",
+  "serverCount": "{count, plural, =1{1 server} other{{count} servers}}",
+  "currentBadge": "Current",
+  "emptyPickerTitle": "No servers yet",
+  "emptyPickerDesc": "Add your first server to connect to your music",
+  "addFirstServer": "Add your first server",
+  "editServer": "Edit server",
+  "close": "Close",
+  "serverType": "Server type",
+  "serverName": "Server name",
+  "serverNameHint": "e.g. My Navidrome",
+  "pleaseInputServerName": "Please enter a server name",
+  "serverAddress": "Server address",
+  "hostLabel": "Host",
+  "pleaseInputServerAddress": "Please enter a server address",
+  "hostNoScheme": "No protocol needed; host name only",
+  "portInRightField": "Use the port field on the right",
+  "portLabel": "Port",
+  "portRange": "1–65535",
+  "username": "Username",
+  "pleaseInputUsername": "Please enter a username",
+  "password": "Password",
+  "pleaseInputPassword": "Please enter a password",
+  "connectSuccess": "Connected! The server is responding.",
+  "connectFailed": "Connection failed: {message}",
+  "saveFailed": "Failed to save: {error}",
+  "testConnection": "Test connection",
+  "saveChanges": "Save changes",
+  "saveAndConnect": "Save and connect",
+  "deleteServerTitle": "Delete server?",
+  "deleteServerConfirm": "Delete \"{name}\"? Only the locally stored connection will be removed.",
+  "cancel": "Cancel",
+  "back": "Back",
+  "switchLibrary": "Switch library",
+  "membership": "Membership",
+  "notActivated": "Not activated",
+  "sectionPlayback": "Playback",
+  "autoPlayOnLaunch": "Auto-play on launch",
+  "fadeTransition": "Fade in / out",
+  "musicRoaming": "Music roaming",
+  "audiobooksPodcasts": "Audiobooks / podcasts",
+  "streamingQuality": "Streaming quality",
+  "equalizerSettings": "Equalizer",
+  "lyricsOverlay": "Floating lyrics",
+  "lyricsOverlayPermissionNeeded": "Overlay permission is required. Grant it in system settings and try again.",
+  "sectionNetwork": "Network",
+  "backgroundDownload": "Background downloads",
+  "downloadWifiOnly": "Wi-Fi only",
+  "downloadAnyNetwork": "Any network",
+  "downloadOff": "Off",
+  "networkProxy": "Network proxy",
+  "sectionStorage": "Storage & servers",
+  "serverManagement": "Manage servers",
+  "notConnected": "Not connected",
+  "addNewServer": "Add a new server",
+  "clearCache": "Clear song cache",
+  "cacheCleared": "Local temporary cache cleared",
+  "sectionAppearance": "Appearance",
+  "language": "Language",
+  "sectionAbout": "About",
+  "currentVersion": "Version",
+  "loading": "Loading…",
+  "unknown": "Unknown",
+  "checkUpdates": "Check for updates",
+  "updateAvailable": "Update available",
+  "downloading": "Downloading",
+  "downloaded": "Downloaded",
+  "installing": "Installing",
+  "retry": "Retry",
+  "upToDate": "Up to date",
+  "updateCheckFailed": "Failed to check for updates",
+  "qualityLosslessAuto": "Lossless / Auto",
+  "qualityFlacWav": "FLAC / WAV ultra high",
+  "quality320": "320 kbps MP3 high",
+  "quality192": "192 kbps MP3 standard",
+  "quality128": "128 kbps MP3 data saver",
+  "proxyDialogTitle": "Network proxy",
+  "proxyAddressLabel": "HTTP / SOCKS5 proxy address",
+  "proxySaved": "Proxy settings saved",
+  "save": "Save",
+  "followSystem": "Follow system",
+  "aboutSection": "About",
+  "addLibraryFirst": "Add a music library on the servers page first.",
+  "addToQueue": "Add to queue",
+  "addedToDownloads": "Added \"{title}\" to downloads",
+  "addedToPlayNext": "\"{title}\" will play next",
+  "addedToQueue": "Added to queue",
+  "albumEmptyTracks": "This album has no playable tracks.",
+  "albumLoadFailed": "Failed to load album: {error}",
+  "albumsLoadFailed": "Failed to load albums: {error}",
+  "allAlbumsLoaded": "All albums loaded",
+  "artistAlbumCount": "{count, plural, =1{1 album} other{{count} albums}}",
+  "artistsLoadFailed": "Failed to load artists: {error}",
+  "assetInfo": "Package: {name} · {size}",
+  "betaTrialActive": "Beta trial",
+  "betaTrialDays": "{days} days of beta trial left — all member features included",
+  "betaTrialRemaining": "{days} days of trial left",
+  "browse": "Browse",
+  "cancelDownload": "Cancel download",
+  "cancelTrial": "Cancel trial",
+  "cast": "Cast",
+  "clear": "Clear",
+  "clearHistory": "Clear history",
+  "collapsePlayer": "Collapse",
+  "connectedLibraries": "Connected libraries",
+  "dailyMixSubtitle": "Smart picks based on your listening",
+  "dailyMixTitle": "Today's personal mix",
+  "dailyRecommend": "Daily picks",
+  "deleteDownload": "Delete download",
+  "download": "Download",
+  "downloadSong": "Download song",
+  "downloadsLoadFailed": "Failed to load downloads: {error}",
+  "emptyAlbums": "No albums on the server yet.",
+  "emptyArtists": "No artists on the server yet.",
+  "emptyDownloads": "No downloaded songs yet.",
+  "emptyGenres": "No genres in the library yet",
+  "emptyLibrarySongs": "No songs in the library yet",
+  "emptyPlayerDesc": "Pick a song from your library to start playing.",
+  "emptyPlayerTitle": "Nothing is playing",
+  "emptyPlaylists": "No playlists yet.",
+  "emptyQueue": "The queue is empty.",
+  "emptySearchHistory": "No search history yet. Type a keyword and press enter.",
+  "enableEqualizer": "Enable equalizer",
+  "equalizerLoadFailed": "Failed to load equalizer settings: {error}",
+  "equalizerTitle": "Equalizer",
+  "failedStatus": "Failed",
+  "favorite": "Favorite",
+  "favoritesLoadFailed": "Failed to load favorites: {error}",
+  "favoritesTitle": "Favorites",
+  "featureAll": "All features",
+  "featureLifetime": "Lifetime",
+  "featureMultiDevice": "Multi-device",
+  "featureUpdates": "Updates",
+  "frequentlyPlayed": "Frequently played",
+  "fullscreenPlayer": "Fullscreen player",
+  "genreAlbumCount": "{count, plural, =1{1 album} other{{count} albums}}",
+  "genreEmpty": "No songs in this genre",
+  "genreSongCount": "{count, plural, =1{1 song} other{{count} songs}}",
+  "genresLoadFailed": "Failed to load genres: {error}",
+  "goAddServer": "Add a server",
+  "goDiscover": "Discover music",
+  "goToServerPicker": "Go to servers",
+  "gotIt": "Got it",
+  "install": "Install",
+  "installLater": "Install later",
+  "internetRadio": "Internet radio",
+  "iosNotSupported": "Not supported on iOS yet",
+  "later": "Later",
+  "librarySection": "Library",
+  "loadedSongsCount": "{count, plural, =1{1 song loaded} other{{count} songs loaded}}",
+  "localOutputOnly": "Playing via local high-quality output",
+  "logout": "Log out",
+  "loopAll": "Repeat mode: all",
+  "loopAllShort": "Repeat all",
+  "loopOff": "Repeat mode: off",
+  "loopOffShort": "No repeat",
+  "loopOne": "Repeat mode: one",
+  "loopOneShort": "Repeat one",
+  "lyrics": "Lyrics",
+  "membershipLifetimeNote": "Membership is permanent once purchased.",
+  "membershipNote": "1. Membership allows up to 7 devices at the same time.",
+  "minutesLabel": "{minutes} min",
+  "mute": "Mute",
+  "myMembership": "Membership",
+  "myPlaylists": "My playlists",
+  "navAlbums": "Albums",
+  "navArtists": "Artists",
+  "navDiscover": "Discover",
+  "navDownloads": "Downloads",
+  "navDownloadsShort": "Downloads",
+  "navFavorites": "Favorites",
+  "navGenres": "Genres",
+  "navLiked": "Liked",
+  "navRadios": "Radio",
+  "navSongs": "Songs",
+  "nextTrack": "Next track",
+  "noContentYet": "Nothing here yet",
+  "noData": "No data",
+  "noFavoriteAlbums": "No favorite albums yet.",
+  "noFavoriteArtists": "No favorite artists yet.",
+  "noFavoriteSongs": "No favorite songs yet.",
+  "noLyrics": "No lyrics available for this song",
+  "noMatchingAsset": "No matching package for this platform. The GitHub release page will open instead.",
+  "noPlaylists": "No playlists",
+  "noSearchMatches": "No matches found.",
+  "noServerMessage": "Add or connect a music library on the servers page first.",
+  "noSongHistory": "No song history",
+  "nowPlaying": "Now playing",
+  "openDownload": "Get it",
+  "openDownloadPage": "Open download page",
+  "pause": "Pause",
+  "personalSection": "Personal",
+  "pictureInPicture": "Picture in picture",
+  "play": "Play",
+  "playAll": "Play all",
+  "playInOrder": "Play in order",
+  "playNext": "Play next",
+  "playbackFailed": "Playback failed: {error}",
+  "playlistEmpty": "This playlist has no songs.",
+  "playlistsLabel": "Playlists",
+  "playlistsLoadFailed": "Failed to load playlists: {error}",
+  "popularSongs": "Popular songs",
+  "preparingInstall": "Preparing to install…",
+  "presetClassical": "Classical",
+  "presetFlat": "Flat",
+  "presetLabel": "Preset",
+  "presetPop": "Pop",
+  "presetRock": "Rock",
+  "presetVocal": "Vocal",
+  "previousTrack": "Previous track",
+  "privacyBody1": "1. SakuraMusic is an open-source, independent music client.",
+  "privacyBody2": "2. Local storage: your server address, username and password are stored only in a protected database on your device and never uploaded to any third party.",
+  "privacyBody3": "3. Networking: the app talks only to the self-hosted servers you configure (e.g. Navidrome, Subsonic).",
+  "privacyBody4": "4. Cache & downloads: songs you download stay on your local disk and can be managed or removed at any time.",
+  "privacyPolicyTitle": "Privacy Policy & Terms",
+  "queueSongCount": "{count, plural, =1{1 song} other{{count} songs}}",
+  "queueTitle": "Queue",
+  "randomAlbums": "Random albums",
+  "recentlyAdded": "Recently added",
+  "recentlyPlayed": "Recently played",
+  "refresh": "Refresh",
+  "refreshBatch": "Shuffle again",
+  "refreshSongs": "Refresh songs",
+  "releaseNotes": "Release notes",
+  "restartAndInstall": "Restart & install",
+  "restartTrial": "Restart trial",
+  "searchFailed": "Search failed: {error}",
+  "searchHint": "Search songs, albums, artists...",
+  "searchHistory": "Search history",
+  "searchHistoryLoadFailed": "Failed to load search history: {error}",
+  "sectionCompleted": "Completed",
+  "sectionInProgress": "In progress",
+  "shuffleOff": "Turn off shuffle",
+  "shuffleOn": "Turn on shuffle",
+  "shufflePlay": "Shuffle play",
+  "sleepTimer": "Sleep timer",
+  "sleepTimerAfterCurrent": "Stop after current song",
+  "sleepTimerSet": "Playback will stop in {minutes} minutes",
+  "sleepTimerSetLabel": "Sleep timer set: {label}",
+  "sleepTimerTitle": "Sleep timer",
+  "songCountLabel": "{count, plural, =1{1 song} other{{count} songs}}",
+  "songCountText": "{count} songs total",
+  "songsLoadFailed": "Failed to load songs: {error}",
+  "sortAlbum": "Album",
+  "sortArtist": "Artist",
+  "sortBy": "Sort by",
+  "sortDuration": "Duration",
+  "sortFormat": "Format",
+  "sortRecent": "Recently added",
+  "sortTitle": "Title",
+  "starFailed": "Favorite failed: {error}",
+  "trialCancelled": "Trial cancelled",
+  "trialResumed": "Beta trial resumed",
+  "unfavorite": "Unfavorite",
+  "unknownArtist": "Unknown artist",
+  "unmute": "Unmute",
+  "unstarFailed": "Unfavorite failed: {error}",
+  "updateDownloading": "Downloading…",
+  "updateDownloadingPercent": "Downloading {percent}%",
+  "updateNow": "Update now",
+  "updatingFavorite": "Updating favorite",
+  "viewAlbum": "View album",
+  "viewAll": "View all ->",
+  "viewArtist": "View artist",
+  "@artistAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@betaTrialDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@betaTrialRemaining": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@genreAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@genreSongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@loadedSongsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@queueSongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@sleepTimerSet": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@songCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songCountText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@updateDownloadingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@addedToDownloads": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "@addedToPlayNext": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "@albumLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@albumsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@artistsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@assetInfo": {
+    "placeholders": {
+      "name": {},
+      "size": {}
+    }
+  },
+  "@downloadsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@equalizerLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@favoritesLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@genresLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@playbackFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@playlistsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@searchFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@searchHistoryLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@sleepTimerSetLabel": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "@songsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@starFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@unstarFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  }
+}

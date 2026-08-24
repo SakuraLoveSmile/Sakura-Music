@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../../l10n/l10n.dart';
+
 /// App Logo component matching the glowing squircle in the screenshot
 class WelcomeAppLogo extends StatelessWidget {
   const WelcomeAppLogo({this.size = 88, super.key});
@@ -133,7 +135,7 @@ class _LogoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Top-left card: 多源支援 (Multi-source support)
+/// Top-left card: 多源支持 (Multi-source support)
 class MultiSourceCard extends StatelessWidget {
   const MultiSourceCard({super.key});
 
@@ -163,9 +165,9 @@ class MultiSourceCard extends StatelessWidget {
             backgroundColor: const Color(0xFF0A84FF).withValues(alpha: 0.16),
           ),
           const SizedBox(height: 18),
-          const Text(
-            '多源支援',
-            style: TextStyle(
+          Text(
+            context.l10n.featureMultiSource,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -174,7 +176,7 @@ class MultiSourceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '支援 Navidrome、Emby 等多種伺服器協定',
+            context.l10n.featureMultiSourceDesc,
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withValues(alpha: 0.6),
@@ -187,7 +189,7 @@ class MultiSourceCard extends StatelessWidget {
   }
 }
 
-/// Top-middle card: 無損播放 (Lossless Playback)
+/// Top-middle card: 无损播放 (Lossless Playback)
 class LosslessCard extends StatelessWidget {
   const LosslessCard({super.key});
 
@@ -217,9 +219,9 @@ class LosslessCard extends StatelessWidget {
             backgroundColor: const Color(0xFF30D158).withValues(alpha: 0.16),
           ),
           const SizedBox(height: 18),
-          const Text(
-            '無損播放',
-            style: TextStyle(
+          Text(
+            context.l10n.featureLossless,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -228,7 +230,7 @@ class LosslessCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Hi-Res 音質',
+            context.l10n.featureLosslessDesc,
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withValues(alpha: 0.6),
@@ -241,7 +243,7 @@ class LosslessCard extends StatelessWidget {
   }
 }
 
-/// Top-right card: 原生體驗 (Native Experience)
+/// Top-right card: 原生体验 (Native Experience)
 class NativeExperienceCard extends StatelessWidget {
   const NativeExperienceCard({super.key});
 
@@ -271,9 +273,9 @@ class NativeExperienceCard extends StatelessWidget {
             backgroundColor: const Color(0xFFFF9F0A).withValues(alpha: 0.16),
           ),
           const SizedBox(height: 18),
-          const Text(
-            '原生體驗',
-            style: TextStyle(
+          Text(
+            context.l10n.featureNative,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -282,7 +284,7 @@ class NativeExperienceCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'SwiftUI 建構',
+            context.l10n.featureNativeDesc,
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withValues(alpha: 0.6),
@@ -295,7 +297,7 @@ class NativeExperienceCard extends StatelessWidget {
   }
 }
 
-/// Bottom full-width banner: 全平台支援 (All-platform support) + 新增伺服器 button
+/// Bottom full-width banner: 全平台支持 (All-platform support) + 新增服务器 button
 class CrossPlatformBannerCard extends StatelessWidget {
   const CrossPlatformBannerCard({
     required this.onAddServer,
@@ -335,9 +337,9 @@ class CrossPlatformBannerCard extends StatelessWidget {
                       const Color(0xFF30D158).withValues(alpha: 0.16),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  '全平台支援',
-                  style: TextStyle(
+                Text(
+                  context.l10n.featureCrossPlatform,
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -345,7 +347,7 @@ class CrossPlatformBannerCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'iOS、macOS、tvOS 無縫切換',
+                  context.l10n.featureCrossPlatformDesc,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withValues(alpha: 0.6),
@@ -374,9 +376,9 @@ class CrossPlatformBannerCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Text(
-                      '全平台支援',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.featureCrossPlatform,
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -385,7 +387,7 @@ class CrossPlatformBannerCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'iOS、macOS、tvOS 無縫切換',
+                      context.l10n.featureCrossPlatformDesc,
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.white.withValues(alpha: 0.6),
@@ -428,20 +430,20 @@ class _AddServerButton extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
           onTap: onPressed,
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Icon(
+                const Icon(
                   Icons.add_circle,
                   color: Colors.white,
                   size: 20,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  '新增伺服器',
-                  style: TextStyle(
+                  context.l10n.addServer,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

@@ -9,6 +9,7 @@ import '../../audio/playable_item_builder.dart';
 import '../../core/artwork_palette.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class ArtistDetailsScreen extends ConsumerWidget {
@@ -29,7 +30,12 @@ class ArtistDetailsScreen extends ConsumerWidget {
       child: SafeArea(
         child: artist.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('加载歌手失败：$error')),
+          error: (error, stackTrace) =>
+              Center(
+                child: Text(
+                  context.l10n.artistsLoadFailed(error.toString()),
+                ),
+              ),
           data: (value) {
             final details = info.value;
             final songs = value.albums
@@ -49,7 +55,7 @@ class ArtistDetailsScreen extends ConsumerWidget {
                   title: Text(value.name),
                   pinned: true,
                   leading: IconButton(
-                    tooltip: '返回',
+                    tooltip: context.l10n.back,
                     onPressed: () {
                       if (context.canPop()) {
                         context.pop();
@@ -80,11 +86,11 @@ class ArtistDetailsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                     sliver: SliverMainAxisGroup(
                       slivers: <Widget>[
-                        const SliverToBoxAdapter(
+                        SliverToBoxAdapter(
                           child: Padding(
                             padding: EdgeInsets.fromLTRB(8, 8, 8, 4),
                             child: Text(
-                              '热门歌曲',
+                              context.l10n.popularSongs,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
@@ -110,7 +116,13 @@ class ArtistDetailsScreen extends ConsumerWidget {
                                 } catch (error) {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('收藏失败：$error')),
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.starFailed(
+                                            error.toString(),
+                                          ),
+                                        ),
+                                      ),
                                     );
                                   }
                                 }
@@ -121,11 +133,11 @@ class ArtistDetailsScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(20, 18, 20, 12),
                     child: Text(
-                      '专辑',
+                      context.l10n.navAlbums,
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -164,7 +176,13 @@ class ArtistDetailsScreen extends ConsumerWidget {
                               } catch (error) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('收藏失败：$error')),
+                                    SnackBar(
+                                      content: Text(
+                                        context.l10n.starFailed(
+                                          error.toString(),
+                                        ),
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -253,7 +271,7 @@ class _ArtistHeader extends StatelessWidget {
             if (biography != null && biography!.trim().isNotEmpty)
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: const Text('简介'),
+                title: Text(context.l10n.aboutSection),
                 children: <Widget>[
                   Align(
                     alignment: Alignment.centerLeft,
@@ -294,7 +312,11 @@ Future<void> _playSongs(
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('播放失败：$error')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.playbackFailed(error.toString())),
+        ),
+      );
     }
   }
 }

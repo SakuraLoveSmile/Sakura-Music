@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:sakuramusic/app.dart';
 import 'package:sakuramusic/audio/audio_player_provider.dart';
 import 'package:sakuramusic/audio/audio_player_service.dart';
@@ -89,13 +90,13 @@ void main() {
 
       // Verify WelcomeScreen branding and cards
       expect(find.text('音流'), findsWidgets);
-      expect(find.text('連接你的音樂'), findsOneWidget);
-      expect(find.text('多源支援'), findsOneWidget);
-      expect(find.text('無損播放'), findsOneWidget);
-      expect(find.text('原生體驗'), findsOneWidget);
-      expect(find.text('全平台支援'), findsOneWidget);
-      expect(find.text('新增伺服器'), findsWidgets);
-      expect(find.text('隱私政策'), findsOneWidget);
+      expect(find.text('连接你的音乐'), findsOneWidget);
+      expect(find.text('多源支持'), findsOneWidget);
+      expect(find.text('无损播放'), findsOneWidget);
+      expect(find.text('原生体验'), findsOneWidget);
+      expect(find.text('全平台支持'), findsOneWidget);
+      expect(find.text('新增服务器'), findsWidgets);
+      expect(find.text('隐私政策'), findsOneWidget);
     },
   );
 
@@ -111,33 +112,45 @@ void main() {
           audioPlayerProvider.overrideWithValue(_FakeAudioPlayerService()),
           databaseProvider.overrideWithValue(database),
         ],
-        child: const MaterialApp(home: Scaffold(body: AddServerDialog())),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: const Scaffold(body: AddServerDialog()),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('新增伺服器'), findsOneWidget);
-    expect(find.text('伺服器協定'), findsOneWidget);
+    expect(find.text('新增服务器'), findsOneWidget);
+    expect(find.text('服务器类型'), findsOneWidget);
     expect(find.text('Navidrome'), findsOneWidget);
     expect(find.text('Subsonic'), findsOneWidget);
-    expect(find.text('測試連線'), findsOneWidget);
-    expect(find.text('儲存並連線'), findsOneWidget);
+    expect(find.text('测试连接'), findsOneWidget);
+    expect(find.text('保存并连接'), findsOneWidget);
 
     // Tap test connection without required fields should trigger form validation
-    await tester.tap(find.text('測試連線'));
+    await tester.ensureVisible(find.text('测试连接'));
     await tester.pumpAndSettle();
-    expect(find.text('請輸入伺服器名稱'), findsOneWidget);
+    await tester.tap(find.text('测试连接'));
+    await tester.pumpAndSettle();
+    expect(find.text('请输入服务器名称'), findsOneWidget);
   });
 
   testWidgets('renders PrivacyPolicyDialog properly', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: Scaffold(body: PrivacyPolicyDialog())),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('zh'),
+        home: const Scaffold(body: PrivacyPolicyDialog()),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('隱私政策與條款'), findsOneWidget);
+    expect(find.text('隐私政策与条款'), findsOneWidget);
     expect(find.text('我知道了'), findsOneWidget);
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class ArtistsScreen extends ConsumerWidget {
@@ -17,11 +18,11 @@ class ArtistsScreen extends ConsumerWidget {
         child: CustomScrollView(
           slivers: <Widget>[
             SliverAppBar(
-              title: const Text('歌手'),
+              title: Text(context.l10n.navArtists),
               floating: true,
               actions: <Widget>[
                 IconButton(
-                  tooltip: '刷新',
+                  tooltip: context.l10n.refresh,
                   onPressed: () => ref.invalidate(artistsProvider),
                   icon: const Icon(Icons.refresh),
                 ),
@@ -34,13 +35,17 @@ class ArtistsScreen extends ConsumerWidget {
               ),
               error: (error, stackTrace) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text('加载歌手失败：$error')),
+                child: Center(
+                  child: Text(
+                    context.l10n.artistsLoadFailed(error.toString()),
+                  ),
+                ),
               ),
               data: (items) {
                 if (items.isEmpty) {
-                  return const SliverFillRemaining(
+                  return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(child: Text('服务器中还没有歌手。')),
+                    child: Center(child: Text(context.l10n.emptyArtists)),
                   );
                 }
                 final sorted = [...items]
@@ -66,7 +71,13 @@ class ArtistsScreen extends ConsumerWidget {
                           } catch (error) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('收藏失败：$error')),
+                                SnackBar(
+                                  content: Text(
+                                    context.l10n.starFailed(
+                                      error.toString(),
+                                    ),
+                                  ),
+                                ),
                               );
                             }
                           }

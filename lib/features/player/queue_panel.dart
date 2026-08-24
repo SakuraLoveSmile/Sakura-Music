@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../audio/audio_player_service.dart';
+import '../../l10n/l10n.dart';
 
 Future<void> showQueuePanel(
   BuildContext context,
@@ -12,7 +13,7 @@ Future<void> showQueuePanel(
   if (isWide) {
     await showGeneralDialog<void>(
       context: context,
-      barrierLabel: '播放队列',
+      barrierLabel: context.l10n.queueTitle,
       barrierDismissible: true,
       barrierColor: Colors.black54,
       pageBuilder: (context, animation, secondaryAnimation) {
@@ -69,7 +70,7 @@ class QueuePanel extends StatelessWidget {
         final state =
             snapshot.data ?? (queue: const <PlayableItem>[], index: null);
         if (state.queue.isEmpty) {
-          return const Center(child: Text('播放队列为空。'));
+          return Center(child: Text(context.l10n.emptyQueue));
         }
         return Column(
           children: <Widget>[
@@ -79,11 +80,11 @@ class QueuePanel extends StatelessWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      '播放队列',
+                      context.l10n.queueTitle,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  Text('${state.queue.length} 首'),
+                  Text(context.l10n.queueSongCount(state.queue.length)),
                 ],
               ),
             ),

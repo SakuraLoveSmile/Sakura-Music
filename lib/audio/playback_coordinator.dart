@@ -108,7 +108,12 @@ class PlaybackCoordinator {
     }
     if (serverId != null) {
       try {
-        await database.recordRecentPlay(songId: item.id, serverId: serverId!);
+        await database.recordRecentPlay(
+          songId: item.id,
+          serverId: serverId!,
+          title: item.title,
+          artist: item.artist,
+        );
       } catch (_) {
         // History is best effort and must not interrupt playback.
       }

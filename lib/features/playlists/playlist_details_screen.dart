@@ -7,6 +7,7 @@ import '../../audio/audio_player_service.dart';
 import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class PlaylistDetailsScreen extends ConsumerWidget {
@@ -26,7 +27,12 @@ class PlaylistDetailsScreen extends ConsumerWidget {
       child: SafeArea(
         child: playlist.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) => Center(child: Text('加载歌单失败：$error')),
+          error: (error, stackTrace) =>
+              Center(
+                child: Text(
+                  context.l10n.playlistsLoadFailed(error.toString()),
+                ),
+              ),
           data: (value) {
             final starredIds = ref.watch(starredIdsProvider);
             return CustomScrollView(
@@ -35,7 +41,7 @@ class PlaylistDetailsScreen extends ConsumerWidget {
                   title: Text(value.name),
                   pinned: true,
                   leading: IconButton(
-                    tooltip: '返回',
+                    tooltip: context.l10n.back,
                     onPressed: () {
                       if (context.canPop()) {
                         context.pop();
@@ -69,7 +75,7 @@ class PlaylistDetailsScreen extends ConsumerWidget {
                                   await _play(context, ref, items, 0);
                                 },
                           icon: const Icon(Icons.play_arrow),
-                          label: const Text('播放全部'),
+                          label: Text(context.l10n.playAll),
                         ),
                         OutlinedButton.icon(
                           onPressed: value.songs.isEmpty
@@ -84,21 +90,25 @@ class PlaylistDetailsScreen extends ConsumerWidget {
                                   await _append(ref, items);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('已追加到队列')),
+                                      SnackBar(
+                                        content: Text(
+                                          context.l10n.addedToQueue,
+                                        ),
+                                      ),
                                     );
                                   }
                                 },
                           icon: const Icon(Icons.playlist_add),
-                          label: const Text('追加到队列'),
+                          label: Text(context.l10n.addToQueue),
                         ),
                       ],
                     ),
                   ),
                 ),
                 if (value.songs.isEmpty)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(child: Text('这个歌单没有歌曲。')),
+                    child: Center(child: Text(context.l10n.playlistEmpty)),
                   )
                 else
                   SliverPadding(
@@ -157,7 +167,11 @@ Future<void> _play(
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('播放失败：$error')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.playbackFailed(error.toString())),
+        ),
+      );
     }
   }
 }

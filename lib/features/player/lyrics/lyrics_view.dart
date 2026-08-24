@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../audio/audio_player_service.dart';
+import '../../../l10n/l10n.dart';
 import 'lyrics_parser.dart';
 import 'lyrics_service.dart';
 
@@ -147,7 +148,7 @@ class _NoLyrics extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 12),
-          const Text('这首歌还没有可用歌词'),
+          Text(context.l10n.noLyrics),
         ],
       ),
     );

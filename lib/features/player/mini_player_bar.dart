@@ -6,6 +6,7 @@ import 'package:subsonic_api/subsonic_api.dart';
 
 import '../../audio/audio_player_service.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'queue_panel.dart';
 import 'smooth_position_builder.dart';
@@ -126,6 +127,7 @@ class MiniPlayerBar extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(16),
                     onTap: () => context.push('/player'),
                     child: _buildCompactContent(
+                      context: context,
                       service: service,
                       item: item,
                       duration: duration,
@@ -231,7 +233,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                             Text(
                                               item.artist ??
                                                   item.album ??
-                                                  '正在播放',
+                                                  context.l10n.nowPlaying,
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
@@ -258,7 +260,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                 children: <Widget>[
                                   // Previous Button
                                   IconButton(
-                                    tooltip: '上一首',
+                                    tooltip: context.l10n.previousTrack,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints.tightFor(
                                       width: 32,
@@ -315,7 +317,7 @@ class MiniPlayerBar extends ConsumerWidget {
 
                                   // Next Button
                                   IconButton(
-                                    tooltip: '下一首',
+                                    tooltip: context.l10n.nextTrack,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints.tightFor(
                                       width: 32,
@@ -352,7 +354,11 @@ class MiniPlayerBar extends ConsumerWidget {
                                             context,
                                           ).showSnackBar(
                                             SnackBar(
-                                              content: Text('收藏失败：$error'),
+                                              content: Text(
+                                                context.l10n.starFailed(
+                                                  error.toString(),
+                                                ),
+                                              ),
                                             ),
                                           );
                                         }
@@ -363,7 +369,10 @@ class MiniPlayerBar extends ConsumerWidget {
                                   // Repeat Mode Button
                                   if (isMedium) ...[
                                     IconButton(
-                                      tooltip: _loopModeTooltip(state.loopMode),
+                                      tooltip: _loopModeTooltip(
+                                        context,
+                                        state.loopMode,
+                                      ),
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -395,8 +404,8 @@ class MiniPlayerBar extends ConsumerWidget {
                                     // Shuffle Button
                                     IconButton(
                                       tooltip: state.shuffle
-                                          ? '关闭随机播放'
-                                          : '开启随机播放',
+                                          ? context.l10n.shuffleOff
+                                          : context.l10n.shuffleOn,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -419,7 +428,7 @@ class MiniPlayerBar extends ConsumerWidget {
 
                                   // Queue Button
                                   IconButton(
-                                    tooltip: '播放队列',
+                                    tooltip: context.l10n.queueTitle,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints.tightFor(
                                       width: 30,
@@ -439,7 +448,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                   // Extra tools for desktop
                                   if (isDesktop) ...[
                                     IconButton(
-                                      tooltip: '睡眠定时',
+                                      tooltip: context.l10n.sleepTimer,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -457,7 +466,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: '投播',
+                                      tooltip: context.l10n.cast,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -468,8 +477,10 @@ class MiniPlayerBar extends ConsumerWidget {
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('已使用本地高质量音频输出'),
+                                          SnackBar(
+                                            content: Text(
+                                              context.l10n.localOutputOnly,
+                                            ),
                                           ),
                                         );
                                       },
@@ -482,7 +493,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: '歌词',
+                                      tooltip: context.l10n.lyrics,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -499,7 +510,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: '画中画',
+                                      tooltip: context.l10n.pictureInPicture,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -528,8 +539,8 @@ class MiniPlayerBar extends ConsumerWidget {
                                   children: <Widget>[
                                     IconButton(
                                       tooltip: state.volume == 0
-                                          ? '取消静音'
-                                          : '静音',
+                                          ? context.l10n.unmute
+                                          : context.l10n.mute,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -581,7 +592,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: '全屏播放',
+                                      tooltip: context.l10n.fullscreenPlayer,
                                       padding: EdgeInsets.zero,
                                       constraints:
                                           const BoxConstraints.tightFor(
@@ -610,6 +621,7 @@ class MiniPlayerBar extends ConsumerWidget {
   }
 
   Widget _buildCompactContent({
+    required BuildContext context,
     required AudioPlayerService service,
     required PlayableItem item,
     required Duration? duration,
@@ -674,7 +686,7 @@ class MiniPlayerBar extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            item.artist ?? item.album ?? '正在播放',
+                            item.artist ?? item.album ?? context.l10n.nowPlaying,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -690,7 +702,7 @@ class MiniPlayerBar extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               IconButton(
-                tooltip: playing ? '暂停' : '播放',
+                tooltip: playing ? context.l10n.pause : context.l10n.play,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   width: 38,
@@ -710,7 +722,7 @@ class MiniPlayerBar extends ConsumerWidget {
                 ),
               ),
               IconButton(
-                tooltip: '下一首',
+                tooltip: context.l10n.nextTrack,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   width: 38,
@@ -730,34 +742,43 @@ class MiniPlayerBar extends ConsumerWidget {
     );
   }
 
-  String _loopModeTooltip(AppLoopMode mode) {
+  String _loopModeTooltip(BuildContext context, AppLoopMode mode) {
     return switch (mode) {
-      AppLoopMode.off => '单曲/列表不循环',
-      AppLoopMode.all => '列表循环',
-      AppLoopMode.one => '单曲循环',
+      AppLoopMode.off => context.l10n.loopOffShort,
+      AppLoopMode.all => context.l10n.loopAllShort,
+      AppLoopMode.one => context.l10n.loopOneShort,
     };
   }
 
   void _showSleepTimerDialog(BuildContext context) {
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E2028),
-        title: const Row(
+        title: Row(
           children: <Widget>[
-            Icon(Icons.bedtime_outlined, color: Color(0xFF1E7BF6)),
-            SizedBox(width: 10),
-            Text('睡眠定时器', style: TextStyle(color: Colors.white, fontSize: 18)),
+            const Icon(Icons.bedtime_outlined, color: Color(0xFF1E7BF6)),
+            const SizedBox(width: 10),
+            Text(
+              dialogContext.l10n.sleepTimerTitle,
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+            ),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _sleepTimerOption(context, '15 分钟', 15),
-            _sleepTimerOption(context, '30 分钟', 30),
-            _sleepTimerOption(context, '45 分钟', 45),
-            _sleepTimerOption(context, '60 分钟', 60),
-            _sleepTimerOption(context, '播完当前歌曲后停止', 0),
+            for (final minutes in <int>[15, 30, 45, 60])
+              _sleepTimerOption(
+                dialogContext,
+                dialogContext.l10n.minutesLabel(minutes),
+                minutes,
+              ),
+            _sleepTimerOption(
+              dialogContext,
+              dialogContext.l10n.sleepTimerAfterCurrent,
+              0,
+            ),
           ],
         ),
       ),
@@ -779,7 +800,9 @@ class MiniPlayerBar extends ConsumerWidget {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('已设置睡眠定时：$label')));
+        ).showSnackBar(
+          SnackBar(content: Text(context.l10n.sleepTimerSetLabel(label))),
+        );
       },
     );
   }

@@ -24,6 +24,12 @@ class RecentPlays extends Table {
 
   IntColumn get serverId => integer()();
 
+  // Denormalized song metadata so the history can render without a
+  // per-song server round trip. Nullable for rows recorded by older builds.
+  TextColumn get title => text().nullable()();
+
+  TextColumn get artist => text().nullable()();
+
   DateTimeColumn get playedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -80,6 +86,12 @@ class Settings extends Table {
 
   BoolColumn get listenBrainzEnabled =>
       boolean().withDefault(const Constant(false))();
+
+  BoolColumn get lyricsOverlayEnabled =>
+      boolean().withDefault(const Constant(false))();
+
+  /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
+  TextColumn get localeCode => text().withDefault(const Constant('zh'))();
 }
 
 class Downloads extends Table {

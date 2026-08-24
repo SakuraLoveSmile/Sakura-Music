@@ -297,6 +297,14 @@ final recentPlayIdsProvider = FutureProvider<List<String>>((ref) {
       .getRecentPlayIds(serverId: ref.watch(activeServerProvider)?.id);
 });
 
+/// Recent plays with the denormalized song metadata recorded at play time, so
+/// the home history renders titles without per-song server lookups.
+final recentPlaysProvider = FutureProvider<List<RecentPlay>>((ref) {
+  return ref
+      .watch(databaseProvider)
+      .getRecentPlays(serverId: ref.watch(activeServerProvider)?.id);
+});
+
 class StarredNotifier extends AsyncNotifier<Starred2> {
   @override
   Future<Starred2> build() async {

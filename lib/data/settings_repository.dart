@@ -21,6 +21,14 @@ class SettingsRepository {
       seedColorValue: seedColorValue,
     );
   }
+
+  Future<void> updateLyricsOverlay({required bool enabled}) {
+    return database.saveSettings(lyricsOverlayEnabled: enabled);
+  }
+
+  Future<void> updateLocale({required String localeCode}) {
+    return database.saveSettings(localeCode: localeCode);
+  }
 }
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {

@@ -10,6 +10,7 @@ import 'package:sakuramusic/core/theme.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
 import 'package:sakuramusic/features/welcome/welcome_screen.dart';
+import 'package:sakuramusic/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('capture welcome screen preview', (tester) async {
@@ -55,6 +56,9 @@ void main() {
           serversProvider.overrideWithValue(const AsyncValue.data(<Server>[])),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
           debugShowCheckedModeBanner: false,
           theme: theme,
           darkTheme: theme,

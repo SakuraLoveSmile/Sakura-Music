@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../audio/audio_player_provider.dart';
 import '../../audio/audio_player_service.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class RadioStation {
@@ -113,10 +114,13 @@ class RadiosScreen extends ConsumerWidget {
           child: SafeArea(
             child: CustomScrollView(
               slivers: <Widget>[
-                const SliverAppBar(
+                SliverAppBar(
                   title: Text(
-                    '电台',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                    context.l10n.navRadios,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                   floating: true,
                 ),
@@ -153,7 +157,7 @@ class RadiosScreen extends ConsumerWidget {
                                     id: station.id,
                                     title: station.name,
                                     artist: station.genre,
-                                    album: '网络电台',
+                                    album: context.l10n.internetRadio,
                                     streamUrl: station.streamUrl,
                                   );
                                   await playerService.setQueue(<PlayableItem>[
