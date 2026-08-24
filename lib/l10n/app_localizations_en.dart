@@ -144,7 +144,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hostNoScheme => 'No protocol needed; host name only';
 
   @override
-  String get portInRightField => 'Use the port field on the right';
+  String get portInRightField => 'Please enter the port in the port field';
 
   @override
   String get portLabel => 'Port';

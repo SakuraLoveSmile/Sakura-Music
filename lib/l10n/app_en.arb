@@ -41,7 +41,7 @@
   "hostLabel": "Host",
   "pleaseInputServerAddress": "Please enter a server address",
   "hostNoScheme": "No protocol needed; host name only",
-  "portInRightField": "Use the port field on the right",
+  "portInRightField": "Please enter the port in the port field",
   "portLabel": "Port",
   "portRange": "1–65535",
   "username": "Username",

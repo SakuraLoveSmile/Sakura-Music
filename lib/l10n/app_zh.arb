@@ -53,7 +53,7 @@
   "hostLabel": "主机",
   "pleaseInputServerAddress": "请输入服务器地址",
   "hostNoScheme": "无需填写协议，请只输入主机",
-  "portInRightField": "端口请填写在右侧",
+  "portInRightField": "端口请填写在端口输入框",
   "portLabel": "端口",
   "portRange": "1–65535",
   "username": "账号 / 用户名",
