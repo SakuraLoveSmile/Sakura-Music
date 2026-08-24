@@ -196,3 +196,52 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+
+      - name: Generate version manifest
+        run: |
+          mkdir -p release
+          RELEASE_TAG="${{ env.RELEASE_TAG }}"
+          BASE_URL="https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/${RELEASE_TAG}"
+          PAGE_URL="https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/${RELEASE_TAG}"
+          PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          assets_json="[]"
+          for f in release-files/*; do
+            [ -e "$f" ] || continue
+            name="$(basename "$f")"
+            size="$(stat -c%s "$f")"
+            digest="sha256:$(sha256sum "$f" | cut -d' ' -f1)"
+            url="${BASE_URL}/${name}"
+            asset="$(jq -n \
+              --arg name "$name" \
+              --arg url "$url" \
+              --argjson size "$size" \
+              --arg digest "$digest" \
+              '{name: $name, browser_download_url: $url, size: $size, digest: $digest}')"
+            assets_json="$(echo "$assets_json" | jq --argjson a "$asset" '. + [$a]')"
+          done
+
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg page "$PAGE_URL" \
+            --arg published "$PUBLISHED_AT" \
+            --argjson assets "$assets_json" \
+            '{tag_name: $tag, html_url: $page, body: "", published_at: $published, assets: $assets}' \
+            > release/latest.json
+
+          echo "Generated release/latest.json:"
+          cat release/latest.json
+
+      - name: Commit manifest to main
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add release/latest.json
+          if git diff --cached --quiet; then
+            echo "No manifest changes to commit"
+          else
+            git commit -m "[skip ci] chore: update latest.json manifest for ${{ env.RELEASE_TAG }}"
+            git push origin main
+          fi
