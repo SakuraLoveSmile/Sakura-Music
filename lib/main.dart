@@ -11,6 +11,7 @@ import 'package:window_manager/window_manager.dart';
 import 'app.dart';
 import 'audio/audio_player_provider.dart';
 import 'audio/audio_service_handler.dart';
+import 'data/db/app_database.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,18 +28,32 @@ Future<void> main() async {
       await windowManager.focus();
     });
   }
-  if (Platform.isAndroid || Platform.isIOS) {
-    if (Platform.isAndroid) {
-      await Permission.notification.request();
-    }
-    final audioHandler = await AudioService.init<AudioServiceHandler>(
-      builder: AudioServiceHandler.new,
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.sakuramusic.app.audio',
-        androidNotificationChannelName: 'SakuraMusic 播放',
-        androidStopForegroundOnPause: false,
-      ),
-    );
+    if (Platform.isAndroid || Platform.isIOS) {
+      if (Platform.isAndroid) {
+        await Permission.notification.request();
+      }
+      // Read the diagnostic "safe audio mode" before the player is built so the
+      // equalizer pipeline can be skipped from the very first launch. Changing
+      // it later requires a restart because the player is created here.
+      var safeAudioMode = false;
+      try {
+        final db = AppDatabase();
+        final settings = await db.getSettings();
+        safeAudioMode = settings?.safeAudioMode ?? false;
+        await db.close();
+      } catch (error) {
+        debugPrint('Failed to read safeAudioMode setting: $error');
+      }
+      final audioHandler = await AudioService.init<AudioServiceHandler>(
+        builder: () => AudioServiceHandler(
+          disableEqualizerPipeline: safeAudioMode,
+        ),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'com.sakuramusic.app.audio',
+          androidNotificationChannelName: 'SakuraMusic 播放',
+          androidStopForegroundOnPause: false,
+        ),
+      );
     runApp(
       ProviderScope(
         overrides: [audioPlayerProvider.overrideWithValue(audioHandler)],

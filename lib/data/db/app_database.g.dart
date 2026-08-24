@@ -1809,6 +1809,21 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _safeAudioModeMeta = const VerificationMeta(
+    'safeAudioMode',
+  );
+  @override
+  late final GeneratedColumn<bool> safeAudioMode = GeneratedColumn<bool>(
+    'safe_audio_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("safe_audio_mode" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _localeCodeMeta = const VerificationMeta(
     'localeCode',
   );
@@ -1832,6 +1847,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     listenBrainzToken,
     listenBrainzEnabled,
     lyricsOverlayEnabled,
+    safeAudioMode,
     localeCode,
   ];
   @override
@@ -1918,6 +1934,15 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
       );
     }
+    if (data.containsKey('safe_audio_mode')) {
+      context.handle(
+        _safeAudioModeMeta,
+        safeAudioMode.isAcceptableOrUnknown(
+          data['safe_audio_mode']!,
+          _safeAudioModeMeta,
+        ),
+      );
+    }
     if (data.containsKey('locale_code')) {
       context.handle(
         _localeCodeMeta,
@@ -1969,6 +1994,10 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.bool,
         data['${effectivePrefix}lyrics_overlay_enabled'],
       )!,
+      safeAudioMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}safe_audio_mode'],
+      )!,
       localeCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}locale_code'],
@@ -1993,6 +2022,11 @@ class Setting extends DataClass implements Insertable<Setting> {
   final bool listenBrainzEnabled;
   final bool lyricsOverlayEnabled;
 
+  /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
+  /// audio player. Used as a diagnostic toggle to rule out the equalizer as the
+  /// cause of silent playback on some devices.
+  final bool safeAudioMode;
+
   /// `zh`, `en`, or `system`. Defaults to simplified Chinese.
   final String localeCode;
   const Setting({
@@ -2005,6 +2039,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     this.listenBrainzToken,
     required this.listenBrainzEnabled,
     required this.lyricsOverlayEnabled,
+    required this.safeAudioMode,
     required this.localeCode,
   });
   @override
@@ -2021,6 +2056,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     }
     map['listen_brainz_enabled'] = Variable<bool>(listenBrainzEnabled);
     map['lyrics_overlay_enabled'] = Variable<bool>(lyricsOverlayEnabled);
+    map['safe_audio_mode'] = Variable<bool>(safeAudioMode);
     map['locale_code'] = Variable<String>(localeCode);
     return map;
   }
@@ -2038,6 +2074,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           : Value(listenBrainzToken),
       listenBrainzEnabled: Value(listenBrainzEnabled),
       lyricsOverlayEnabled: Value(lyricsOverlayEnabled),
+      safeAudioMode: Value(safeAudioMode),
       localeCode: Value(localeCode),
     );
   }
@@ -2065,6 +2102,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       lyricsOverlayEnabled: serializer.fromJson<bool>(
         json['lyricsOverlayEnabled'],
       ),
+      safeAudioMode: serializer.fromJson<bool>(json['safeAudioMode']),
       localeCode: serializer.fromJson<String>(json['localeCode']),
     );
   }
@@ -2081,6 +2119,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       'listenBrainzToken': serializer.toJson<String?>(listenBrainzToken),
       'listenBrainzEnabled': serializer.toJson<bool>(listenBrainzEnabled),
       'lyricsOverlayEnabled': serializer.toJson<bool>(lyricsOverlayEnabled),
+      'safeAudioMode': serializer.toJson<bool>(safeAudioMode),
       'localeCode': serializer.toJson<String>(localeCode),
     };
   }
@@ -2095,6 +2134,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     Value<String?> listenBrainzToken = const Value.absent(),
     bool? listenBrainzEnabled,
     bool? lyricsOverlayEnabled,
+    bool? safeAudioMode,
     String? localeCode,
   }) => Setting(
     id: id ?? this.id,
@@ -2108,6 +2148,7 @@ class Setting extends DataClass implements Insertable<Setting> {
         : this.listenBrainzToken,
     listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
     lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
+    safeAudioMode: safeAudioMode ?? this.safeAudioMode,
     localeCode: localeCode ?? this.localeCode,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
@@ -2135,6 +2176,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       lyricsOverlayEnabled: data.lyricsOverlayEnabled.present
           ? data.lyricsOverlayEnabled.value
           : this.lyricsOverlayEnabled,
+      safeAudioMode: data.safeAudioMode.present
+          ? data.safeAudioMode.value
+          : this.safeAudioMode,
       localeCode: data.localeCode.present
           ? data.localeCode.value
           : this.localeCode,
@@ -2153,6 +2197,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('listenBrainzToken: $listenBrainzToken, ')
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
+          ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode')
           ..write(')'))
         .toString();
@@ -2169,6 +2214,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     listenBrainzToken,
     listenBrainzEnabled,
     lyricsOverlayEnabled,
+    safeAudioMode,
     localeCode,
   );
   @override
@@ -2184,6 +2230,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.listenBrainzToken == this.listenBrainzToken &&
           other.listenBrainzEnabled == this.listenBrainzEnabled &&
           other.lyricsOverlayEnabled == this.lyricsOverlayEnabled &&
+          other.safeAudioMode == this.safeAudioMode &&
           other.localeCode == this.localeCode);
 }
 
@@ -2197,6 +2244,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<String?> listenBrainzToken;
   final Value<bool> listenBrainzEnabled;
   final Value<bool> lyricsOverlayEnabled;
+  final Value<bool> safeAudioMode;
   final Value<String> localeCode;
   const SettingsCompanion({
     this.id = const Value.absent(),
@@ -2208,6 +2256,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.listenBrainzToken = const Value.absent(),
     this.listenBrainzEnabled = const Value.absent(),
     this.lyricsOverlayEnabled = const Value.absent(),
+    this.safeAudioMode = const Value.absent(),
     this.localeCode = const Value.absent(),
   });
   SettingsCompanion.insert({
@@ -2220,6 +2269,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.listenBrainzToken = const Value.absent(),
     this.listenBrainzEnabled = const Value.absent(),
     this.lyricsOverlayEnabled = const Value.absent(),
+    this.safeAudioMode = const Value.absent(),
     this.localeCode = const Value.absent(),
   });
   static Insertable<Setting> custom({
@@ -2232,6 +2282,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<String>? listenBrainzToken,
     Expression<bool>? listenBrainzEnabled,
     Expression<bool>? lyricsOverlayEnabled,
+    Expression<bool>? safeAudioMode,
     Expression<String>? localeCode,
   }) {
     return RawValuesInsertable({
@@ -2247,6 +2298,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         'listen_brainz_enabled': listenBrainzEnabled,
       if (lyricsOverlayEnabled != null)
         'lyrics_overlay_enabled': lyricsOverlayEnabled,
+      if (safeAudioMode != null) 'safe_audio_mode': safeAudioMode,
       if (localeCode != null) 'locale_code': localeCode,
     });
   }
@@ -2261,6 +2313,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<String?>? listenBrainzToken,
     Value<bool>? listenBrainzEnabled,
     Value<bool>? lyricsOverlayEnabled,
+    Value<bool>? safeAudioMode,
     Value<String>? localeCode,
   }) {
     return SettingsCompanion(
@@ -2273,6 +2326,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       listenBrainzToken: listenBrainzToken ?? this.listenBrainzToken,
       listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
       lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
+      safeAudioMode: safeAudioMode ?? this.safeAudioMode,
       localeCode: localeCode ?? this.localeCode,
     );
   }
@@ -2309,6 +2363,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         lyricsOverlayEnabled.value,
       );
     }
+    if (safeAudioMode.present) {
+      map['safe_audio_mode'] = Variable<bool>(safeAudioMode.value);
+    }
     if (localeCode.present) {
       map['locale_code'] = Variable<String>(localeCode.value);
     }
@@ -2327,6 +2384,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('listenBrainzToken: $listenBrainzToken, ')
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
+          ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode')
           ..write(')'))
         .toString();
@@ -4660,6 +4718,7 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<String?> listenBrainzToken,
       Value<bool> listenBrainzEnabled,
       Value<bool> lyricsOverlayEnabled,
+      Value<bool> safeAudioMode,
       Value<String> localeCode,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
@@ -4673,6 +4732,7 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<String?> listenBrainzToken,
       Value<bool> listenBrainzEnabled,
       Value<bool> lyricsOverlayEnabled,
+      Value<bool> safeAudioMode,
       Value<String> localeCode,
     });
 
@@ -4727,6 +4787,11 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<bool> get lyricsOverlayEnabled => $composableBuilder(
     column: $table.lyricsOverlayEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get safeAudioMode => $composableBuilder(
+    column: $table.safeAudioMode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4790,6 +4855,11 @@ class $$SettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get safeAudioMode => $composableBuilder(
+    column: $table.safeAudioMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get localeCode => $composableBuilder(
     column: $table.localeCode,
     builder: (column) => ColumnOrderings(column),
@@ -4846,6 +4916,11 @@ class $$SettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get safeAudioMode => $composableBuilder(
+    column: $table.safeAudioMode,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get localeCode => $composableBuilder(
     column: $table.localeCode,
     builder: (column) => column,
@@ -4889,6 +4964,7 @@ class $$SettingsTableTableManager
                 Value<String?> listenBrainzToken = const Value.absent(),
                 Value<bool> listenBrainzEnabled = const Value.absent(),
                 Value<bool> lyricsOverlayEnabled = const Value.absent(),
+                Value<bool> safeAudioMode = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
@@ -4900,6 +4976,7 @@ class $$SettingsTableTableManager
                 listenBrainzToken: listenBrainzToken,
                 listenBrainzEnabled: listenBrainzEnabled,
                 lyricsOverlayEnabled: lyricsOverlayEnabled,
+                safeAudioMode: safeAudioMode,
                 localeCode: localeCode,
               ),
           createCompanionCallback:
@@ -4913,6 +4990,7 @@ class $$SettingsTableTableManager
                 Value<String?> listenBrainzToken = const Value.absent(),
                 Value<bool> listenBrainzEnabled = const Value.absent(),
                 Value<bool> lyricsOverlayEnabled = const Value.absent(),
+                Value<bool> safeAudioMode = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
@@ -4924,6 +5002,7 @@ class $$SettingsTableTableManager
                 listenBrainzToken: listenBrainzToken,
                 listenBrainzEnabled: listenBrainzEnabled,
                 lyricsOverlayEnabled: lyricsOverlayEnabled,
+                safeAudioMode: safeAudioMode,
                 localeCode: localeCode,
               ),
           withReferenceMapper: (p0) => p0

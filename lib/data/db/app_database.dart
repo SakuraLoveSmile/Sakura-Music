@@ -22,7 +22,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -69,6 +69,10 @@ class AppDatabase extends _$AppDatabase {
         // table is cleaner than rendering unresolvable ids forever.
         await m.deleteTable('recent_plays');
         await m.createTable(recentPlays);
+      }
+      if (from >= 4 && from < 10) {
+        // V10 diagnostic toggle: disables the Android equalizer pipeline.
+        await m.addColumn(settings, settings.safeAudioMode);
       }
     },
   );
@@ -275,6 +279,7 @@ class AppDatabase extends _$AppDatabase {
     bool? listenBrainzEnabled,
     bool clearListenBrainzToken = false,
     bool? lyricsOverlayEnabled,
+    bool? safeAudioMode,
     String? localeCode,
   }) async {
     final current = await getSettings();
@@ -304,6 +309,9 @@ class AppDatabase extends _$AppDatabase {
         ),
         lyricsOverlayEnabled: Value(
           lyricsOverlayEnabled ?? current?.lyricsOverlayEnabled ?? false,
+        ),
+        safeAudioMode: Value(
+          safeAudioMode ?? current?.safeAudioMode ?? false,
         ),
         localeCode: Value(localeCode ?? current?.localeCode ?? 'zh'),
       ),

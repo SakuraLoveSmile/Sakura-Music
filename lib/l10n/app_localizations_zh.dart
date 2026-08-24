@@ -946,4 +946,109 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get viewArtist => '查看艺术家';
+
+  @override
+  String get debugDiagnostics => '调试诊断';
+
+  @override
+  String get debugTitle => '调试与诊断';
+
+  @override
+  String get debugSnapshot => '实时快照';
+
+  @override
+  String get debugAudioSession => '音频会话';
+
+  @override
+  String get debugSafeAudioMode => '安全音频模式';
+
+  @override
+  String get debugSafeAudioHint => '关闭 Android 均衡器音频管线；修改后需重启应用才能生效。';
+
+  @override
+  String get debugSelfTest => '播放自检';
+
+  @override
+  String get debugSelfTestHint => '使用裸 AudioPlayer 直接播放当前曲目，用于对照主播放管线是否无声。';
+
+  @override
+  String get debugSelfTestStart => '开始自检';
+
+  @override
+  String get debugSelfTestStop => '停止自检';
+
+  @override
+  String get debugSelfTestPlaying => '自检播放中…';
+
+  @override
+  String get debugSelfTestIdle => '自检未运行';
+
+  @override
+  String get debugNoTrack => '当前没有正在播放的曲目，无法启动自检。';
+
+  @override
+  String get debugLog => '事件日志';
+
+  @override
+  String get debugLogEmpty => '暂无日志，播放一首歌试试。';
+
+  @override
+  String get debugCopyLog => '复制日志';
+
+  @override
+  String get debugCopied => '日志已复制到剪贴板';
+
+  @override
+  String get debugStatus => '状态';
+
+  @override
+  String get debugPlaying => '播放中';
+
+  @override
+  String get debugPosition => '位置';
+
+  @override
+  String get debugDuration => '时长';
+
+  @override
+  String get debugVolume => '音量';
+
+  @override
+  String get debugIndex => '当前索引';
+
+  @override
+  String get debugQueueLen => '队列长度';
+
+  @override
+  String get debugActive => '会话激活';
+
+  @override
+  String get debugOutputDevices => '输出设备';
+
+  @override
+  String get debugSessionUnknown => '未知';
+
+  @override
+  String get addServerTitle => '添加服务器';
+
+  @override
+  String get lanDiscovery => '局域网探索';
+
+  @override
+  String get lanRefresh => '刷新局域网搜索';
+
+  @override
+  String get searchingLan => '正在搜索局域网中的音乐服务器…';
+
+  @override
+  String get noServersFound => '未发现任何服务器';
+
+  @override
+  String get ensureSameNetwork => '请确认设备处于同一局域网';
+
+  @override
+  String get manualAdd => '手动添加';
+
+  @override
+  String get comingSoon => '即将支持';
 }

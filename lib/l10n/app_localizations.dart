@@ -1831,6 +1831,216 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'查看艺术家'**
   String get viewArtist;
+
+  /// No description provided for @debugDiagnostics.
+  ///
+  /// In zh, this message translates to:
+  /// **'调试诊断'**
+  String get debugDiagnostics;
+
+  /// No description provided for @debugTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'调试与诊断'**
+  String get debugTitle;
+
+  /// No description provided for @debugSnapshot.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时快照'**
+  String get debugSnapshot;
+
+  /// No description provided for @debugAudioSession.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频会话'**
+  String get debugAudioSession;
+
+  /// No description provided for @debugSafeAudioMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'安全音频模式'**
+  String get debugSafeAudioMode;
+
+  /// No description provided for @debugSafeAudioHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭 Android 均衡器音频管线；修改后需重启应用才能生效。'**
+  String get debugSafeAudioHint;
+
+  /// No description provided for @debugSelfTest.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放自检'**
+  String get debugSelfTest;
+
+  /// No description provided for @debugSelfTestHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用裸 AudioPlayer 直接播放当前曲目，用于对照主播放管线是否无声。'**
+  String get debugSelfTestHint;
+
+  /// No description provided for @debugSelfTestStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始自检'**
+  String get debugSelfTestStart;
+
+  /// No description provided for @debugSelfTestStop.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止自检'**
+  String get debugSelfTestStop;
+
+  /// No description provided for @debugSelfTestPlaying.
+  ///
+  /// In zh, this message translates to:
+  /// **'自检播放中…'**
+  String get debugSelfTestPlaying;
+
+  /// No description provided for @debugSelfTestIdle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自检未运行'**
+  String get debugSelfTestIdle;
+
+  /// No description provided for @debugNoTrack.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前没有正在播放的曲目，无法启动自检。'**
+  String get debugNoTrack;
+
+  /// No description provided for @debugLog.
+  ///
+  /// In zh, this message translates to:
+  /// **'事件日志'**
+  String get debugLog;
+
+  /// No description provided for @debugLogEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无日志，播放一首歌试试。'**
+  String get debugLogEmpty;
+
+  /// No description provided for @debugCopyLog.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制日志'**
+  String get debugCopyLog;
+
+  /// No description provided for @debugCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'日志已复制到剪贴板'**
+  String get debugCopied;
+
+  /// No description provided for @debugStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态'**
+  String get debugStatus;
+
+  /// No description provided for @debugPlaying.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放中'**
+  String get debugPlaying;
+
+  /// No description provided for @debugPosition.
+  ///
+  /// In zh, this message translates to:
+  /// **'位置'**
+  String get debugPosition;
+
+  /// No description provided for @debugDuration.
+  ///
+  /// In zh, this message translates to:
+  /// **'时长'**
+  String get debugDuration;
+
+  /// No description provided for @debugVolume.
+  ///
+  /// In zh, this message translates to:
+  /// **'音量'**
+  String get debugVolume;
+
+  /// No description provided for @debugIndex.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前索引'**
+  String get debugIndex;
+
+  /// No description provided for @debugQueueLen.
+  ///
+  /// In zh, this message translates to:
+  /// **'队列长度'**
+  String get debugQueueLen;
+
+  /// No description provided for @debugActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'会话激活'**
+  String get debugActive;
+
+  /// No description provided for @debugOutputDevices.
+  ///
+  /// In zh, this message translates to:
+  /// **'输出设备'**
+  String get debugOutputDevices;
+
+  /// No description provided for @debugSessionUnknown.
+  ///
+  /// In zh, this message translates to:
+  /// **'未知'**
+  String get debugSessionUnknown;
+
+  /// No description provided for @addServerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加服务器'**
+  String get addServerTitle;
+
+  /// No description provided for @lanDiscovery.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网探索'**
+  String get lanDiscovery;
+
+  /// No description provided for @lanRefresh.
+  ///
+  /// In zh, this message translates to:
+  /// **'刷新局域网搜索'**
+  String get lanRefresh;
+
+  /// No description provided for @searchingLan.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在搜索局域网中的音乐服务器…'**
+  String get searchingLan;
+
+  /// No description provided for @noServersFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'未发现任何服务器'**
+  String get noServersFound;
+
+  /// No description provided for @ensureSameNetwork.
+  ///
+  /// In zh, this message translates to:
+  /// **'请确认设备处于同一局域网'**
+  String get ensureSameNetwork;
+
+  /// No description provided for @manualAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动添加'**
+  String get manualAdd;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In zh, this message translates to:
+  /// **'即将支持'**
+  String get comingSoon;
 }
 
 class _AppLocalizationsDelegate

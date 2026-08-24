@@ -11,13 +11,18 @@ import 'package:just_audio/just_audio.dart';
 import 'audio_cache_manager.dart';
 import 'audio_player_service.dart';
 import 'equalizer_models.dart';
+import 'playback_debug_log.dart';
 
 class JustAudioPlayerService implements AudioPlayerService {
-  JustAudioPlayerService({AudioPlayer? player})
-    : this._withEqualizer(
-        player,
-        Platform.isAndroid ? AndroidEqualizer() : null,
-      );
+  JustAudioPlayerService({
+    AudioPlayer? player,
+    bool disableEqualizerPipeline = false,
+  }) : this._withEqualizer(
+          player,
+          (player == null && !disableEqualizerPipeline && Platform.isAndroid)
+              ? AndroidEqualizer()
+              : null,
+        );
 
   JustAudioPlayerService._withEqualizer(AudioPlayer? player, this._equalizer)
     : _player =
@@ -38,6 +43,42 @@ class JustAudioPlayerService implements AudioPlayerService {
     );
     addSubscription(_subscriptions, _player.durationStream, (_) => _emit());
     addSubscription(_subscriptions, _player.currentIndexStream, (_) => _emit());
+    addSubscription(
+      _subscriptions,
+      _player.playerStateStream,
+      _logPlayerState,
+    );
+    unawaited(_initSessionLogging());
+  }
+
+  void _logPlayerState(dynamic state) {
+    final playing = state.playing as bool? ?? false;
+    final processing = state.processingState;
+    playbackDebugLog.add(
+      'playerState: processing=$processing playing=$playing',
+    );
+  }
+
+  Future<void> _initSessionLogging() async {
+    try {
+      final session = await AudioSession.instance;
+      _sessionSubscriptions.add(
+        session.interruptionEventStream.listen((event) {
+          playbackDebugLog.add(
+            'AudioSession interruption: begin=${event.begin} '
+            'type=${event.type}',
+          );
+        }),
+      );
+      _sessionSubscriptions.add(
+        session.becomingNoisyEventStream.listen((_) {
+          playbackDebugLog.add('AudioSession becomingNoisy');
+        }),
+      );
+    } catch (error, stackTrace) {
+      playbackDebugLog.add('AudioSession logging init failed: $error');
+      debugPrintStack(stackTrace: stackTrace, label: 'PlaybackDebug');
+    }
   }
 
   final AudioPlayer _player;
@@ -47,6 +88,8 @@ class JustAudioPlayerService implements AudioPlayerService {
   late final PlayerSnapshotEmitter _snapshotEmitter;
   PlayerSnapshot? _latestSnapshot;
   final List<StreamSubscription<dynamic>> _subscriptions =
+      <StreamSubscription<dynamic>>[];
+  final List<StreamSubscription<dynamic>> _sessionSubscriptions =
       <StreamSubscription<dynamic>>[];
   List<PlayableItem> _queue = const <PlayableItem>[];
   AppLoopMode _loopMode = AppLoopMode.off;
@@ -71,6 +114,9 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> setQueue(List<PlayableItem> items, {int startIndex = 0}) async {
+    playbackDebugLog.add(
+      'setQueue: ${items.length} items startIndex=$startIndex',
+    );
     _queue = List<PlayableItem>.unmodifiable(items);
     if (_queue.isEmpty) {
       await _player.stop();
@@ -104,18 +150,23 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> play() async {
+    playbackDebugLog.add('play');
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
-    if (await session.setActive(true)) {
-      _volumeFader.cancel();
-      await _applyVolume(0);
-      await _player.play();
-      unawaited(_fadeTo(_volume));
-    }
+    final active = await session.setActive(true);
+    // A failed audio-focus activation must not block playback: on some
+    // devices setActive returns false even though audio is perfectly usable.
+    // Previously this silently skipped playing; now we warn and continue.
+    playbackDebugLog.add('AudioSession.setActive -> $active');
+    _volumeFader.cancel();
+    await _applyVolume(0);
+    await _player.play();
+    unawaited(_fadeTo(_volume));
   }
 
   @override
   Future<void> pause() async {
+    playbackDebugLog.add('pause');
     if (_player.playerState.playing) {
       await _fadeTo(0);
     }
@@ -125,6 +176,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> next() async {
+    playbackDebugLog.add('next');
     final wasPlaying = _player.playerState.playing;
     if (wasPlaying) {
       await _fadeTo(0);
@@ -137,6 +189,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> previous() async {
+    playbackDebugLog.add('previous');
     final wasPlaying = _player.playerState.playing;
     if (wasPlaying) {
       await _fadeTo(0);
@@ -148,10 +201,14 @@ class JustAudioPlayerService implements AudioPlayerService {
   }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) {
+    playbackDebugLog.add('seek: ${position.inMilliseconds}ms');
+    return _player.seek(position);
+  }
 
   @override
   Future<void> setLoopMode(AppLoopMode mode) async {
+    playbackDebugLog.add('setLoopMode: ${mode.name}');
     _loopMode = mode;
     await _player.setLoopMode(_toJustAudioLoopMode(mode));
     _emit();
@@ -159,6 +216,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> setShuffle(bool enabled) async {
+    playbackDebugLog.add('setShuffle: $enabled');
     _shuffle = enabled;
     await _player.setShuffleModeEnabled(enabled);
     _emit();
@@ -166,6 +224,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> playAt(int index) async {
+    playbackDebugLog.add('playAt: $index');
     _checkIndex(index);
     await _fadeTo(0);
     await _player.seek(Duration.zero, index: index);
@@ -212,6 +271,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> setVolume(double value) async {
+    playbackDebugLog.add('setVolume: $value');
     _checkVolume(value);
     _volume = value;
     _volumeFader.cancel();
@@ -246,6 +306,10 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   @override
   Future<void> setEqualizer(EqualizerSettings settings) async {
+    playbackDebugLog.add(
+      'setEqualizer: enabled=${settings.enabled} '
+      'gains=${settings.gains} preset=${settings.preset.name}',
+    );
     _equalizerSettings = settings;
     await _applyEqualizer();
   }
@@ -253,6 +317,7 @@ class JustAudioPlayerService implements AudioPlayerService {
   Future<void> _applyEqualizer() async {
     final equalizer = _equalizer;
     if (equalizer == null) {
+      playbackDebugLog.add('setEqualizer: no equalizer (pipeline disabled)');
       return;
     }
     try {
@@ -272,12 +337,17 @@ class JustAudioPlayerService implements AudioPlayerService {
               .toDouble(),
         );
       }
+      playbackDebugLog.add(
+        'setEqualizer: applied ${parameters.bands.length} bands',
+      );
     } on TimeoutException {
       // The native effect becomes ready with the first audio source; setQueue
       // calls this method again after that activation.
-    } on PlatformException {
+      playbackDebugLog.add('setEqualizer: parameters not ready (timeout)');
+    } on PlatformException catch (error) {
       // Some Android audio effect implementations are not ready yet. A
       // missing equalizer must not prevent the queue from being loaded.
+      playbackDebugLog.add('setEqualizer: PlatformException $error');
     }
   }
 
@@ -339,6 +409,9 @@ class JustAudioPlayerService implements AudioPlayerService {
     _disposed = true;
     _volumeFader.cancel();
     for (final subscription in _subscriptions) {
+      await subscription.cancel();
+    }
+    for (final subscription in _sessionSubscriptions) {
       await subscription.cancel();
     }
     _snapshotEmitter.dispose();

@@ -1000,4 +1000,113 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewArtist => 'View artist';
+
+  @override
+  String get debugDiagnostics => 'Debug & diagnostics';
+
+  @override
+  String get debugTitle => 'Debug & diagnostics';
+
+  @override
+  String get debugSnapshot => 'Live snapshot';
+
+  @override
+  String get debugAudioSession => 'Audio session';
+
+  @override
+  String get debugSafeAudioMode => 'Safe audio mode';
+
+  @override
+  String get debugSafeAudioHint =>
+      'Disables the Android equalizer audio pipeline; restart the app for it to take effect.';
+
+  @override
+  String get debugSelfTest => 'Playback self-test';
+
+  @override
+  String get debugSelfTestHint =>
+      'Plays the current track with a bare AudioPlayer to isolate whether the main pipeline is silent.';
+
+  @override
+  String get debugSelfTestStart => 'Start self-test';
+
+  @override
+  String get debugSelfTestStop => 'Stop self-test';
+
+  @override
+  String get debugSelfTestPlaying => 'Self-test playing…';
+
+  @override
+  String get debugSelfTestIdle => 'Self-test idle';
+
+  @override
+  String get debugNoTrack =>
+      'Nothing is currently playing, so the self-test cannot start.';
+
+  @override
+  String get debugLog => 'Event log';
+
+  @override
+  String get debugLogEmpty => 'No log yet. Play a song to get started.';
+
+  @override
+  String get debugCopyLog => 'Copy log';
+
+  @override
+  String get debugCopied => 'Log copied to clipboard';
+
+  @override
+  String get debugStatus => 'Status';
+
+  @override
+  String get debugPlaying => 'Playing';
+
+  @override
+  String get debugPosition => 'Position';
+
+  @override
+  String get debugDuration => 'Duration';
+
+  @override
+  String get debugVolume => 'Volume';
+
+  @override
+  String get debugIndex => 'Index';
+
+  @override
+  String get debugQueueLen => 'Queue length';
+
+  @override
+  String get debugActive => 'Session active';
+
+  @override
+  String get debugOutputDevices => 'Output devices';
+
+  @override
+  String get debugSessionUnknown => 'Unknown';
+
+  @override
+  String get addServerTitle => 'Add server';
+
+  @override
+  String get lanDiscovery => 'LAN discovery';
+
+  @override
+  String get lanRefresh => 'Refresh LAN search';
+
+  @override
+  String get searchingLan => 'Searching the local network for music servers…';
+
+  @override
+  String get noServersFound => 'No servers found';
+
+  @override
+  String get ensureSameNetwork =>
+      'Make sure the device is on the same local network';
+
+  @override
+  String get manualAdd => 'Add manually';
+
+  @override
+  String get comingSoon => 'Coming soon';
 }
