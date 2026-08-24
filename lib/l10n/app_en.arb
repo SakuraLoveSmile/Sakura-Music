@@ -501,5 +501,35 @@
   "noServersFound": "No servers found",
   "ensureSameNetwork": "Make sure the device is on the same local network",
   "manualAdd": "Add manually",
-  "comingSoon": "Coming soon"
+  "comingSoon": "Coming soon",
+  "artistCount": "{count, plural, =1{1 artist} other{{count} artists}}",
+  "@artistCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "artistSongCount": "{count, plural, =1{1 song} other{{count} songs}}",
+  "@artistSongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "similarArtists": "Similar Artists",
+  "artistBio": "About Artist",
+  "viewGrid": "Grid View",
+  "viewList": "List View",
+  "sortNameAsc": "Name (A-Z)",
+  "sortNameDesc": "Name (Z-A)",
+  "sortAlbumCount": "Album Count",
+  "sortYearDesc": "Year (Newest)",
+  "sortYearAsc": "Year (Oldest)",
+  "showMore": "Show more",
+  "showLess": "Show less",
+  "noSimilarArtists": "No similar artists",
+  "filterArtistsHint": "Filter artists...",
+  "discography": "Discography"
 }

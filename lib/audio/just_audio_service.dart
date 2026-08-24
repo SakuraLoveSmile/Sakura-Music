@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 
-import 'audio_cache_manager.dart';
 import 'audio_player_service.dart';
 import 'equalizer_controller.dart';
 import 'equalizer_models.dart';
@@ -17,7 +16,7 @@ import 'playback_debug_log.dart';
 class JustAudioPlayerService implements AudioPlayerService {
   JustAudioPlayerService({
     AudioPlayer? player,
-    bool disableEqualizerPipeline = false,
+    bool disableEqualizerPipeline = true,
   }) : this._withEqualizer(
           player,
           (player == null && !disableEqualizerPipeline && Platform.isAndroid)
@@ -162,6 +161,11 @@ class JustAudioPlayerService implements AudioPlayerService {
     _queue = List<PlayableItem>.unmodifiable(items);
   }
 
+  static AudioSource _createAudioSource(PlayableItem item) {
+    final uri = Uri.parse(item.streamUrl);
+    return AudioSource.uri(uri, tag: item);
+  }
+
   @override
   Future<void> setQueue(List<PlayableItem> items, {int startIndex = 0}) async {
     playbackDebugLog.add(
@@ -175,28 +179,7 @@ class JustAudioPlayerService implements AudioPlayerService {
       return;
     }
     final index = startIndex.clamp(0, _queue.length - 1);
-    final cacheDirectory = await AudioCacheManager.directory();
-    final exclude = _queue
-        .map(
-          (item) =>
-              AudioCacheManager.fileFor(cacheDirectory, item.streamUrl).path,
-        )
-        .toSet();
-    unawaited(
-      AudioCacheManager.trim(cacheDirectory, exclude: exclude).catchError((_) {}),
-    );
-    final sources = _queue
-        .map(
-          (item) => LockCachingAudioSource(
-            Uri.parse(item.streamUrl),
-            cacheFile: AudioCacheManager.fileFor(
-              cacheDirectory,
-              item.streamUrl,
-            ),
-            tag: item,
-          ),
-        )
-        .toList(growable: false);
+    final sources = _queue.map(_createAudioSource).toList(growable: false);
     await _player.setAudioSources(sources, initialIndex: index, preload: false);
     await _player.setLoopMode(_toJustAudioLoopMode(_loopMode));
     await _player.setShuffleModeEnabled(_shuffle);
@@ -218,49 +201,32 @@ class JustAudioPlayerService implements AudioPlayerService {
     // Previously this silently skipped playing; now we warn and continue.
     playbackDebugLog.add('AudioSession.setActive -> $active');
     _volumeFader.cancel();
-    await _applyVolume(0);
+    await _applyVolume(_volume);
     await _player.play();
-    unawaited(_fadeTo(_volume).then((_) {
-      playbackDebugLog.add(
-        'play: fade-in done volume=${_appliedVolume.toStringAsFixed(2)}',
-      );
-    }));
+    playbackDebugLog.add(
+      'play: active volume=${_appliedVolume.toStringAsFixed(2)}',
+    );
   }
 
   @override
   Future<void> pause() async {
     playbackDebugLog.add('pause');
-    if (_player.playerState.playing) {
-      await _fadeTo(0);
-    }
+    _volumeFader.cancel();
     await _player.pause();
-    await _applyVolume(_volume);
   }
 
   @override
   Future<void> next() async {
     playbackDebugLog.add('next');
-    final wasPlaying = _player.playerState.playing;
-    if (wasPlaying) {
-      await _fadeTo(0);
-    }
+    _volumeFader.cancel();
     await _player.seekToNext();
-    if (wasPlaying) {
-      unawaited(_fadeTo(_volume));
-    }
   }
 
   @override
   Future<void> previous() async {
     playbackDebugLog.add('previous');
-    final wasPlaying = _player.playerState.playing;
-    if (wasPlaying) {
-      await _fadeTo(0);
-    }
+    _volumeFader.cancel();
     await _player.seekToPrevious();
-    if (wasPlaying) {
-      unawaited(_fadeTo(_volume));
-    }
   }
 
   @override
@@ -289,14 +255,13 @@ class JustAudioPlayerService implements AudioPlayerService {
   Future<void> playAt(int index) async {
     playbackDebugLog.add('playAt: $index');
     _checkIndex(index);
-    await _fadeTo(0);
+    _volumeFader.cancel();
     await _player.seek(Duration.zero, index: index);
+    await _applyVolume(_volume);
     await _player.play();
-    unawaited(_fadeTo(_volume).then((_) {
-      playbackDebugLog.add(
-        'play: fade-in done volume=${_appliedVolume.toStringAsFixed(2)}',
-      );
-    }));
+    playbackDebugLog.add(
+      'playAt: active volume=${_appliedVolume.toStringAsFixed(2)}',
+    );
   }
 
   @override
@@ -305,7 +270,7 @@ class JustAudioPlayerService implements AudioPlayerService {
     final insertIndex = index.clamp(0, _queue.length);
     await _player.insertAudioSource(
       insertIndex,
-      LockCachingAudioSource(Uri.parse(item.streamUrl), tag: item),
+      _createAudioSource(item),
     );
     final updated = <PlayableItem>[..._queue]..insert(insertIndex, item);
     _queue = List<PlayableItem>.unmodifiable(updated);
@@ -358,15 +323,6 @@ class JustAudioPlayerService implements AudioPlayerService {
     final applied = await _player.setPreferredDevice(deviceId);
     playbackDebugLog.add('setPreferredDevice: applied=$applied');
     return applied;
-  }
-
-  Future<void> _fadeTo(double target) async {
-    await _volumeFader.fade(
-      from: _appliedVolume,
-      to: target,
-      apply: _applyVolume,
-      duration: const Duration(milliseconds: 120),
-    );
   }
 
   @override

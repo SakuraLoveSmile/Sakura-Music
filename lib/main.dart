@@ -35,11 +35,11 @@ Future<void> main() async {
       // Read the diagnostic "safe audio mode" before the player is built so the
       // equalizer pipeline can be skipped from the very first launch. Changing
       // it later requires a restart because the player is created here.
-      var safeAudioMode = false;
+      var safeAudioMode = true;
       try {
         final db = AppDatabase();
         final settings = await db.getSettings();
-        safeAudioMode = settings?.safeAudioMode ?? false;
+        safeAudioMode = settings?.safeAudioMode ?? true;
         await db.close();
       } catch (error) {
         debugPrint('Failed to read safeAudioMode setting: $error');
