@@ -25,6 +25,11 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
   List<AudioDevice> _outputDevices = <AudioDevice>[];
   StreamSubscription<Set<AudioDevice>>? _devicesSub;
 
+  /// The output device selected by the user; `null` means "follow the system
+  /// default". Not persisted: Android device ids are not stable across
+  /// reboots.
+  String? _selectedOutputDeviceId;
+
   bool _safeAudioMode = false;
   bool _selfTesting = false;
   AudioPlayer? _selfTestPlayer;
@@ -48,7 +53,9 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
       final session = await AudioSession.instance;
       final devices = await session.getDevices();
       if (mounted) {
-        setState(() => _outputDevices = devices.where((d) => d.isOutput).toList());
+        setState(
+          () => _outputDevices = devices.where((d) => d.isOutput).toList(),
+        );
       }
       _devicesSub = session.devicesStream.listen((set) {
         if (mounted) {
@@ -60,6 +67,40 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
     } catch (error) {
       playbackDebugLog.add('DebugScreen devices init failed: $error');
     }
+  }
+
+  Future<void> _selectOutputDevice(String? deviceId) async {
+    final ok = await ref
+        .read(audioPlayerProvider)
+        .setPreferredOutputDevice(deviceId);
+    playbackDebugLog.add('setPreferredDevice: deviceId=$deviceId result=$ok');
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _selectedOutputDeviceId = deviceId);
+    }
+    final l10n = context.l10n;
+    String name;
+    if (deviceId == null) {
+      name = l10n.debugOutputDeviceDefault;
+    } else {
+      String? found;
+      for (final device in _outputDevices) {
+        if (device.id == deviceId) {
+          found = device.name;
+          break;
+        }
+      }
+      name = found ?? deviceId;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? l10n.debugOutputDeviceApplied(name)
+              : l10n.debugOutputDeviceFailed,
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleSafeAudioMode(bool value) async {
@@ -81,9 +122,9 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
     final item = snapshot?.currentItem;
     if (item == null || item.streamUrl.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.debugNoTrack)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.debugNoTrack)));
       }
       return;
     }
@@ -158,17 +199,18 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
         children: <Widget>[
           _SnapshotCard(),
           const SizedBox(height: 16),
-          _AudioSessionCard(devices: _outputDevices),
+          _AudioSessionCard(
+            devices: _outputDevices,
+            selectedId: _selectedOutputDeviceId,
+            onSelect: _selectOutputDevice,
+          ),
           const SizedBox(height: 16),
           _SafeAudioCard(
             value: _safeAudioMode,
             onChanged: _toggleSafeAudioMode,
           ),
           const SizedBox(height: 16),
-          _SelfTestCard(
-            testing: _selfTesting,
-            onToggle: _toggleSelfTest,
-          ),
+          _SelfTestCard(testing: _selfTesting, onToggle: _toggleSelfTest),
           const SizedBox(height: 16),
           _LogCard(),
         ],
@@ -190,7 +232,9 @@ class _SnapshotCard extends ConsumerWidget {
         final data = snapshot.data;
         final rows = <String, String>{
           l10n.debugStatus: data?.status.name ?? '—',
-          l10n.debugPlaying: (data?.playing ?? false) ? l10n.debugPlaying : 'false',
+          l10n.debugPlaying: (data?.playing ?? false)
+              ? l10n.debugPlaying
+              : 'false',
           l10n.debugPosition: _fmt(data?.position),
           l10n.debugDuration: _fmt(data?.duration),
           l10n.debugVolume: (data?.volume ?? 0).toStringAsFixed(2),
@@ -218,16 +262,19 @@ class _SnapshotCard extends ConsumerWidget {
 }
 
 class _AudioSessionCard extends StatelessWidget {
-  const _AudioSessionCard({required this.devices});
+  const _AudioSessionCard({
+    required this.devices,
+    required this.selectedId,
+    required this.onSelect,
+  });
 
   final List<AudioDevice> devices;
+  final String? selectedId;
+  final ValueChanged<String?> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final names = devices.isEmpty
-        ? <String>[l10n.debugSessionUnknown]
-        : devices.map((d) => d.name).toList();
 
     return _Card(
       title: l10n.debugAudioSession,
@@ -239,28 +286,79 @@ class _AudioSessionCard extends StatelessWidget {
             value: devices.length.toString(),
           ),
           const SizedBox(height: 8),
-          ...names.map(
-            (name) => Padding(
+          _DeviceRow(
+            icon: Icons.speaker,
+            title: l10n.debugOutputDeviceDefault,
+            selected: selectedId == null,
+            onTap: () => onSelect(null),
+          ),
+          if (devices.isEmpty)
+            Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.volume_up,
-                    size: 14,
-                    color: Colors.white54,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                  ),
-                ],
+              child: Text(
+                l10n.debugSessionUnknown,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            )
+          else
+            ...devices.map(
+              (device) => _DeviceRow(
+                key: ValueKey<String>('device-${device.id}'),
+                icon: Icons.volume_up,
+                title: device.name,
+                selected: selectedId == device.id,
+                onTap: () => onSelect(device.id),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _DeviceRow extends StatelessWidget {
+  const _DeviceRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlight = const Color(0xFF64D2FF);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: 14, color: selected ? highlight : Colors.white54),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: selected ? highlight : Colors.white70,
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              size: 16,
+              color: selected ? highlight : Colors.white30,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -333,10 +431,7 @@ class _SelfTestCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: Icon(
-                    testing ? Icons.stop : Icons.play_arrow,
-                    size: 18,
-                  ),
+                  icon: Icon(testing ? Icons.stop : Icons.play_arrow, size: 18),
                   label: Text(
                     testing ? l10n.debugSelfTestStop : l10n.debugSelfTestStart,
                   ),
@@ -344,7 +439,10 @@ class _SelfTestCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: testing
                       ? const Color(0xFF30D158).withValues(alpha: 0.18)
@@ -377,9 +475,9 @@ class _LogCard extends StatelessWidget {
             ClipboardData(text: playbackDebugLog.copyAllText()),
           );
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.debugCopied)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.debugCopied)));
           }
         },
         icon: const Icon(Icons.copy, size: 16),

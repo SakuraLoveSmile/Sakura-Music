@@ -198,6 +198,14 @@ abstract class AudioPlayerService {
 
   Future<void> setVolume(double value);
 
+  /// Routes playback to a preferred output device (Android only).
+  ///
+  /// [deviceId] is the `AudioDevice.id` reported by the `audio_session`
+  /// plugin's output-device list; passing `null` restores the system default
+  /// routing. Non-Android backends and unsupported pipelines return `false`
+  /// and record the reason in the playback debug log.
+  Future<bool> setPreferredOutputDevice(String? deviceId);
+
   Future<void> setSpeed(double value);
 
   Future<void> setEqualizer(EqualizerSettings settings);

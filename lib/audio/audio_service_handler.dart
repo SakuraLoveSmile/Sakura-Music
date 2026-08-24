@@ -138,6 +138,12 @@ class AudioServiceHandler extends BaseAudioHandler
   }
 
   @override
+  Future<bool> setPreferredOutputDevice(String? deviceId) {
+    playbackDebugLog.add('AudioServiceHandler.setPreferredOutputDevice');
+    return _delegate.setPreferredOutputDevice(deviceId);
+  }
+
+  @override
   Future<void> setSpeed(double speed) {
     playbackDebugLog.add('AudioServiceHandler.setSpeed');
     return _delegate.setSpeed(speed);

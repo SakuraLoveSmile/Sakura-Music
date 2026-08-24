@@ -362,6 +362,14 @@ class JustAudioPlayerService implements AudioPlayerService {
   }
 
   @override
+  Future<bool> setPreferredOutputDevice(String? deviceId) async {
+    playbackDebugLog.add('setPreferredDevice: deviceId=$deviceId');
+    final ok = await _player.setPreferredDevice(deviceId);
+    playbackDebugLog.add('setPreferredDevice: result=$ok');
+    return ok;
+  }
+
+  @override
   Future<void> setSpeed(double value) async {
     if (value <= 0) {
       throw ArgumentError.value(value, 'value', 'must be positive');
