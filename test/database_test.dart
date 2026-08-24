@@ -67,6 +67,32 @@ void main() {
     expect(updatedSettings?.equalizerPreset, 'pop');
     expect(updatedSettings?.listenBrainzToken, 'token');
     expect(updatedSettings?.listenBrainzEnabled, isTrue);
+    expect(updatedSettings?.membershipActive, isFalse);
+    expect(updatedSettings?.membershipMethod, isNull);
+
+    await database.saveSettings(
+      membershipActive: true,
+      membershipMethod: 'code',
+    );
+    final codeMembershipSettings = await database.getSettings();
+    expect(codeMembershipSettings?.membershipActive, isTrue);
+    expect(codeMembershipSettings?.membershipMethod, 'code');
+
+    await database.saveSettings(
+      membershipActive: true,
+      membershipMethod: 'star',
+    );
+    final starMembershipSettings = await database.getSettings();
+    expect(starMembershipSettings?.membershipActive, isTrue);
+    expect(starMembershipSettings?.membershipMethod, 'star');
+
+    await database.saveSettings(
+      membershipActive: false,
+      clearMembershipMethod: true,
+    );
+    final deactivatedSettings = await database.getSettings();
+    expect(deactivatedSettings?.membershipActive, isFalse);
+    expect(deactivatedSettings?.membershipMethod, isNull);
   });
 
   test('loads completed download paths as one server-scoped map', () async {

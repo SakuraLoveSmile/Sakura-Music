@@ -54,3 +54,9 @@ app.*.map.json
 # Mimosa security scan working files
 .mimosa/
 **/.mimosa/
+
+# Local tool state
+.config/
+.local/
+.qoder/
+.flutter

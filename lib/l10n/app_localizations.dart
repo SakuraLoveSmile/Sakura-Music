@@ -347,7 +347,7 @@ abstract class AppLocalizations {
   /// No description provided for @portInRightField.
   ///
   /// In zh, this message translates to:
-  /// **'端口请填写在右侧'**
+  /// **'端口请填写在端口输入框'**
   String get portInRightField;
 
   /// No description provided for @portLabel.
@@ -457,6 +457,102 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'会员'**
   String get membership;
+
+  /// No description provided for @membershipActivated.
+  ///
+  /// In zh, this message translates to:
+  /// **'已激活'**
+  String get membershipActivated;
+
+  /// No description provided for @activateMembership.
+  ///
+  /// In zh, this message translates to:
+  /// **'开通会员'**
+  String get activateMembership;
+
+  /// No description provided for @activateMembershipSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过激活码或 Star 开源仓库即可激活全部会员权益'**
+  String get activateMembershipSubtitle;
+
+  /// No description provided for @membershipActiveBannerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'会员已激活'**
+  String get membershipActiveBannerTitle;
+
+  /// No description provided for @activationCodeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'激活码激活'**
+  String get activationCodeTitle;
+
+  /// No description provided for @activationCodeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入激活码'**
+  String get activationCodeHint;
+
+  /// No description provided for @activateButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'激活'**
+  String get activateButton;
+
+  /// No description provided for @activationSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'激活成功，已开通会员功能！'**
+  String get activationSuccess;
+
+  /// No description provided for @activationCodeInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'激活码无效，请检查后重试'**
+  String get activationCodeInvalid;
+
+  /// No description provided for @starActivationTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'Star 点亮激活'**
+  String get starActivationTitle;
+
+  /// No description provided for @starActivationDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'如果你已在 GitHub 上为本项目点亮 Star，可开启此开关直接激活。我们不做联网检测，请凭诚信开启。'**
+  String get starActivationDesc;
+
+  /// No description provided for @goToStar.
+  ///
+  /// In zh, this message translates to:
+  /// **'前往 Star'**
+  String get goToStar;
+
+  /// No description provided for @activatedViaCode.
+  ///
+  /// In zh, this message translates to:
+  /// **'激活方式：激活码'**
+  String get activatedViaCode;
+
+  /// No description provided for @activatedViaStar.
+  ///
+  /// In zh, this message translates to:
+  /// **'激活方式：Star 诚信激活'**
+  String get activatedViaStar;
+
+  /// No description provided for @deactivateMembership.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消激活'**
+  String get deactivateMembership;
+
+  /// No description provided for @deactivatedSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消会员激活'**
+  String get deactivatedSuccess;
 
   /// No description provided for @notActivated.
   ///
@@ -812,24 +908,6 @@ abstract class AppLocalizations {
   /// **'安装包：{name} · {size}'**
   String assetInfo(Object name, Object size);
 
-  /// No description provided for @betaTrialActive.
-  ///
-  /// In zh, this message translates to:
-  /// **'公测试用中'**
-  String get betaTrialActive;
-
-  /// No description provided for @betaTrialDays.
-  ///
-  /// In zh, this message translates to:
-  /// **'公测剩余 {days} 天，期间可试用全部会员功能'**
-  String betaTrialDays(int days);
-
-  /// No description provided for @betaTrialRemaining.
-  ///
-  /// In zh, this message translates to:
-  /// **'公测试用剩余 {days} 天'**
-  String betaTrialRemaining(int days);
-
   /// No description provided for @browse.
   ///
   /// In zh, this message translates to:
@@ -841,12 +919,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'取消下载'**
   String get cancelDownload;
-
-  /// No description provided for @cancelTrial.
-  ///
-  /// In zh, this message translates to:
-  /// **'取消试用'**
-  String get cancelTrial;
 
   /// No description provided for @cast.
   ///
@@ -1598,12 +1670,6 @@ abstract class AppLocalizations {
   /// **'重启并安装'**
   String get restartAndInstall;
 
-  /// No description provided for @restartTrial.
-  ///
-  /// In zh, this message translates to:
-  /// **'重新开启'**
-  String get restartTrial;
-
   /// No description provided for @searchFailed.
   ///
   /// In zh, this message translates to:
@@ -1753,18 +1819,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'收藏失败：{error}'**
   String starFailed(Object error);
-
-  /// No description provided for @trialCancelled.
-  ///
-  /// In zh, this message translates to:
-  /// **'已取消试用'**
-  String get trialCancelled;
-
-  /// No description provided for @trialResumed.
-  ///
-  /// In zh, this message translates to:
-  /// **'已恢复公测试用'**
-  String get trialResumed;
 
   /// No description provided for @unfavorite.
   ///
@@ -1987,6 +2041,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'输出设备'**
   String get debugOutputDevices;
+
+  /// No description provided for @debugOutputDeviceDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'跟随系统默认'**
+  String get debugOutputDeviceDefault;
+
+  /// No description provided for @debugOutputDeviceApplied.
+  ///
+  /// In zh, this message translates to:
+  /// **'输出设备已切换为「{name}」'**
+  String debugOutputDeviceApplied(Object name);
+
+  /// No description provided for @debugOutputDeviceFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'切换输出设备失败'**
+  String get debugOutputDeviceFailed;
 
   /// No description provided for @debugSessionUnknown.
   ///
