@@ -199,6 +199,55 @@ class AppLocalizationsZh extends AppLocalizations {
   String get membership => '会员';
 
   @override
+  String get membershipActivated => '已激活';
+
+  @override
+  String get activateMembership => '开通会员';
+
+  @override
+  String get activateMembershipSubtitle => '通过激活码或 Star 开源仓库即可激活全部会员权益';
+
+  @override
+  String get membershipActiveBannerTitle => '会员已激活';
+
+  @override
+  String get activationCodeTitle => '激活码激活';
+
+  @override
+  String get activationCodeHint => '请输入激活码';
+
+  @override
+  String get activateButton => '激活';
+
+  @override
+  String get activationSuccess => '激活成功，已开通会员功能！';
+
+  @override
+  String get activationCodeInvalid => '激活码无效，请检查后重试';
+
+  @override
+  String get starActivationTitle => 'Star 点亮激活';
+
+  @override
+  String get starActivationDesc =>
+      '如果你已在 GitHub 上为本项目点亮 Star，可开启此开关直接激活。我们不做联网检测，请凭诚信开启。';
+
+  @override
+  String get goToStar => '前往 Star';
+
+  @override
+  String get activatedViaCode => '激活方式：激活码';
+
+  @override
+  String get activatedViaStar => '激活方式：Star 诚信激活';
+
+  @override
+  String get deactivateMembership => '取消激活';
+
+  @override
+  String get deactivatedSuccess => '已取消会员激活';
+
+  @override
   String get notActivated => '未开通';
 
   @override
@@ -390,26 +439,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get betaTrialActive => '公测试用中';
-
-  @override
-  String betaTrialDays(int days) {
-    return '公测剩余 $days 天，期间可试用全部会员功能';
-  }
-
-  @override
-  String betaTrialRemaining(int days) {
-    return '公测试用剩余 $days 天';
-  }
-
-  @override
   String get browse => '浏览';
 
   @override
   String get cancelDownload => '取消下载';
-
-  @override
-  String get cancelTrial => '取消试用';
 
   @override
   String get cast => '投播';
@@ -811,9 +844,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get restartAndInstall => '重启并安装';
 
   @override
-  String get restartTrial => '重新开启';
-
-  @override
   String searchFailed(Object error) {
     return '搜索失败：$error';
   }
@@ -903,12 +933,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String starFailed(Object error) {
     return '收藏失败：$error';
   }
-
-  @override
-  String get trialCancelled => '已取消试用';
-
-  @override
-  String get trialResumed => '已恢复公测试用';
 
   @override
   String get unfavorite => '取消收藏';
@@ -1024,6 +1048,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get debugOutputDevices => '输出设备';
+
+  @override
+  String get debugOutputDeviceDefault => '跟随系统默认';
+
+  @override
+  String debugOutputDeviceApplied(Object name) {
+    return '输出设备已切换为「$name」';
+  }
+
+  @override
+  String get debugOutputDeviceFailed => '切换输出设备失败';
 
   @override
   String get debugSessionUnknown => '未知';

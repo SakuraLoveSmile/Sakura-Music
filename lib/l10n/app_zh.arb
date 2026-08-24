@@ -87,6 +87,22 @@
   "back": "返回",
   "switchLibrary": "切换音乐库",
   "membership": "会员",
+  "membershipActivated": "已激活",
+  "activateMembership": "开通会员",
+  "activateMembershipSubtitle": "通过激活码或 Star 开源仓库即可激活全部会员权益",
+  "membershipActiveBannerTitle": "会员已激活",
+  "activationCodeTitle": "激活码激活",
+  "activationCodeHint": "请输入激活码",
+  "activateButton": "激活",
+  "activationSuccess": "激活成功，已开通会员功能！",
+  "activationCodeInvalid": "激活码无效，请检查后重试",
+  "starActivationTitle": "Star 点亮激活",
+  "starActivationDesc": "如果你已在 GitHub 上为本项目点亮 Star，可开启此开关直接激活。我们不做联网检测，请凭诚信开启。",
+  "goToStar": "前往 Star",
+  "activatedViaCode": "激活方式：激活码",
+  "activatedViaStar": "激活方式：Star 诚信激活",
+  "deactivateMembership": "取消激活",
+  "deactivatedSuccess": "已取消会员激活",
   "notActivated": "未开通",
   "sectionPlayback": "播放",
   "autoPlayOnLaunch": "启动后自动播放",
@@ -146,12 +162,8 @@
   "artistAlbumCount": "{count} 张专辑",
   "artistsLoadFailed": "加载歌手失败：{error}",
   "assetInfo": "安装包：{name} · {size}",
-  "betaTrialActive": "公测试用中",
-  "betaTrialDays": "公测剩余 {days} 天，期间可试用全部会员功能",
-  "betaTrialRemaining": "公测试用剩余 {days} 天",
   "browse": "浏览",
   "cancelDownload": "取消下载",
-  "cancelTrial": "取消试用",
   "cast": "投播",
   "clear": "清空",
   "clearHistory": "清空历史",
@@ -277,7 +289,6 @@
   "refreshSongs": "刷新歌曲",
   "releaseNotes": "发布说明",
   "restartAndInstall": "重启并安装",
-  "restartTrial": "重新开启",
   "searchFailed": "搜索失败：{error}",
   "searchHint": "搜索歌曲、专辑、艺术家...",
   "searchHistory": "搜索历史",
@@ -303,8 +314,6 @@
   "sortRecent": "最近添加",
   "sortTitle": "歌曲名",
   "starFailed": "收藏失败：{error}",
-  "trialCancelled": "已取消试用",
-  "trialResumed": "已恢复公测试用",
   "unfavorite": "取消收藏",
   "unknownArtist": "未知艺术家",
   "unmute": "取消静音",
@@ -319,20 +328,6 @@
   "@artistAlbumCount": {
     "placeholders": {
       "count": {
-        "type": "int"
-      }
-    }
-  },
-  "@betaTrialDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "@betaTrialRemaining": {
-    "placeholders": {
-      "days": {
         "type": "int"
       }
     }
@@ -517,6 +512,14 @@
   "debugQueueLen": "队列长度",
   "debugActive": "会话激活",
   "debugOutputDevices": "输出设备",
+  "debugOutputDeviceDefault": "跟随系统默认",
+  "debugOutputDeviceApplied": "输出设备已切换为「{name}」",
+  "@debugOutputDeviceApplied": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "debugOutputDeviceFailed": "切换输出设备失败",
   "debugSessionUnknown": "未知",
   "addServerTitle": "添加服务器",
   "lanDiscovery": "局域网探索",
