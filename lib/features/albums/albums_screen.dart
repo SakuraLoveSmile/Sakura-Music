@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class AlbumsScreen extends ConsumerWidget {
@@ -32,11 +33,11 @@ class AlbumsScreen extends ConsumerWidget {
               child: CustomScrollView(
                 slivers: <Widget>[
                   SliverAppBar(
-                    title: const Text('专辑'),
+                    title: Text(context.l10n.navAlbums),
                     floating: true,
                     actions: <Widget>[
                       IconButton(
-                        tooltip: '刷新',
+                        tooltip: context.l10n.refresh,
                         onPressed: client == null
                             ? null
                             : () => ref.invalidate(albumsPagerProvider),
@@ -63,9 +64,11 @@ class AlbumsScreen extends ConsumerWidget {
                         ),
                       ),
                       data: (page) => page.items.isEmpty
-                          ? const SliverFillRemaining(
+                          ? SliverFillRemaining(
                               hasScrollBody: false,
-                              child: Center(child: Text('服务器中还没有专辑。')),
+                              child: Center(
+                                child: Text(context.l10n.emptyAlbums),
+                              ),
                             )
                           : SliverPadding(
                               padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
@@ -103,7 +106,7 @@ class AlbumsScreen extends ConsumerWidget {
                                     },
                                   ),
                                   if (page.isLoadingMore)
-                                    const SliverToBoxAdapter(
+                                    SliverToBoxAdapter(
                                       child: Padding(
                                         padding: EdgeInsets.only(top: 20),
                                         child: Center(
@@ -117,10 +120,14 @@ class AlbumsScreen extends ConsumerWidget {
                                       ),
                                     ),
                                   if (!page.hasMore)
-                                    const SliverToBoxAdapter(
+                                    SliverToBoxAdapter(
                                       child: Padding(
                                         padding: EdgeInsets.only(top: 20),
-                                        child: Center(child: Text('已加载全部专辑')),
+                                        child: Center(
+                                          child: Text(
+                                            context.l10n.allAlbumsLoaded,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                 ],
@@ -150,11 +157,11 @@ class _NoServerAlbums extends StatelessWidget {
           children: <Widget>[
             const Icon(Icons.cloud_off, size: 64),
             const SizedBox(height: 12),
-            const Text('请先在服务器页添加一个音乐库。'),
+            Text(context.l10n.addLibraryFirst),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () => context.go('/settings'),
-              child: const Text('去添加服务器'),
+              child: Text(context.l10n.goAddServer),
             ),
           ],
         ),
@@ -179,9 +186,15 @@ class _AlbumsError extends StatelessWidget {
           children: <Widget>[
             const Icon(Icons.error_outline, size: 56),
             const SizedBox(height: 12),
-            Text('加载专辑失败：$error', textAlign: TextAlign.center),
+            Text(
+              context.l10n.albumsLoadFailed(error.toString()),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+            OutlinedButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.retry),
+            ),
           ],
         ),
       ),

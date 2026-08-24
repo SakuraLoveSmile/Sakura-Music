@@ -9,6 +9,7 @@ import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
 import '../../data/server_repository.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -66,7 +67,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             size: 28,
             color: Colors.white,
           ),
-          tooltip: '返回',
+          tooltip: context.l10n.back,
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -88,7 +89,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             style: const TextStyle(color: Colors.white, fontSize: 14),
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: '搜索歌曲、专辑、艺术家...',
+              hintText: context.l10n.searchHint,
               hintStyle: TextStyle(
                 color: Colors.white.withValues(alpha: 0.4),
                 fontSize: 13.5,
@@ -102,7 +103,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
               suffixIcon: _controller.text.isNotEmpty
                   ? IconButton(
-                      tooltip: '清空',
+                      tooltip: context.l10n.clear,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints.tightFor(
                         width: 28,
@@ -161,7 +162,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     hasScrollBody: false,
                     child: Center(
                       child: Text(
-                        '搜索失败：$error',
+                        context.l10n.searchFailed(error.toString()),
                         style: const TextStyle(color: Colors.white60),
                       ),
                     ),
@@ -173,7 +174,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         // 1. Artists Section
                         if (value.artists.isNotEmpty) ...[
                           _ResultHeader(
-                            title: '艺术家',
+                            title: context.l10n.navArtists,
                             count: value.artists.length,
                           ),
                           SliverList.builder(
@@ -199,7 +200,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         // 2. Albums Section
                         if (value.albums.isNotEmpty) ...[
                           _ResultHeader(
-                            title: '专辑',
+                            title: context.l10n.navAlbums,
                             count: value.albums.length,
                           ),
                           SliverToBoxAdapter(
@@ -236,7 +237,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
                         // 3. Songs Section
                         if (value.songs.isNotEmpty) ...[
-                          _ResultHeader(title: '歌曲', count: value.songs.length),
+                          _ResultHeader(
+                            title: context.l10n.navSongs,
+                            count: value.songs.length,
+                          ),
                           SliverList.builder(
                             itemCount: value.songs.length,
                             itemBuilder: (context, index) {
@@ -271,12 +275,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         if (value.artists.isEmpty &&
                             value.albums.isEmpty &&
                             value.songs.isEmpty)
-                          const SliverFillRemaining(
+                          SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(
                               child: Text(
-                                '没有找到匹配内容。',
-                                style: TextStyle(
+                                context.l10n.noSearchMatches,
+                                style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 14,
                                 ),
@@ -316,16 +320,16 @@ class _SearchHistory extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              const Text(
-                '搜索历史',
-                style: TextStyle(
+              Text(
+                context.l10n.searchHistory,
+                style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
-                tooltip: '清空历史',
+                tooltip: context.l10n.clearHistory,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   width: 28,
@@ -344,12 +348,12 @@ class _SearchHistory extends StatelessWidget {
           history.when(
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => Text(
-              '读取搜索历史失败：$error',
+              context.l10n.searchHistoryLoadFailed(error.toString()),
               style: const TextStyle(color: Colors.white38),
             ),
             data: (items) => items.isEmpty
                 ? Text(
-                    '暂无搜索历史，输入关键词回车搜索。',
+                    context.l10n.emptySearchHistory,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.35),
                       fontSize: 13,

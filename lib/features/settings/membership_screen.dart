@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,7 +30,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.chevron_left_rounded, size: 28, color: Colors.white),
-          tooltip: '返回',
+          tooltip: context.l10n.back,
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -37,9 +39,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
             }
           },
         ),
-        title: const Text(
-          '我的会员',
-          style: TextStyle(
+        title: Text(
+          context.l10n.myMembership,
+          style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -48,7 +50,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
         actions: <Widget>[
           if (activeServer != null)
             PopupMenuButton<Server>(
-              tooltip: '切换音乐库',
+              tooltip: context.l10n.switchLibrary,
               offset: const Offset(0, 40),
               color: const Color(0xFF22252E),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -96,7 +98,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
             ),
             child: IconButton(
               icon: const Icon(Icons.settings_outlined, size: 18, color: Colors.white70),
-              tooltip: '设置',
+              tooltip: context.l10n.settings,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               onPressed: () => context.go('/settings'),
@@ -110,7 +112,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
             ),
             child: IconButton(
               icon: const Icon(Icons.logout_rounded, size: 18, color: Colors.white70),
-              tooltip: '退出登录',
+              tooltip: context.l10n.logout,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               onPressed: () => context.go('/welcome'),
@@ -183,9 +185,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          const Text(
-                            '公测试用中',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.betaTrialActive,
+                            style: const TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
@@ -194,7 +196,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '公测剩余 $_remainingDays 天，期间可试用全部会员功能',
+                            context.l10n.betaTrialDays(_remainingDays),
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withValues(alpha: 0.75),
@@ -214,22 +216,22 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                 children: <Widget>[
                   _buildFeatureIcon(
                     icon: Icons.auto_awesome_rounded,
-                    label: '全功能',
+                    label: context.l10n.featureAll,
                     color: const Color(0xFFFF2D55),
                   ),
                   _buildFeatureIcon(
                     icon: Icons.devices_rounded,
-                    label: '多设备',
+                    label: context.l10n.featureMultiDevice,
                     color: const Color(0xFFAF52DE),
                   ),
                   _buildFeatureIcon(
                     icon: Icons.sync_rounded,
-                    label: '持续更新',
+                    label: context.l10n.featureUpdates,
                     color: const Color(0xFF0A84FF),
                   ),
                   _buildFeatureIcon(
                     icon: Icons.all_inclusive_rounded,
-                    label: '终身有效',
+                    label: context.l10n.featureLifetime,
                     color: const Color(0xFFFF9500),
                   ),
                 ],
@@ -267,7 +269,11 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            _isTrialActive ? '公测试用剩余 $_remainingDays 天' : '已取消试用',
+                            _isTrialActive
+                                ? context.l10n.betaTrialRemaining(
+                                    _remainingDays,
+                                  )
+                                : context.l10n.trialCancelled,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
@@ -276,7 +282,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '购买后将永久享有会员资格。',
+                            context.l10n.membershipLifetimeNote,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.55),
                               fontSize: 12,
@@ -292,7 +298,11 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(_isTrialActive ? '已恢复公测试用' : '已取消公测试用'),
+                            content: Text(
+                              _isTrialActive
+                                  ? context.l10n.trialResumed
+                                  : context.l10n.trialCancelled,
+                            ),
                           ),
                         );
                       },
@@ -300,7 +310,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                         foregroundColor: Colors.white70,
                       ),
                       child: Text(
-                        _isTrialActive ? '取消试用' : '重新开启',
+                        _isTrialActive
+                            ? context.l10n.cancelTrial
+                            : context.l10n.restartTrial,
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
@@ -313,7 +325,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
-                  '1. 会员最多可同时在 7 台装置上登录。',
+                  context.l10n.membershipNote,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.35),

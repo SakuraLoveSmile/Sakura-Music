@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/l10n.dart';
+
 class PrivacyPolicyDialog extends StatelessWidget {
   const PrivacyPolicyDialog({super.key});
 
@@ -39,9 +41,9 @@ class PrivacyPolicyDialog extends StatelessWidget {
                     size: 24,
                   ),
                   const SizedBox(width: 10),
-                  const Text(
-                    '隱私政策與條款',
-                    style: TextStyle(
+                  Text(
+                    context.l10n.privacyPolicyTitle,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -55,14 +57,14 @@ class PrivacyPolicyDialog extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              const Flexible(
+              Flexible(
                 child: SingleChildScrollView(
                   child: Text(
-                    '1. 本應用程式（音流）為開源獨立音樂客戶端。\n\n'
-                    '2. 本地儲存：您的伺服器位址、使用者名稱、密碼均僅儲存在您本機設備的加密/受保護資料庫中，絕不上傳至任何第三方伺服器。\n\n'
-                    '3. 網路通訊：本應用僅直接與您所配置的自建音樂伺服器（如 Navidrome、Subsonic 等）進行通訊。\n\n'
-                    '4. 音訊快取與下載：您選擇離線下載的歌曲將僅保留在您的本機磁碟中，隨時可手動管理與清除。',
-                    style: TextStyle(
+                    '${context.l10n.privacyBody1}\n\n'
+                    '${context.l10n.privacyBody2}\n\n'
+                    '${context.l10n.privacyBody3}\n\n'
+                    '${context.l10n.privacyBody4}',
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Colors.white70,
                       height: 1.6,
@@ -85,7 +87,7 @@ class PrivacyPolicyDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('我知道了'),
+                  child: Text(context.l10n.gotIt),
                 ),
               ),
             ],

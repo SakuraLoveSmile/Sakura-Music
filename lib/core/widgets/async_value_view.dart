@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../l10n/l10n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AsyncValueView<T> extends StatelessWidget {
@@ -25,10 +27,16 @@ class AsyncValueView<T> extends StatelessWidget {
           children: <Widget>[
             const Icon(Icons.error_outline, size: 48),
             const SizedBox(height: 8),
-            Text('加载失败：$error', textAlign: TextAlign.center),
+            Text(
+              context.l10n.loadFailed(error.toString()),
+              textAlign: TextAlign.center,
+            ),
             if (onRetry != null) ...<Widget>[
               const SizedBox(height: 12),
-              OutlinedButton(onPressed: onRetry, child: const Text('重试')),
+              OutlinedButton(
+                onPressed: onRetry,
+                child: Text(context.l10n.retry),
+              ),
             ],
           ],
         ),
@@ -51,6 +59,6 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('暂时没有内容'));
+    return Center(child: Text(context.l10n.noContentYet));
   }
 }

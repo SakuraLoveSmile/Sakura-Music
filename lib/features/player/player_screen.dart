@@ -11,6 +11,7 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/audio_player_service.dart';
 import '../../core/artwork_palette.dart';
 import '../../core/providers.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'equalizer_panel.dart';
 import 'lyrics/lyrics_view.dart';
@@ -171,7 +172,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       child: Row(
                         children: <Widget>[
                           IconButton(
-                            tooltip: '收起',
+                            tooltip: context.l10n.collapsePlayer,
                             icon: const Icon(
                               Icons.keyboard_arrow_down_rounded,
                               size: 28,
@@ -187,7 +188,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           ),
                           const Spacer(),
                           IconButton(
-                            tooltip: '均衡器',
+                            tooltip: context.l10n.equalizerTitle,
                             icon: const Icon(
                               Icons.equalizer_rounded,
                               color: Colors.white70,
@@ -392,7 +393,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             children: <Widget>[
               // Left Playback Controls: Prev, Big Blue Play/Pause, Next
               IconButton(
-                tooltip: '上一首',
+                tooltip: context.l10n.previousTrack,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   width: 34,
@@ -445,7 +446,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               ),
               const SizedBox(width: 4),
               IconButton(
-                tooltip: '下一首',
+                tooltip: context.l10n.nextTrack,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   width: 34,
@@ -508,7 +509,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             item.artist,
                             item.album,
                           ].whereType<String>().join(' · ').isEmpty
-                          ? '正在播放'
+                          ? context.l10n.nowPlaying
                           : [
                               item.artist,
                               item.album,
@@ -596,14 +597,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
-                      ).showSnackBar(SnackBar(content: Text('收藏失败：$err')));
+                      ).showSnackBar(
+                        SnackBar(
+                          content: Text(context.l10n.starFailed(err.toString())),
+                        ),
+                      );
                     }
                   }
                 },
               ),
               if (isWide) ...[
                 IconButton(
-                  tooltip: _loopModeLabel(state.loopMode),
+                  tooltip: _loopModeLabel(context, state.loopMode),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
                     width: 28,
@@ -626,7 +631,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ),
                 IconButton(
-                  tooltip: state.shuffle ? '关闭随机播放' : '开启随机播放',
+                  tooltip: state.shuffle
+                      ? context.l10n.shuffleOff
+                      : context.l10n.shuffleOn,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
                     width: 28,
@@ -643,7 +650,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ],
               IconButton(
-                tooltip: '播放队列',
+                tooltip: context.l10n.queueTitle,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
                   width: 28,
@@ -658,7 +665,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               ),
               if (isWide) ...[
                 IconButton(
-                  tooltip: '睡眠定时',
+                  tooltip: context.l10n.sleepTimer,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
                     width: 28,
@@ -672,7 +679,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ),
                 IconButton(
-                  tooltip: '投播',
+                  tooltip: context.l10n.cast,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
                     width: 28,
@@ -686,7 +693,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ),
                 IconButton(
-                  tooltip: '画中画',
+                  tooltip: context.l10n.pictureInPicture,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
                     width: 28,
@@ -705,7 +712,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               if (isWide) ...[
                 const SizedBox(width: 4),
                 IconButton(
-                  tooltip: state.volume == 0 ? '取消静音' : '静音',
+                  tooltip: state.volume == 0
+                      ? context.l10n.unmute
+                      : context.l10n.mute,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints.tightFor(
                     width: 26,
@@ -852,7 +861,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     Expanded(
                       child: Center(
                         child: IconButton(
-                          tooltip: '上一首',
+                          tooltip: context.l10n.previousTrack,
                           onPressed: service.previous,
                           icon: const Icon(
                             Icons.skip_previous_rounded,
@@ -905,7 +914,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     Expanded(
                       child: Center(
                         child: IconButton(
-                          tooltip: '下一首',
+                          tooltip: context.l10n.nextTrack,
                           onPressed: service.next,
                           icon: const Icon(
                             Icons.skip_next_rounded,
@@ -917,7 +926,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     Expanded(
                       child: Center(
                         child: IconButton(
-                          tooltip: '播放队列',
+                          tooltip: context.l10n.queueTitle,
                           onPressed: () => showQueuePanel(context, service),
                           icon: const Icon(
                             Icons.queue_music_rounded,
@@ -935,7 +944,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     IconButton(
-                      tooltip: _loopModeLabel(state.loopMode),
+                      tooltip: _loopModeLabel(context, state.loopMode),
                       padding: EdgeInsets.zero,
                       onPressed: () {
                         final next = switch (state.loopMode) {
@@ -954,7 +963,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     ),
                     const SizedBox(width: 28),
                     IconButton(
-                      tooltip: state.shuffle ? '关闭随机播放' : '开启随机播放',
+                      tooltip: state.shuffle
+                      ? context.l10n.shuffleOff
+                      : context.l10n.shuffleOn,
                       padding: EdgeInsets.zero,
                       onPressed: () => service.setShuffle(!state.shuffle),
                       icon: Icon(
@@ -966,7 +977,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     ),
                     const SizedBox(width: 28),
                     IconButton(
-                      tooltip: '睡眠定时',
+                      tooltip: context.l10n.sleepTimer,
                       padding: EdgeInsets.zero,
                       onPressed: () => _showSleepTimer(context),
                       icon: const Icon(
@@ -987,48 +998,32 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   void _showSleepTimer(BuildContext context) {
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E2028),
-        title: const Text('睡眠定时器', style: TextStyle(color: Colors.white)),
+        title: Text(
+          dialogContext.l10n.sleepTimerTitle,
+          style: const TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            ListTile(
-              title: const Text(
-                '15 分钟',
-                style: TextStyle(color: Colors.white70),
+            for (final minutes in <int>[15, 30, 60])
+              ListTile(
+                title: Text(
+                  dialogContext.l10n.minutesLabel(minutes),
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        dialogContext.l10n.sleepTimerSet(minutes),
+                      ),
+                    ),
+                  );
+                },
               ),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('已设置 15 分钟后停止播放')));
-              },
-            ),
-            ListTile(
-              title: const Text(
-                '30 分钟',
-                style: TextStyle(color: Colors.white70),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('已设置 30 分钟后停止播放')));
-              },
-            ),
-            ListTile(
-              title: const Text(
-                '60 分钟',
-                style: TextStyle(color: Colors.white70),
-              ),
-              onTap: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('已设置 60 分钟后停止播放')));
-              },
-            ),
           ],
         ),
       ),
@@ -1055,9 +1050,9 @@ class _EmptyPlayer extends StatelessWidget {
               color: Color(0xFF1E7BF6),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '还没有正在播放的歌曲',
-              style: TextStyle(
+            Text(
+              context.l10n.emptyPlayerTitle,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1065,7 +1060,7 @@ class _EmptyPlayer extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '从歌曲或专辑列表中选择一首歌曲开始播放。',
+              context.l10n.emptyPlayerDesc,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 20),
@@ -1075,7 +1070,7 @@ class _EmptyPlayer extends StatelessWidget {
                 backgroundColor: const Color(0xFF1E7BF6),
               ),
               icon: const Icon(Icons.explore_rounded),
-              label: const Text('去发现音乐'),
+              label: Text(context.l10n.goDiscover),
             ),
           ],
         ),
@@ -1098,10 +1093,10 @@ IconData _loopModeIcon(AppLoopMode mode) {
   };
 }
 
-String _loopModeLabel(AppLoopMode mode) {
+String _loopModeLabel(BuildContext context, AppLoopMode mode) {
   return switch (mode) {
-    AppLoopMode.off => '循环模式：关闭',
-    AppLoopMode.all => '循环模式：列表循环',
-    AppLoopMode.one => '循环模式：单曲循环',
+    AppLoopMode.off => context.l10n.loopOff,
+    AppLoopMode.all => context.l10n.loopAll,
+    AppLoopMode.one => context.l10n.loopOne,
   };
 }

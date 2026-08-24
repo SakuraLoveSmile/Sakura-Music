@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../data/db/app_database.dart';
 import '../../../data/server_repository.dart';
 import 'add_server_dialog.dart';
+import '../../../l10n/l10n.dart';
+import 'server_actions.dart';
 
 class ServerSidebar extends ConsumerStatefulWidget {
   const ServerSidebar({
@@ -31,41 +33,6 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _deleteServer(Server server) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF22252E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('刪除伺服器？', style: TextStyle(color: Colors.white)),
-        content: Text(
-          '確定要刪除「${server.name}」嗎？這只會移除本地保存的連線資訊。',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消', style: TextStyle(color: Colors.white70)),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFF453A),
-            ),
-            child: const Text('刪除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      await ref.read(serverRepositoryProvider).deleteServer(server.id);
-      if (ref.read(selectedServerIdProvider) == server.id) {
-        ref.read(selectedServerIdProvider.notifier).state = null;
-      }
-    }
   }
 
   @override
@@ -107,9 +74,9 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                       size: 22,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      '音流',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.appName,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -134,7 +101,7 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                   onChanged: (val) => setState(() => _searchQuery = val.trim()),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: '搜索',
+                    hintText: context.l10n.search,
                     hintStyle: TextStyle(
                       color: Colors.white.withValues(alpha: 0.38),
                       fontSize: 13,
@@ -178,7 +145,7 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                   // 🎉 欢迎 button (highlighted when active)
                   _SidebarItem(
                     icon: Icons.celebration_rounded,
-                    title: '欢迎',
+                    title: context.l10n.welcomeNav,
                     isSelected: widget.isWelcomeSelected,
                     onTap: widget.onSelectWelcome,
                   ),
@@ -195,7 +162,7 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: <Widget>[
                         Text(
-                          '伺服器',
+                          context.l10n.serversSection,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.4),
                             fontSize: 11,
@@ -233,7 +200,7 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                     error: (err, stack) => Padding(
                       padding: const EdgeInsets.all(10),
                       child: Text(
-                        '載入失敗：$err',
+                        context.l10n.loadFailed(err.toString()),
                         style: const TextStyle(
                           color: Color(0xFFFF6961),
                           fontSize: 12,
@@ -262,7 +229,9 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                             vertical: 8,
                           ),
                           child: Text(
-                            servers.isEmpty ? '尚無伺服器' : '無符合結果',
+                            servers.isEmpty
+                                ? context.l10n.noServers
+                                : context.l10n.noSearchResults,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.3),
                               fontSize: 12,
@@ -293,7 +262,8 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                                 serverToEdit: server,
                               );
                             },
-                            onDelete: () => _deleteServer(server),
+                            onDelete: () =>
+                                confirmAndDeleteServer(context, ref, server),
                           );
                         }).toList(growable: false),
                       );
@@ -320,9 +290,12 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                   ),
                 ),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text(
-                  '新增伺服器',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                label: Text(
+                  context.l10n.addServer,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -486,7 +459,7 @@ class _ServerSidebarTile extends StatelessWidget {
                     size: 16,
                     color: Colors.white.withValues(alpha: 0.4),
                   ),
-                  tooltip: '更多',
+                  tooltip: context.l10n.more,
                   padding: EdgeInsets.zero,
                   color: const Color(0xFF22252E),
                   shape: RoundedRectangleBorder(
@@ -497,23 +470,23 @@ class _ServerSidebarTile extends StatelessWidget {
                     if (val == 'delete') onDelete();
                   },
                   itemBuilder: (context) => <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'edit',
                       child: Row(
                         children: <Widget>[
-                          Icon(Icons.edit_outlined, size: 16, color: Colors.white70),
-                          SizedBox(width: 8),
-                          Text('編輯', style: TextStyle(color: Colors.white, fontSize: 13)),
+                          const Icon(Icons.edit_outlined, size: 16, color: Colors.white70),
+                          const SizedBox(width: 8),
+                          Text(context.l10n.edit, style: const TextStyle(color: Colors.white, fontSize: 13)),
                         ],
                       ),
                     ),
-                    const PopupMenuItem<String>(
+                    PopupMenuItem<String>(
                       value: 'delete',
                       child: Row(
                         children: <Widget>[
-                          Icon(Icons.delete_outline, size: 16, color: Color(0xFFFF453A)),
-                          SizedBox(width: 8),
-                          Text('刪除', style: TextStyle(color: Color(0xFFFF453A), fontSize: 13)),
+                          const Icon(Icons.delete_outline, size: 16, color: Color(0xFFFF453A)),
+                          const SizedBox(width: 8),
+                          Text(context.l10n.delete, style: const TextStyle(color: Color(0xFFFF453A), fontSize: 13)),
                         ],
                       ),
                     ),

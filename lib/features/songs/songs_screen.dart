@@ -9,18 +9,20 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
-enum SongSortOption {
-  recent('最近添加'),
-  title('歌曲名'),
-  artist('艺术家'),
-  album('专辑'),
-  duration('时长'),
-  format('音质格式');
+enum SongSortOption { recent, title, artist, album, duration, format }
 
-  const SongSortOption(this.label);
-  final String label;
+String _songSortOptionLabel(BuildContext context, SongSortOption option) {
+  return switch (option) {
+    SongSortOption.recent => context.l10n.sortRecent,
+    SongSortOption.title => context.l10n.sortTitle,
+    SongSortOption.artist => context.l10n.sortArtist,
+    SongSortOption.album => context.l10n.sortAlbum,
+    SongSortOption.duration => context.l10n.sortDuration,
+    SongSortOption.format => context.l10n.sortFormat,
+  };
 }
 
 class SongsScreen extends ConsumerStatefulWidget {
@@ -126,9 +128,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                           // Top Row: Title + Server indicator
                           Row(
                             children: <Widget>[
-                              const Text(
-                                '歌曲',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.navSongs,
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
@@ -137,7 +139,7 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                               ),
                               const Spacer(),
                               IconButton(
-                                tooltip: '刷新歌曲',
+                                tooltip: context.l10n.refreshSongs,
                                 onPressed: () =>
                                     ref.invalidate(songsListProvider),
                                 icon: const Icon(
@@ -172,7 +174,7 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                       ),
                                     ),
                                     child: PopupMenuButton<SongSortOption>(
-                                      tooltip: '排序方式',
+                                      tooltip: context.l10n.sortBy,
                                       offset: const Offset(0, 40),
                                       color: const Color(0xFF22252E),
                                       shape: RoundedRectangleBorder(
@@ -190,7 +192,10 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                               child: Row(
                                                 children: <Widget>[
                                                   Text(
-                                                    opt.label,
+                                                    _songSortOptionLabel(
+                                                      context,
+                                                      opt,
+                                                    ),
                                                     style: TextStyle(
                                                       color: _sortOption == opt
                                                           ? const Color(
@@ -226,7 +231,10 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            _sortOption.label,
+                                            _songSortOptionLabel(
+                                              context,
+                                              _sortOption,
+                                            ),
                                             style: const TextStyle(
                                               fontSize: 12.5,
                                               color: Colors.white,
@@ -247,7 +255,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                                   BorderRadius.circular(8),
                                             ),
                                             child: Text(
-                                              '已加载 ${songs.length} 首',
+                                              context.l10n.loadedSongsCount(
+                                                songs.length,
+                                              ),
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.white.withValues(
@@ -286,8 +296,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                       Icons.play_arrow_rounded,
                                       size: 18,
                                     ),
-                                    label: const Text(
-                                      '顺序播放',
+                                    label: Text(
+                                      context.l10n.playInOrder,
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -326,8 +336,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                       size: 16,
                                       color: Colors.white70,
                                     ),
-                                    label: const Text(
-                                      '随机播放',
+                                    label: Text(
+                                      context.l10n.shufflePlay,
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
@@ -367,14 +377,14 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              '加载歌曲失败：$error',
+                              context.l10n.songsLoadFailed(error.toString()),
                               style: const TextStyle(color: Colors.white70),
                             ),
                             const SizedBox(height: 14),
                             FilledButton(
                               onPressed: () =>
                                   ref.invalidate(songsListProvider),
-                              child: const Text('重试'),
+                              child: Text(context.l10n.retry),
                             ),
                           ],
                         ),
@@ -382,11 +392,11 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                     ),
                     data: (songs) {
                       if (songs.isEmpty) {
-                        return const SliverFillRemaining(
+                        return SliverFillRemaining(
                           hasScrollBody: false,
                           child: Center(
                             child: Text(
-                              '音乐库中还没有歌曲',
+                              context.l10n.emptyLibrarySongs,
                               style: TextStyle(color: Colors.white54),
                             ),
                           ),
@@ -425,7 +435,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          '已添加「${song.title}」至下载队列',
+                                          context.l10n.addedToDownloads(
+                                            song.title,
+                                          ),
                                         ),
                                       ),
                                     );
@@ -523,8 +535,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                   Icons.playlist_play_rounded,
                   color: Colors.white70,
                 ),
-                title: const Text(
-                  '下一首播放',
+                title: Text(
+                  context.l10n.playNext,
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () async {
@@ -537,7 +549,11 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                   await ref.read(audioPlayerProvider).insertNext(item);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('已将「${song.title}」添加到下一首播放')),
+                      SnackBar(
+                        content: Text(
+                          context.l10n.addedToPlayNext(song.title),
+                        ),
+                      ),
                     );
                   }
                 },
@@ -548,8 +564,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                     Icons.album_outlined,
                     color: Colors.white70,
                   ),
-                  title: const Text(
-                    '查看专辑',
+                  title: Text(
+                    context.l10n.viewAlbum,
                     style: TextStyle(color: Colors.white),
                   ),
                   onTap: () {
@@ -563,8 +579,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                     Icons.person_outline_rounded,
                     color: Colors.white70,
                   ),
-                  title: const Text(
-                    '查看艺术家',
+                  title: Text(
+                    context.l10n.viewArtist,
                     style: TextStyle(color: Colors.white),
                   ),
                   onTap: () {
@@ -577,8 +593,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                   Icons.download_outlined,
                   color: Colors.white70,
                 ),
-                title: const Text(
-                  '下载歌曲',
+                title: Text(
+                  context.l10n.downloadSong,
                   style: TextStyle(color: Colors.white),
                 ),
                 onTap: () async {
@@ -588,7 +604,11 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                     await manager.downloadSong(song);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('已添加「${song.title}」至下载队列')),
+                        SnackBar(
+                          content: Text(
+                            context.l10n.addedToDownloads(song.title),
+                          ),
+                        ),
                       );
                     }
                   }

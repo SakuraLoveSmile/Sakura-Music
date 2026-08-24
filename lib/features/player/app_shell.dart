@@ -9,28 +9,45 @@ import '../../audio/audio_player_provider.dart';
 import '../../core/providers.dart';
 import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
+import '../../l10n/l10n.dart';
 import 'mini_player_bar.dart';
 
 class _NavMenuItem {
   const _NavMenuItem({
     required this.index,
     required this.path,
-    required this.label,
     required this.icon,
     required this.selectedIcon,
   });
 
   final int index;
   final String path;
-  final String label;
   final IconData icon;
   final IconData selectedIcon;
+}
+
+/// Bottom-bar destinations map to shell branches: favorites and downloads
+/// live at branch 6/7 behind artists/genres/radios.
+const List<int> _bottomNavBranches = <int>[0, 1, 2, 6, 7];
+
+/// Nav labels resolve from the route path so the menu items stay const.
+String _navLabel(BuildContext context, String path) {
+  return switch (path) {
+    '/home' => context.l10n.navDiscover,
+    '/songs' => context.l10n.navSongs,
+    '/albums' => context.l10n.navAlbums,
+    '/artists' => context.l10n.navArtists,
+    '/genres' => context.l10n.navGenres,
+    '/radios' => context.l10n.navRadios,
+    '/favorites' => context.l10n.navFavorites,
+    '/downloads' => context.l10n.navDownloads,
+    _ => '',
+  };
 }
 
 const _discoverItem = _NavMenuItem(
   index: 0,
   path: '/home',
-  label: '发现',
   icon: Icons.explore_outlined,
   selectedIcon: Icons.explore_rounded,
 );
@@ -39,35 +56,30 @@ const _libraryItems = <_NavMenuItem>[
   _NavMenuItem(
     index: 1,
     path: '/songs',
-    label: '歌曲',
     icon: Icons.music_note_outlined,
     selectedIcon: Icons.music_note_rounded,
   ),
   _NavMenuItem(
     index: 2,
     path: '/albums',
-    label: '专辑',
     icon: Icons.album_outlined,
     selectedIcon: Icons.album_rounded,
   ),
   _NavMenuItem(
     index: 3,
     path: '/artists',
-    label: '艺术家',
     icon: Icons.person_outline_rounded,
     selectedIcon: Icons.person_rounded,
   ),
   _NavMenuItem(
     index: 4,
     path: '/genres',
-    label: '流派',
     icon: Icons.category_outlined,
     selectedIcon: Icons.category_rounded,
   ),
   _NavMenuItem(
     index: 5,
     path: '/radios',
-    label: '电台',
     icon: Icons.radio_outlined,
     selectedIcon: Icons.radio_rounded,
   ),
@@ -77,14 +89,12 @@ const _personalItems = <_NavMenuItem>[
   _NavMenuItem(
     index: 6,
     path: '/favorites',
-    label: '我喜欢的',
     icon: Icons.favorite_border_rounded,
     selectedIcon: Icons.favorite_rounded,
   ),
   _NavMenuItem(
     index: 7,
     path: '/downloads',
-    label: '下载管理',
     icon: Icons.download_outlined,
     selectedIcon: Icons.download_done_rounded,
   ),
@@ -98,6 +108,7 @@ class AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = navigationShell.currentIndex;
+    final bottomNavIndex = _bottomNavBranches.indexOf(currentIndex);
     final isWide = MediaQuery.sizeOf(context).width >= 720;
     final playlistsAsync = ref.watch(playlistsProvider);
     final activeServer = ref.watch(activeServerProvider);
@@ -148,38 +159,42 @@ class AppShell extends ConsumerWidget {
             MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
             if (!isWide)
               NavigationBar(
-                selectedIndex: currentIndex.clamp(0, 4),
+                // The bar shows a subset of the shell branches: favorites and
+                // downloads sit behind artists/genres/radios at branch 6/7, so
+                // destination indexes must map through _bottomNavBranches.
+                selectedIndex: bottomNavIndex < 0 ? 0 : bottomNavIndex,
                 onDestinationSelected: (index) {
+                  final branch = _bottomNavBranches[index];
                   navigationShell.goBranch(
-                    index,
-                    initialLocation: index == navigationShell.currentIndex,
+                    branch,
+                    initialLocation: branch == navigationShell.currentIndex,
                   );
                 },
-                destinations: const <NavigationDestination>[
+                destinations: <NavigationDestination>[
                   NavigationDestination(
-                    icon: Icon(Icons.explore_outlined),
-                    selectedIcon: Icon(Icons.explore_rounded),
-                    label: '发现',
+                    icon: const Icon(Icons.explore_outlined),
+                    selectedIcon: const Icon(Icons.explore_rounded),
+                    label: context.l10n.navDiscover,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.music_note_outlined),
-                    selectedIcon: Icon(Icons.music_note_rounded),
-                    label: '歌曲',
+                    icon: const Icon(Icons.music_note_outlined),
+                    selectedIcon: const Icon(Icons.music_note_rounded),
+                    label: context.l10n.navSongs,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.album_outlined),
-                    selectedIcon: Icon(Icons.album_rounded),
-                    label: '专辑',
+                    icon: const Icon(Icons.album_outlined),
+                    selectedIcon: const Icon(Icons.album_rounded),
+                    label: context.l10n.navAlbums,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.favorite_border_rounded),
-                    selectedIcon: Icon(Icons.favorite_rounded),
-                    label: '喜欢',
+                    icon: const Icon(Icons.favorite_border_rounded),
+                    selectedIcon: const Icon(Icons.favorite_rounded),
+                    label: context.l10n.navLiked,
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.download_outlined),
-                    selectedIcon: Icon(Icons.download_done_rounded),
-                    label: '下载',
+                    icon: const Icon(Icons.download_outlined),
+                    selectedIcon: const Icon(Icons.download_done_rounded),
+                    label: context.l10n.navDownloadsShort,
                   ),
                 ],
               ),
@@ -218,18 +233,30 @@ class _TopActionBar extends StatelessWidget {
         children: <Widget>[
           if (!isWide)
             PopupMenuButton<String>(
-              tooltip: '浏览',
+              tooltip: context.l10n.browse,
               offset: const Offset(0, 40),
               color: const Color(0xFF22252E),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               onSelected: (path) => context.go(path),
-              itemBuilder: (context) => const <PopupMenuEntry<String>>[
-                PopupMenuItem<String>(value: '/artists', child: Text('艺术家')),
-                PopupMenuItem<String>(value: '/genres', child: Text('流派')),
-                PopupMenuItem<String>(value: '/radios', child: Text('电台')),
-                PopupMenuItem<String>(value: '/playlists', child: Text('歌单')),
+              itemBuilder: (context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: '/artists',
+                  child: Text(context.l10n.navArtists),
+                ),
+                PopupMenuItem<String>(
+                  value: '/genres',
+                  child: Text(context.l10n.navGenres),
+                ),
+                PopupMenuItem<String>(
+                  value: '/radios',
+                  child: Text(context.l10n.navRadios),
+                ),
+                PopupMenuItem<String>(
+                  value: '/playlists',
+                  child: Text(context.l10n.playlistsLabel),
+                ),
               ],
               child: const Icon(Icons.explore_outlined, color: Colors.white70),
             ),
@@ -238,7 +265,7 @@ class _TopActionBar extends StatelessWidget {
           // Server Switch Disc Icon / Popup
           if (activeServer != null)
             PopupMenuButton<Server>(
-              tooltip: '切换音乐库',
+              tooltip: context.l10n.switchLibrary,
               offset: const Offset(0, 40),
               color: const Color(0xFF22252E),
               shape: RoundedRectangleBorder(
@@ -248,11 +275,11 @@ class _TopActionBar extends StatelessWidget {
               itemBuilder: (context) {
                 final servers = serversAsync.value ?? <Server>[];
                 return <PopupMenuEntry<Server>>[
-                  const PopupMenuItem<Server>(
+                  PopupMenuItem<Server>(
                     enabled: false,
                     child: Text(
-                      '已连接的音乐库',
-                      style: TextStyle(
+                      context.l10n.connectedLibraries,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         color: Colors.white54,
@@ -350,7 +377,7 @@ class _TopActionBar extends StatelessWidget {
                 size: 18,
                 color: Colors.white70,
               ),
-              tooltip: '搜索',
+              tooltip: context.l10n.search,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               onPressed: () => context.go('/search'),
@@ -370,7 +397,7 @@ class _TopActionBar extends StatelessWidget {
                 size: 18,
                 color: Colors.white70,
               ),
-              tooltip: '设置',
+              tooltip: context.l10n.settings,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               onPressed: () => context.go('/settings'),
@@ -418,19 +445,19 @@ class _DesktopSidebar extends StatelessWidget {
             if (Platform.isMacOS)
               const SizedBox(height: 37)
             else
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 14, 16, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
                 child: Row(
                   children: <Widget>[
-                    Icon(
+                    const Icon(
                       Icons.music_note_rounded,
                       color: Color(0xFF1E7BF6),
                       size: 22,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
-                      '音流',
-                      style: TextStyle(
+                      context.l10n.appName,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
@@ -465,7 +492,7 @@ class _DesktopSidebar extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '搜索',
+                        context.l10n.search,
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.white.withValues(alpha: 0.4),
@@ -487,6 +514,7 @@ class _DesktopSidebar extends StatelessWidget {
                 children: <Widget>[
                   // 1. 发现 Group
                   _buildNavTile(
+                    context: context,
                     item: _discoverItem,
                     isSelected: currentIndex == _discoverItem.index,
                     onTap: () => navigationShell.goBranch(_discoverItem.index),
@@ -495,9 +523,10 @@ class _DesktopSidebar extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // 2. 音乐库 Group
-                  _buildSectionHeader('音乐库'),
+                  _buildSectionHeader(context.l10n.librarySection),
                   ..._libraryItems.map(
                     (item) => _buildNavTile(
+                      context: context,
                       item: item,
                       isSelected: currentIndex == item.index,
                       onTap: () => navigationShell.goBranch(item.index),
@@ -507,9 +536,10 @@ class _DesktopSidebar extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // 3. 个人 Group
-                  _buildSectionHeader('个人'),
+                  _buildSectionHeader(context.l10n.personalSection),
                   ..._personalItems.map(
                     (item) => _buildNavTile(
+                      context: context,
                       item: item,
                       isSelected: currentIndex == item.index,
                       onTap: () => navigationShell.goBranch(item.index),
@@ -595,6 +625,7 @@ class _DesktopSidebar extends StatelessWidget {
   }
 
   Widget _buildNavTile({
+    required BuildContext context,
     required _NavMenuItem item,
     required bool isSelected,
     required VoidCallback onTap,
@@ -624,7 +655,7 @@ class _DesktopSidebar extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    item.label,
+                    _navLabel(context, item.path),
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: isSelected
@@ -654,7 +685,7 @@ class _DesktopSidebar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Text(
-                '我的歌单',
+                context.l10n.myPlaylists,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -697,7 +728,7 @@ class _DesktopSidebar extends StatelessWidget {
                   vertical: 6,
                 ),
                 child: Text(
-                  '暂无歌单',
+                  context.l10n.noPlaylists,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.3),

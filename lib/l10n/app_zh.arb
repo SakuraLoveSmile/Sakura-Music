@@ -1,0 +1,494 @@
+{
+  "@@locale": "zh",
+  "appName": "音流",
+  "viewSwitch": "视图切换",
+  "settings": "设置",
+  "welcomeTagline": "连接你的音乐",
+  "privacyPrefix": "继续使用即表示同意 ",
+  "privacyPolicy": "隐私政策",
+  "addedTapCardHint": "已添加，点击卡片进入",
+  "featureMultiSource": "多源支持",
+  "featureMultiSourceDesc": "支持 Navidrome、Emby 等多种服务器协议",
+  "featureLossless": "无损播放",
+  "featureLosslessDesc": "Hi-Res 音质",
+  "featureNative": "原生体验",
+  "featureNativeDesc": "SwiftUI 构建",
+  "featureCrossPlatform": "全平台支持",
+  "featureCrossPlatformDesc": "iOS、macOS、tvOS 无缝切换",
+  "search": "搜索",
+  "welcomeNav": "欢迎",
+  "serversSection": "服务器",
+  "loadFailed": "加载失败：{message}",
+  "@loadFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "noServers": "暂无服务器",
+  "noSearchResults": "无符合结果",
+  "addServer": "新增服务器",
+  "more": "更多",
+  "edit": "编辑",
+  "delete": "删除",
+  "chooseLibrary": "选择媒体库",
+  "serverCount": "共 {count} 台服务器",
+  "@serverCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "currentBadge": "当前",
+  "emptyPickerTitle": "还没有服务器",
+  "emptyPickerDesc": "添加你的第一台服务器，连接你的音乐",
+  "addFirstServer": "添加第一台服务器",
+  "editServer": "编辑服务器",
+  "close": "关闭",
+  "serverType": "服务器类型",
+  "serverName": "服务器名称",
+  "serverNameHint": "如：我的 Navidrome",
+  "pleaseInputServerName": "请输入服务器名称",
+  "serverAddress": "服务器地址",
+  "hostLabel": "主机",
+  "pleaseInputServerAddress": "请输入服务器地址",
+  "hostNoScheme": "无需填写协议，请只输入主机",
+  "portInRightField": "端口请填写在右侧",
+  "portLabel": "端口",
+  "portRange": "1–65535",
+  "username": "账号 / 用户名",
+  "pleaseInputUsername": "请输入用户名",
+  "password": "密码",
+  "pleaseInputPassword": "请输入密码",
+  "connectSuccess": "连接成功！服务器通信正常。",
+  "connectFailed": "连接失败：{message}",
+  "@connectFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "saveFailed": "保存失败：{error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "testConnection": "测试连接",
+  "saveChanges": "保存修改",
+  "saveAndConnect": "保存并连接",
+  "deleteServerTitle": "删除服务器？",
+  "deleteServerConfirm": "确定要删除「{name}」吗？这只会移除本地保存的连接信息。",
+  "@deleteServerConfirm": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "cancel": "取消",
+  "back": "返回",
+  "switchLibrary": "切换音乐库",
+  "membership": "会员",
+  "notActivated": "未开通",
+  "sectionPlayback": "播放",
+  "autoPlayOnLaunch": "启动后自动播放",
+  "fadeTransition": "淡入淡出",
+  "musicRoaming": "音乐漫游",
+  "audiobooksPodcasts": "有声书/播客",
+  "streamingQuality": "在线播放音质",
+  "equalizerSettings": "均衡器设置",
+  "lyricsOverlay": "桌面悬浮歌词",
+  "lyricsOverlayPermissionNeeded": "需要悬浮窗权限，请在系统设置中授予后重试",
+  "sectionNetwork": "网络",
+  "backgroundDownload": "后台下载",
+  "downloadWifiOnly": "仅 Wi-Fi",
+  "downloadAnyNetwork": "所有网络",
+  "downloadOff": "关闭",
+  "networkProxy": "网络代理",
+  "sectionStorage": "存储与服务",
+  "serverManagement": "服务器管理",
+  "notConnected": "未连接",
+  "addNewServer": "添加新服务器",
+  "clearCache": "清除歌曲缓存",
+  "cacheCleared": "已清除本地临时缓存数据",
+  "sectionAppearance": "外观",
+  "language": "语言",
+  "sectionAbout": "关于",
+  "currentVersion": "当前版本",
+  "loading": "读取中…",
+  "unknown": "未知",
+  "checkUpdates": "检查更新",
+  "updateAvailable": "发现新版本",
+  "downloading": "下载中",
+  "downloaded": "已下载",
+  "installing": "安装中",
+  "retry": "重试",
+  "upToDate": "已是最新版本",
+  "updateCheckFailed": "检查更新失败",
+  "qualityLosslessAuto": "无损 / 自动",
+  "qualityFlacWav": "FLAC / WAV 极高音质",
+  "quality320": "320 kbps MP3 高音质",
+  "quality192": "192 kbps MP3 标准音质",
+  "quality128": "128 kbps MP3 流畅节省流量",
+  "proxyDialogTitle": "网络代理设置",
+  "proxyAddressLabel": "HTTP / SOCKS5 代理地址",
+  "proxySaved": "网络代理设置已保存",
+  "save": "保存",
+  "followSystem": "跟随系统",
+  "aboutSection": "简介",
+  "addLibraryFirst": "请先在服务器页添加一个音乐库。",
+  "addToQueue": "追加到队列",
+  "addedToDownloads": "已添加「{title}」至下载队列",
+  "addedToPlayNext": "已将「{title}」添加到下一首播放",
+  "addedToQueue": "已追加到队列",
+  "albumEmptyTracks": "这个专辑没有可播放的曲目。",
+  "albumLoadFailed": "加载专辑详情失败：{error}",
+  "albumsLoadFailed": "加载专辑失败：{error}",
+  "allAlbumsLoaded": "已加载全部专辑",
+  "artistAlbumCount": "{count} 张专辑",
+  "artistsLoadFailed": "加载歌手失败：{error}",
+  "assetInfo": "安装包：{name} · {size}",
+  "betaTrialActive": "公测试用中",
+  "betaTrialDays": "公测剩余 {days} 天，期间可试用全部会员功能",
+  "betaTrialRemaining": "公测试用剩余 {days} 天",
+  "browse": "浏览",
+  "cancelDownload": "取消下载",
+  "cancelTrial": "取消试用",
+  "cast": "投播",
+  "clear": "清空",
+  "clearHistory": "清空历史",
+  "collapsePlayer": "收起",
+  "connectedLibraries": "已连接的音乐库",
+  "dailyMixSubtitle": "根据你的收听偏好智能推荐",
+  "dailyMixTitle": "今日私享歌单",
+  "dailyRecommend": "每日推荐",
+  "deleteDownload": "删除下载",
+  "download": "下载",
+  "downloadSong": "下载歌曲",
+  "downloadsLoadFailed": "读取下载失败：{error}",
+  "emptyAlbums": "服务器中还没有专辑。",
+  "emptyArtists": "服务器中还没有歌手。",
+  "emptyDownloads": "还没有下载歌曲。",
+  "emptyGenres": "音乐库中还没有流派信息",
+  "emptyLibrarySongs": "音乐库中还没有歌曲",
+  "emptyPlayerDesc": "从歌曲或专辑列表中选择一首歌曲开始播放。",
+  "emptyPlayerTitle": "还没有正在播放的歌曲",
+  "emptyPlaylists": "还没有歌单。",
+  "emptyQueue": "播放队列为空。",
+  "emptySearchHistory": "暂无搜索历史，输入关键词回车搜索。",
+  "enableEqualizer": "启用均衡器",
+  "equalizerLoadFailed": "读取均衡器设置失败：{error}",
+  "equalizerTitle": "均衡器",
+  "failedStatus": "失败",
+  "favorite": "收藏",
+  "favoritesLoadFailed": "加载收藏失败：{error}",
+  "favoritesTitle": "收藏",
+  "featureAll": "全功能",
+  "featureLifetime": "终身有效",
+  "featureMultiDevice": "多设备",
+  "featureUpdates": "持续更新",
+  "frequentlyPlayed": "最常播放",
+  "fullscreenPlayer": "全屏播放",
+  "genreAlbumCount": "{count} 专辑",
+  "genreEmpty": "该流派暂无歌曲",
+  "genreSongCount": "{count} 首歌",
+  "genresLoadFailed": "加载流派失败：{error}",
+  "goAddServer": "去添加服务器",
+  "goDiscover": "去发现音乐",
+  "goToServerPicker": "前往服务器选择",
+  "gotIt": "我知道了",
+  "install": "安装",
+  "installLater": "稍后安装",
+  "internetRadio": "网络电台",
+  "iosNotSupported": "iOS 暂不支持",
+  "later": "稍后",
+  "librarySection": "音乐库",
+  "loadedSongsCount": "已加载 {count} 首",
+  "localOutputOnly": "已使用本地高质量音频输出",
+  "logout": "退出登录",
+  "loopAll": "循环模式：列表循环",
+  "loopAllShort": "列表循环",
+  "loopOff": "循环模式：关闭",
+  "loopOffShort": "单曲/列表不循环",
+  "loopOne": "循环模式：单曲循环",
+  "loopOneShort": "单曲循环",
+  "lyrics": "歌词",
+  "membershipLifetimeNote": "购买后将永久享有会员资格。",
+  "membershipNote": "1. 会员最多可同时在 7 台装置上登录。",
+  "minutesLabel": "{minutes} 分钟",
+  "mute": "静音",
+  "myMembership": "我的会员",
+  "myPlaylists": "我的歌单",
+  "navAlbums": "专辑",
+  "navArtists": "艺术家",
+  "navDiscover": "发现",
+  "navDownloads": "下载管理",
+  "navDownloadsShort": "下载",
+  "navFavorites": "我喜欢的",
+  "navGenres": "流派",
+  "navLiked": "喜欢",
+  "navRadios": "电台",
+  "navSongs": "歌曲",
+  "nextTrack": "下一首",
+  "noContentYet": "暂时没有内容",
+  "noData": "暂无数据",
+  "noFavoriteAlbums": "还没有收藏专辑。",
+  "noFavoriteArtists": "还没有收藏歌手。",
+  "noFavoriteSongs": "还没有收藏歌曲。",
+  "noLyrics": "这首歌还没有可用歌词",
+  "noMatchingAsset": "当前平台暂无匹配的安装包，将打开 GitHub Release 页面。",
+  "noPlaylists": "暂无歌单",
+  "noSearchMatches": "没有找到匹配内容。",
+  "noServerMessage": "请先在服务器选择页添加或连接一个音乐库。",
+  "noSongHistory": "暂无歌曲记录",
+  "nowPlaying": "正在播放",
+  "openDownload": "前往下载",
+  "openDownloadPage": "前往下载页",
+  "pause": "暂停",
+  "personalSection": "个人",
+  "pictureInPicture": "画中画",
+  "play": "播放",
+  "playAll": "播放全部",
+  "playInOrder": "顺序播放",
+  "playNext": "下一首播放",
+  "playbackFailed": "播放失败：{error}",
+  "playlistEmpty": "这个歌单没有歌曲。",
+  "playlistsLabel": "歌单",
+  "playlistsLoadFailed": "加载歌单失败：{error}",
+  "popularSongs": "热门歌曲",
+  "preparingInstall": "正在准备安装，请稍候…",
+  "presetClassical": "古典",
+  "presetFlat": "平直",
+  "presetLabel": "预设",
+  "presetPop": "流行",
+  "presetRock": "摇滚",
+  "presetVocal": "人声",
+  "previousTrack": "上一首",
+  "privacyBody1": "1. 本应用（音流）为开源独立音乐客户端。",
+  "privacyBody2": "2. 本地存储：您的服务器地址、用户名、密码均仅存储在您本机设备的加密/受保护数据库中，绝不上传至任何第三方服务器。",
+  "privacyBody3": "3. 网络通讯：本应用仅直接与您所配置的自建音乐服务器（如 Navidrome、Subsonic 等）进行通讯。",
+  "privacyBody4": "4. 音频缓存与下载：您选择离线下载的歌曲将仅保留在您的本机磁盘中，随时可手动管理与清除。",
+  "privacyPolicyTitle": "隐私政策与条款",
+  "queueSongCount": "{count} 首",
+  "queueTitle": "播放队列",
+  "randomAlbums": "随机专辑",
+  "recentlyAdded": "最近新增",
+  "recentlyPlayed": "最近播放",
+  "refresh": "刷新",
+  "refreshBatch": "换一批",
+  "refreshSongs": "刷新歌曲",
+  "releaseNotes": "发布说明",
+  "restartAndInstall": "重启并安装",
+  "restartTrial": "重新开启",
+  "searchFailed": "搜索失败：{error}",
+  "searchHint": "搜索歌曲、专辑、艺术家...",
+  "searchHistory": "搜索历史",
+  "searchHistoryLoadFailed": "读取搜索历史失败：{error}",
+  "sectionCompleted": "已完成",
+  "sectionInProgress": "进行中",
+  "shuffleOff": "关闭随机播放",
+  "shuffleOn": "开启随机播放",
+  "shufflePlay": "随机播放",
+  "sleepTimer": "睡眠定时",
+  "sleepTimerAfterCurrent": "播完当前歌曲后停止",
+  "sleepTimerSet": "已设置 {minutes} 分钟后停止播放",
+  "sleepTimerSetLabel": "已设置睡眠定时：{label}",
+  "sleepTimerTitle": "睡眠定时器",
+  "songCountLabel": "{count} 首歌曲",
+  "songCountText": "共 {count} 首",
+  "songsLoadFailed": "加载歌曲失败：{error}",
+  "sortAlbum": "专辑",
+  "sortArtist": "艺术家",
+  "sortBy": "排序方式",
+  "sortDuration": "时长",
+  "sortFormat": "音质格式",
+  "sortRecent": "最近添加",
+  "sortTitle": "歌曲名",
+  "starFailed": "收藏失败：{error}",
+  "trialCancelled": "已取消试用",
+  "trialResumed": "已恢复公测试用",
+  "unfavorite": "取消收藏",
+  "unknownArtist": "未知艺术家",
+  "unmute": "取消静音",
+  "unstarFailed": "取消收藏失败：{error}",
+  "updateDownloading": "正在下载…",
+  "updateDownloadingPercent": "正在下载 {percent}%",
+  "updateNow": "立即更新",
+  "updatingFavorite": "正在更新收藏",
+  "viewAlbum": "查看专辑",
+  "viewAll": "查看全部 ->",
+  "viewArtist": "查看艺术家",
+  "@artistAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@betaTrialDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@betaTrialRemaining": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@genreAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@genreSongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@loadedSongsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@minutesLabel": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@queueSongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@sleepTimerSet": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@songCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@songCountText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@updateDownloadingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@addedToDownloads": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "@addedToPlayNext": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "@albumLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@albumsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@artistsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@assetInfo": {
+    "placeholders": {
+      "name": {},
+      "size": {}
+    }
+  },
+  "@downloadsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@equalizerLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@favoritesLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@genresLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@playbackFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@playlistsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@searchFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@searchHistoryLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@sleepTimerSetLabel": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "@songsLoadFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@starFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "@unstarFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  }
+}

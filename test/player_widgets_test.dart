@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:sakuramusic/audio/audio_player_provider.dart';
 import 'package:sakuramusic/audio/audio_player_service.dart';
 import 'package:sakuramusic/audio/equalizer_models.dart';
@@ -106,6 +107,9 @@ void main() {
           starredProvider.overrideWith(() => _FakeStarredNotifier()),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
           home: Scaffold(body: MiniPlayerBar(service: service)),
         ),
       ),
@@ -156,6 +160,9 @@ void main() {
               starredProvider.overrideWith(() => _FakeStarredNotifier()),
             ],
             child: MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
               home: Scaffold(body: MiniPlayerBar(service: service)),
             ),
           ),
@@ -202,7 +209,12 @@ void main() {
             ),
             starredProvider.overrideWith(() => _FakeStarredNotifier()),
           ],
-          child: const MaterialApp(home: Scaffold(body: PlayerScreen())),
+          child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+            home: const Scaffold(body: PlayerScreen()),
+          ),
         ),
       );
 
@@ -257,7 +269,12 @@ void main() {
               ),
               starredProvider.overrideWith(() => _FakeStarredNotifier()),
             ],
-            child: const MaterialApp(home: PlayerScreen()),
+            child: MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+              home: const PlayerScreen(),
+            ),
           ),
         );
         service.emit(

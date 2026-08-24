@@ -9,6 +9,7 @@ import '../../audio/playable_item_builder.dart';
 import '../../core/artwork_palette.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class AlbumDetailsScreen extends ConsumerWidget {
@@ -28,7 +29,7 @@ class AlbumDetailsScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF131418),
         elevation: 0,
         leading: IconButton(
-          tooltip: '返回',
+          tooltip: context.l10n.back,
           icon: const Icon(
             Icons.chevron_left_rounded,
             size: 28,
@@ -89,11 +90,11 @@ class AlbumDetailsScreen extends ConsumerWidget {
 
                   // Song Listing
                   if (value.songs.isEmpty)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
                         child: Text(
-                          '这个专辑没有可播放的曲目。',
+                          context.l10n.albumEmptyTracks,
                           style: TextStyle(color: Colors.white54),
                         ),
                       ),
@@ -220,7 +221,7 @@ class _AlbumHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  album.artist ?? '未知艺术家',
+                  album.artist ?? context.l10n.unknownArtist,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 14,
@@ -231,7 +232,8 @@ class _AlbumHeader extends StatelessWidget {
                 Text(
                   <String>[
                     if (album.year != null) '${album.year}',
-                    if (album.songCount != null) '${album.songCount} 首歌曲',
+                    if (album.songCount != null)
+                      context.l10n.songCountLabel(album.songCount!),
                     if (album.genre != null) album.genre!,
                     if (album.duration != null)
                       formatSongDuration(album.duration),
@@ -259,9 +261,9 @@ class _AlbumHeader extends StatelessWidget {
                       ),
                       onPressed: onPlayAll,
                       icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                      label: const Text(
-                        '播放全部',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      label: Text(
+                        context.l10n.playAll,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -279,7 +281,7 @@ class _AlbumHeader extends StatelessWidget {
                       ),
                       onPressed: onShuffleAll,
                       icon: const Icon(Icons.shuffle_rounded, size: 18),
-                      label: const Text('随机播放'),
+                      label: Text(context.l10n.shufflePlay),
                     ),
                     const SizedBox(width: 10),
                     StarButton(
@@ -309,7 +311,7 @@ class _AlbumDetailsError extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          '加载专辑详情失败：$error',
+          context.l10n.albumLoadFailed(error.toString()),
           style: const TextStyle(color: Colors.white70),
         ),
       ),
@@ -347,7 +349,11 @@ Future<void> _playSongs(
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('播放失败：$error')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.playbackFailed(error.toString())),
+        ),
+      );
     }
   }
 }

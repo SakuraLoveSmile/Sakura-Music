@@ -23,14 +23,14 @@ import 'features/genres/genres_screen.dart';
 import 'features/radios/radios_screen.dart';
 import 'features/songs/songs_screen.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// The router is a provider so its redirect can observe the same server state
 /// as the rest of the application. The refresh listeners make adding or
 /// removing the last server take effect without restarting the app.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/home',
     redirect: (context, state) {
       final path = state.uri.path;
@@ -184,25 +184,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/search',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: SearchScreen()),
       ),
       GoRoute(
         path: '/welcome',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: WelcomeScreen()),
       ),
       GoRoute(
         path: '/membership',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: MembershipScreen()),
       ),
       GoRoute(
         path: '/settings',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: SettingsScreen()),
       ),
@@ -210,7 +210,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // or mini-player duplication while it is open.
       GoRoute(
         path: '/player',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const MaterialPage(fullscreenDialog: true, child: PlayerScreen()),
       ),

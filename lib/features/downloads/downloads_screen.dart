@@ -9,6 +9,7 @@ import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/db/app_database.dart';
 import '../../data/download_manager.dart';
+import '../../l10n/l10n.dart';
 
 class DownloadsScreen extends ConsumerWidget {
   const DownloadsScreen({super.key});
@@ -25,7 +26,7 @@ class DownloadsScreen extends ConsumerWidget {
           slivers: <Widget>[
             SliverAppBar(
               leading: IconButton(
-                tooltip: '返回',
+                tooltip: context.l10n.back,
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
                   if (context.canPop()) {
@@ -35,7 +36,7 @@ class DownloadsScreen extends ConsumerWidget {
                   }
                 },
               ),
-              title: const Text('下载'),
+              title: Text(context.l10n.navDownloadsShort),
               floating: true,
             ),
             downloads.when(
@@ -45,13 +46,17 @@ class DownloadsScreen extends ConsumerWidget {
               ),
               error: (error, stackTrace) => SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text('读取下载失败：$error')),
+                child: Center(
+                  child: Text(
+                    context.l10n.downloadsLoadFailed(error.toString()),
+                  ),
+                ),
               ),
               data: (items) {
                 if (items.isEmpty) {
-                  return const SliverFillRemaining(
+                  return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(child: Text('还没有下载歌曲。')),
+                    child: Center(child: Text(context.l10n.emptyDownloads)),
                   );
                 }
                 final active = items
@@ -65,7 +70,7 @@ class DownloadsScreen extends ConsumerWidget {
                   sliver: SliverMainAxisGroup(
                     slivers: <Widget>[
                       if (active.isNotEmpty) ...<Widget>[
-                        const _DownloadSectionHeader(title: '进行中'),
+                        _DownloadSectionHeader(title: context.l10n.sectionInProgress),
                         SliverList.builder(
                           itemCount: active.length,
                           itemBuilder: (context, index) => _downloadTile(
@@ -78,7 +83,7 @@ class DownloadsScreen extends ConsumerWidget {
                         ),
                       ],
                       if (completed.isNotEmpty) ...<Widget>[
-                        const _DownloadSectionHeader(title: '已完成'),
+                        _DownloadSectionHeader(title: context.l10n.sectionCompleted),
                         SliverList.builder(
                           itemCount: completed.length,
                           itemBuilder: (context, index) => _downloadTile(
@@ -142,7 +147,7 @@ Widget _downloadTile({
           [
             download.artist,
             download.album,
-            if (!isComplete) _statusLabel(download.status),
+            if (!isComplete) _statusLabel(context, download.status),
           ].whereType<String>().join(' · '),
         ),
         trailing: Row(
@@ -150,12 +155,12 @@ Widget _downloadTile({
           children: <Widget>[
             if (!isComplete && manager != null)
               IconButton(
-                tooltip: '取消下载',
+                tooltip: context.l10n.cancelDownload,
                 onPressed: () => manager.cancel(download.songId),
                 icon: const Icon(Icons.close),
               ),
             IconButton(
-              tooltip: '删除下载',
+              tooltip: context.l10n.deleteDownload,
               onPressed: manager == null
                   ? null
                   : () => manager.delete(download.songId),
@@ -204,10 +209,10 @@ Widget _downloadTile({
   );
 }
 
-String _statusLabel(String status) {
+String _statusLabel(BuildContext context, String status) {
   return switch (status) {
-    'downloading' => '下载中',
-    'failed' => '失败',
+    'downloading' => context.l10n.downloading,
+    'failed' => context.l10n.failedStatus,
     _ => status,
   };
 }
