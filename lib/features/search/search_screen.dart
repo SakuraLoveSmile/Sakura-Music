@@ -253,6 +253,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 onFavorite: () => ref
                                     .read(starredProvider.notifier)
                                     .toggleSong(song),
+                                onMore: () {
+                                  showSongActionBottomSheet(
+                                    context: context,
+                                    ref: ref,
+                                    song: song,
+                                    client: client,
+                                  );
+                                },
                                 onTap: () async {
                                   final items =
                                       await playableItemsForSongsWithLocalFiles(
