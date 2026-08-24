@@ -80,10 +80,15 @@ void main() {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
-      final file = File(
-        '/Users/developer/.gemini/antigravity/brain/00000000-0000-4000-8000-000000000001/welcome_screen_preview.png',
-      );
-      await file.writeAsBytes(pngBytes);
+      // Machine-local preview capture: skip when the target directory does
+      // not exist (e.g. CI runners), and allow redirecting via env var.
+      final previewPath =
+          Platform.environment['WELCOME_SCREEN_PREVIEW_PATH'] ??
+          '/Users/developer/.gemini/antigravity/brain/00000000-0000-4000-8000-000000000001/welcome_screen_preview.png';
+      final file = File(previewPath);
+      if (await file.parent.exists()) {
+        await file.writeAsBytes(pngBytes);
+      }
     });
   });
 }
