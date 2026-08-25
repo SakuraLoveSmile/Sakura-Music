@@ -199,7 +199,7 @@ jobs:
 
       - name: Generate version manifest
         run: |
-          mkdir -p release
+          mkdir -p "$RUNNER_TEMP/lyricon_manifest"
           RELEASE_TAG="${{ env.RELEASE_TAG }}"
           BASE_URL="https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/${RELEASE_TAG}"
           PAGE_URL="https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/${RELEASE_TAG}"
@@ -227,10 +227,10 @@ jobs:
             --arg published "$PUBLISHED_AT" \
             --argjson assets "$assets_json" \
             '{tag_name: $tag, html_url: $page, body: "", published_at: $published, assets: $assets}' \
-            > release/latest.json
+            > "$RUNNER_TEMP/lyricon_manifest/latest.json"
 
           echo "Generated release/latest.json:"
-          cat release/latest.json
+          cat "$RUNNER_TEMP/lyricon_manifest/latest.json"
 
       - name: Commit manifest to main
         run: |
@@ -238,6 +238,8 @@ jobs:
           git checkout -B main origin/main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p release
+          cp "$RUNNER_TEMP/lyricon_manifest/latest.json" release/latest.json
           git add release/latest.json
           if git diff --cached --quiet; then
             echo "No manifest changes to commit"

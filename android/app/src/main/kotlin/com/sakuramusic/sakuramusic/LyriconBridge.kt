@@ -3,9 +3,9 @@ package com.sakuramusic.sakuramusic
 import android.content.Context
 import android.util.Log
 import io.github.proify.lyricon.provider.LyriconFactory
-import io.github.proify.lyricon.provider.Provider
-import io.github.proify.lyricon.provider.data.RichLyricLine
-import io.github.proify.lyricon.provider.data.Song
+import io.github.proify.lyricon.provider.LyriconProvider
+import io.github.proify.lyricon.lyric.model.RichLyricLine
+import io.github.proify.lyricon.lyric.model.Song
 
 /**
  * Thin bridge to the Lyricon status-bar lyrics center service.
@@ -19,7 +19,7 @@ object LyriconBridge {
     private const val TAG = "LyriconBridge"
 
     @Volatile
-    private var provider: Provider? = null
+    private var provider: LyriconProvider? = null
 
     @Volatile
     private var registered = false
@@ -54,16 +54,16 @@ object LyriconBridge {
                 val begin = (line["begin"] as? Number)?.toLong() ?: 0L
                 val end = (line["end"] as? Number)?.toLong() ?: 0L
                 val text = line["text"] as? String ?: ""
-                lyricLines.add(RichLyricLine(begin, end, text))
+                lyricLines.add(RichLyricLine(begin = begin, end = end, text = text))
             }
-            val song = Song.Builder()
-                .setId(id)
-                .setName(name)
-                .setArtist(artist)
-                .setDuration(durationMs)
-                .setLyrics(lyricLines)
-                .build()
-            p.setSong(song)
+            val song = Song(
+                id = id,
+                name = name,
+                artist = artist,
+                duration = durationMs,
+                lyrics = lyricLines,
+            )
+            p.player.setSong(song)
         } catch (e: Throwable) {
             Log.d(TAG, "setSong failed: ${e.message}")
         }
@@ -73,7 +73,7 @@ object LyriconBridge {
     fun setPosition(ms: Long) {
         val p = provider ?: return
         try {
-            p.setPosition(ms)
+            p.player.setPosition(ms)
         } catch (e: Throwable) {
             Log.d(TAG, "setPosition failed: ${e.message}")
         }
@@ -83,7 +83,7 @@ object LyriconBridge {
     fun setPlaybackState(playing: Boolean) {
         val p = provider ?: return
         try {
-            p.setPlaybackState(playing)
+            p.player.setPlaybackState(playing)
         } catch (e: Throwable) {
             Log.d(TAG, "setPlaybackState failed: ${e.message}")
         }
@@ -93,7 +93,7 @@ object LyriconBridge {
     fun clearSong() {
         val p = provider ?: return
         try {
-            p.setSong(null)
+            p.player.setSong(null)
         } catch (e: Throwable) {
             Log.d(TAG, "clearSong failed: ${e.message}")
         }
