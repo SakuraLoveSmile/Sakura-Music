@@ -25,7 +25,6 @@ class StatusBarLyricsController extends Notifier<bool> {
   StreamSubscription<PlayerSnapshot>? _snapshotSub;
   String? _songId;
   PlayableItem? _currentItem;
-  List<ParsedLyricsLine>? _lines;
   bool? _lastPlaying;
   int _lastPositionMs = -1;
 
@@ -77,7 +76,6 @@ class StatusBarLyricsController extends Notifier<bool> {
       if (_songId != null) {
         _songId = null;
         _currentItem = null;
-        _lines = null;
         _lastPlaying = null;
         _lastPositionMs = -1;
         _pushClear();
@@ -88,7 +86,6 @@ class StatusBarLyricsController extends Notifier<bool> {
     if (item.id != _songId) {
       _songId = item.id;
       _currentItem = item;
-      _lines = null;
       _lastPlaying = null;
       _lastPositionMs = -1;
       // Push a placeholder song (no lyrics yet) so the title/artist show
@@ -120,7 +117,6 @@ class StatusBarLyricsController extends Notifier<bool> {
     if (_songId != songId) {
       return;
     }
-    _lines = lines;
     if (_currentItem != null) {
       _pushSong(_currentItem!, lines);
     }
@@ -170,7 +166,6 @@ class StatusBarLyricsController extends Notifier<bool> {
       if (_songId != item.id) {
         return;
       }
-      _lines = lines;
       // Re-push the song with its now-loaded lyrics.
       _pushSong(item, lines);
     } catch (_) {

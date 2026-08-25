@@ -1,24 +1,30 @@
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:ffi/ffi.dart';
-import 'package:win32/win32.dart';
 
-/// Shows a blocking native message box on Windows. Uses only FFI, so it works
-/// even when every Flutter plugin (and its native libraries) failed to load —
-/// the exact situation that previously left users with a silent white screen.
+/// Shows a blocking native message box on Windows. Uses only raw FFI against
+/// user32.dll, so it works even when every Flutter plugin (and its native
+/// libraries) failed to load — the exact situation that previously left users
+/// with a silent white screen.
 ///
-/// On non-Windows platforms this is a no-op; importing win32 here is safe
-/// because win32 resolves its native libraries lazily, so merely loading the
-/// library on macOS/Linux never touches a Windows DLL. The guard below ensures
-/// no win32 symbol is ever accessed off Windows.
+/// On non-Windows platforms this is a no-op; the guard below ensures no Win32
+/// symbol is ever touched off Windows.
 void showFatalErrorDialog(String message, String logPath) {
   if (!Platform.isWindows) {
     return;
   }
   try {
+    final user32 = DynamicLibrary.open('user32.dll');
+    final messageBoxW = user32.lookupFunction<
+        Int32 Function(Pointer<Void>, Pointer<Utf16>, Pointer<Utf16>, Uint32),
+        int Function(Pointer<Void>, Pointer<Utf16>, Pointer<Utf16>, int)>(
+      'MessageBoxW',
+    );
     final textPtr = message.toNativeUtf16();
     final captionPtr = 'SakuraMusic — Fatal Error'.toNativeUtf16();
-    MessageBoxW(NULL, textPtr, captionPtr, MB_ICONERROR | MB_OK);
+    // MB_OK (0x0) | MB_ICONERROR (0x10).
+    messageBoxW(nullptr, textPtr, captionPtr, 0x10);
     free(textPtr);
     free(captionPtr);
   } catch (_) {

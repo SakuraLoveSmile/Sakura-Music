@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:media_kit/media_kit.dart';
 
 import 'audio_player_service.dart';
-import 'core/desktop_runtime_status.dart';
+import '../core/desktop_runtime_status.dart';
 import 'equalizer_models.dart';
 import 'playback_debug_log.dart';
 import 'smtc_windows_integration.dart';
