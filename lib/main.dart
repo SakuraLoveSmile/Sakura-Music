@@ -120,7 +120,7 @@ void _runApp({AudioServiceHandler? audioHandler}) {
       observers: const [CrashReportingObserver()],
       overrides: audioHandler != null
           ? [audioPlayerProvider.overrideWithValue(audioHandler)]
-          : const <Override>[],
+          : const [],
       child: const SakuraMusicApp(),
     ),
   );
@@ -128,20 +128,19 @@ void _runApp({AudioServiceHandler? audioHandler}) {
 
 /// Logs provider construction failures (e.g. the media player failing to load
 /// native libraries) so they are not invisible in a release build.
-class CrashReportingObserver extends ProviderObserver {
+final class CrashReportingObserver extends ProviderObserver {
   const CrashReportingObserver();
 
   @override
   void providerDidFail(
-    ProviderBase<Object?> provider,
+    ProviderObserverContext context,
     Object error,
     StackTrace stackTrace,
-    ProviderContainer container,
   ) {
     logCrash(
       error,
       stackTrace,
-      context: 'provider:${provider.name ?? provider.runtimeType}',
+      context: 'provider:${context.provider.name ?? context.provider.runtimeType.toString()}',
     );
   }
 }

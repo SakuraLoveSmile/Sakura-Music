@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:smtc_windows/smtc_windows.dart';
 
 import 'audio_player_service.dart';
-import 'core/crash_report.dart';
+import '../core/crash_report.dart';
 
 /// Bridges the desktop player to Windows System Media Transport Controls.
 /// The package is only constructed on Windows, keeping other platforms inert.
