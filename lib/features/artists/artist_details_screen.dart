@@ -135,11 +135,16 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
 
           final sortedAlbums = _sortAlbums(artist.albums);
 
-          final imageUrl = details?.coverArt == null
-              ? (details?.largeImageUrl ??
-                  details?.mediumImageUrl ??
-                  resolveArtistImageUrl(artist: artist, client: client, size: 640))
-              : client.coverArtUrl(details!.coverArt!, size: 640);
+          final imageUrl = details?.coverArt != null &&
+                  details!.coverArt!.isNotEmpty
+              ? client.coverArtUrl(details.coverArt!, size: 640)
+              : (resolveArtistImageUrl(
+                      artist: artist,
+                      client: client,
+                      size: 640,
+                    ) ??
+                  details?.largeImageUrl ??
+                  details?.mediumImageUrl);
 
           final palette = imageUrl == null
               ? null
@@ -205,6 +210,7 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
               SliverToBoxAdapter(
                 child: _ModernArtistHeader(
                   artist: artist,
+                  client: client,
                   imageUrl: imageUrl,
                   palette: palette,
                   totalSongsCount: allSongs.length,
@@ -611,9 +617,11 @@ class _ModernArtistHeader extends StatelessWidget {
     required this.onFavorite,
     required this.onPlayAll,
     required this.onShuffleAll,
+    this.client,
   });
 
   final Artist artist;
+  final SubsonicClient? client;
   final String? imageUrl;
   final ArtworkPalette? palette;
   final int totalSongsCount;
@@ -661,6 +669,7 @@ class _ModernArtistHeader extends StatelessWidget {
                 // Large Avatar
                 ArtistAvatar(
                   artist: artist,
+                  client: client,
                   imageUrl: imageUrl,
                   radius: 65,
                   showBorder: true,
@@ -717,6 +726,7 @@ class _ModernArtistHeader extends StatelessWidget {
                 // Circular Avatar Centered
                 ArtistAvatar(
                   artist: artist,
+                  client: client,
                   imageUrl: imageUrl,
                   radius: 54,
                   showBorder: true,

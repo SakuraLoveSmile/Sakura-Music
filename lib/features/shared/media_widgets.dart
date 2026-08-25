@@ -985,23 +985,36 @@ String? resolveArtistImageUrl({
   SubsonicClient? client,
   int size = 300,
 }) {
-  if (artist.artistImageUrl != null && artist.artistImageUrl!.trim().isNotEmpty) {
+  if (client != null) {
+    // 1. If artist has explicit coverArt (e.g. 'ar-...' or album ID) from server
+    if (artist.coverArt != null && artist.coverArt!.trim().isNotEmpty) {
+      return client.coverArtUrl(artist.coverArt!.trim(), size: size);
+    }
+    // 2. Navidrome / OpenSubsonic canonical artist cover ID: 'ar-<artist_id>'
+    if (artist.id.isNotEmpty) {
+      final coverId =
+          artist.id.startsWith('ar-') ? artist.id : 'ar-${artist.id}';
+      return client.coverArtUrl(coverId, size: size);
+    }
+  }
+
+  // 3. If direct HTTP / HTTPS image URL is present in artistImageUrl
+  if (artist.artistImageUrl != null &&
+      artist.artistImageUrl!.trim().isNotEmpty) {
     final url = artist.artistImageUrl!.trim();
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-  }
-  if (client != null) {
-    if (artist.coverArt != null && artist.coverArt!.isNotEmpty) {
-      return client.coverArtUrl(artist.coverArt!, size: size);
-    }
-    if (artist.artistImageUrl != null && artist.artistImageUrl!.isNotEmpty) {
-      return client.coverArtUrl(artist.artistImageUrl!, size: size);
-    }
-    if (artist.id.isNotEmpty) {
-      return client.coverArtUrl(artist.id, size: size);
+    if (client != null) {
+      return client.coverArtUrl(url, size: size);
     }
   }
+
+  // 4. Fallback if artist.id is present
+  if (client != null && artist.id.isNotEmpty) {
+    return client.coverArtUrl(artist.id, size: size);
+  }
+
   return null;
 }
 
