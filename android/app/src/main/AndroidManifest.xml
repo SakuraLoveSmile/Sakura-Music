@@ -72,6 +72,22 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
+        <!-- Lyricon status-bar lyrics module declaration. These meta-data tell
+             the Lyricon center service that this app is a lyrics provider. The
+             provider degrades silently when Lyricon / LSPosed is not installed. -->
+        <meta-data
+            android:name="lyricon_module"
+            android:value="true" />
+        <meta-data
+            android:name="lyricon_module_author"
+            android:value="SakuraMusic" />
+        <meta-data
+            android:name="lyricon_module_description"
+            android:value="将当前播放的歌曲与歌词同步到状态栏歌词（Lyricon）。" />
+        <meta-data
+            android:name="lyricon_module_tags"
+            android:resource="@array/lyricon_module_tags" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

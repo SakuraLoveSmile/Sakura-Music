@@ -9,6 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : AudioServiceActivity() {
     private var lyricsOverlayChannel: MethodChannel? = null
+    private var lyriconChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -50,11 +51,60 @@ class MainActivity : AudioServiceActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        val lyricon = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "sakuramusic/lyricon",
+        )
+        lyriconChannel = lyricon
+        lyricon.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "register" -> {
+                    LyriconBridge.register(this)
+                    result.success(true)
+                }
+                "setSong" -> {
+                    val id = call.argument<String>("id") ?: ""
+                    val name = call.argument<String>("name") ?: ""
+                    val artist = call.argument<String>("artist")
+                    val durationMs = call.argument<Number>("durationMs")?.toLong() ?: 0L
+                    val rawLines = call.argument<List<Any?>>("lines")
+                    val lines = rawLines
+                        ?.mapNotNull { it as? Map<String, Any?> }
+                        ?: emptyList()
+                    LyriconBridge.setSong(id, name, artist, durationMs, lines)
+                    result.success(true)
+                }
+                "setPosition" -> {
+                    val ms = call.argument<Number>("ms")?.toLong() ?: 0L
+                    LyriconBridge.setPosition(ms)
+                    result.success(true)
+                }
+                "setPlaybackState" -> {
+                    val playing = call.argument<Boolean>("playing") ?: false
+                    LyriconBridge.setPlaybackState(playing)
+                    result.success(true)
+                }
+                "clearSong" -> {
+                    LyriconBridge.clearSong()
+                    result.success(true)
+                }
+                "destroy" -> {
+                    LyriconBridge.destroy()
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         LyricsOverlayService.setChannel(null)
         lyricsOverlayChannel = null
+        // Only unbind the channel reference; the Lyricon provider follows the
+        // app process lifetime and must keep running for audio_service.
+        lyriconChannel?.setMethodCallHandler(null)
+        lyriconChannel = null
         super.cleanUpFlutterEngine(flutterEngine)
     }
 }

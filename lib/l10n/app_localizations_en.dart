@@ -290,6 +290,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Overlay permission is required. Grant it in system settings and try again.';
 
   @override
+  String get statusBarLyrics => 'Status-bar lyrics (Lyricon)';
+
+  @override
+  String get statusBarLyricsDesc =>
+      'Sync the current song and its lyrics to the status bar (requires LSPosed and Lyricon on the device). Silently ignored when not installed.';
+
+  @override
   String get sectionNetwork => 'Network';
 
   @override

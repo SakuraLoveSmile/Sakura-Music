@@ -22,7 +22,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -77,6 +77,11 @@ class AppDatabase extends _$AppDatabase {
       if (from >= 4 && from < 11) {
         await m.addColumn(settings, settings.membershipActive);
         await m.addColumn(settings, settings.membershipMethod);
+      }
+      if (from >= 4 && from < 12) {
+        // V12 status-bar lyrics (Lyricon) switch. Tables created fresh
+        // (from < 4) already include the column via the table definition.
+        await m.addColumn(settings, settings.statusBarLyricsEnabled);
       }
     },
   );
@@ -283,6 +288,7 @@ class AppDatabase extends _$AppDatabase {
     bool? listenBrainzEnabled,
     bool clearListenBrainzToken = false,
     bool? lyricsOverlayEnabled,
+    bool? statusBarLyricsEnabled,
     bool? safeAudioMode,
     String? localeCode,
     bool? membershipActive,
@@ -316,6 +322,9 @@ class AppDatabase extends _$AppDatabase {
         ),
         lyricsOverlayEnabled: Value(
           lyricsOverlayEnabled ?? current?.lyricsOverlayEnabled ?? false,
+        ),
+        statusBarLyricsEnabled: Value(
+          statusBarLyricsEnabled ?? current?.statusBarLyricsEnabled ?? false,
         ),
         safeAudioMode: Value(
           safeAudioMode ?? current?.safeAudioMode ?? false,

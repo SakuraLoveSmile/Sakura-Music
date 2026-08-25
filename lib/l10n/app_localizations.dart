@@ -614,6 +614,18 @@ abstract class AppLocalizations {
   /// **'需要悬浮窗权限，请在系统设置中授予后重试'**
   String get lyricsOverlayPermissionNeeded;
 
+  /// No description provided for @statusBarLyrics.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态栏歌词 (Lyricon)'**
+  String get statusBarLyrics;
+
+  /// No description provided for @statusBarLyricsDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'将当前播放的歌曲与歌词同步到状态栏（需设备已安装 LSPosed 与 Lyricon），未安装时自动忽略。'**
+  String get statusBarLyricsDesc;
+
   /// No description provided for @sectionNetwork.
   ///
   /// In zh, this message translates to:

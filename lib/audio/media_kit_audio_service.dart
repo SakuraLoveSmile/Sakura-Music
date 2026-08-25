@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:media_kit/media_kit.dart';
 
 import 'audio_player_service.dart';
+import 'core/desktop_runtime_status.dart';
 import 'equalizer_models.dart';
 import 'playback_debug_log.dart';
 import 'smtc_windows_integration.dart';
@@ -18,7 +19,10 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
           ) {
     _mpvCacheReady = _applyMpvCache();
     _snapshotEmitter = PlayerSnapshotEmitter(_snapshotController.add);
-    _smtcIntegration = SmtcWindowsIntegration(service: this);
+    _smtcIntegration = SmtcWindowsIntegration(
+      service: this,
+      enabled: smtcWindowsReady,
+    );
     addSubscription(_subscriptions, _player.stream.playing, (value) {
       _playing = value as bool;
       _emit();

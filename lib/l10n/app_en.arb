@@ -86,6 +86,8 @@
   "equalizerSettings": "Equalizer",
   "lyricsOverlay": "Floating lyrics",
   "lyricsOverlayPermissionNeeded": "Overlay permission is required. Grant it in system settings and try again.",
+  "statusBarLyrics": "Status-bar lyrics (Lyricon)",
+  "statusBarLyricsDesc": "Sync the current song and its lyrics to the status bar (requires LSPosed and Lyricon on the device). Silently ignored when not installed.",
   "sectionNetwork": "Network",
   "backgroundDownload": "Background downloads",
   "downloadWifiOnly": "Wi-Fi only",
