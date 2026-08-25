@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Capabilities this Lyricon module advertises. $translation declares that
+         the provider can supply translated (merged, line-inline) lyrics, which
+         the center service renders as a single merged line. -->
+    <array name="lyricon_module_tags">
+        <item>$translation</item>
+    </array>
+</resources>

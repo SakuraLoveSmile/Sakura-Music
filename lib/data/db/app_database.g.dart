@@ -1809,6 +1809,20 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _statusBarLyricsEnabledMeta =
+      const VerificationMeta('statusBarLyricsEnabled');
+  @override
+  late final GeneratedColumn<bool> statusBarLyricsEnabled = GeneratedColumn<bool>(
+    'status_bar_lyrics_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("status_bar_lyrics_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _safeAudioModeMeta = const VerificationMeta(
     'safeAudioMode',
   );
@@ -1873,6 +1887,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     listenBrainzToken,
     listenBrainzEnabled,
     lyricsOverlayEnabled,
+    statusBarLyricsEnabled,
     safeAudioMode,
     localeCode,
     membershipActive,
@@ -1962,6 +1977,15 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
       );
     }
+    if (data.containsKey('status_bar_lyrics_enabled')) {
+      context.handle(
+        _statusBarLyricsEnabledMeta,
+        statusBarLyricsEnabled.isAcceptableOrUnknown(
+          data['status_bar_lyrics_enabled']!,
+          _statusBarLyricsEnabledMeta,
+        ),
+      );
+    }
     if (data.containsKey('safe_audio_mode')) {
       context.handle(
         _safeAudioModeMeta,
@@ -2040,6 +2064,10 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.bool,
         data['${effectivePrefix}lyrics_overlay_enabled'],
       )!,
+      statusBarLyricsEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}status_bar_lyrics_enabled'],
+      )!,
       safeAudioMode: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}safe_audio_mode'],
@@ -2076,6 +2104,11 @@ class Setting extends DataClass implements Insertable<Setting> {
   final bool listenBrainzEnabled;
   final bool lyricsOverlayEnabled;
 
+  /// When enabled, the currently playing song and its timed lyrics are pushed
+  /// to the Lyricon status-bar lyrics center service. Degrades silently when
+  /// Lyricon is not installed on the device.
+  final bool statusBarLyricsEnabled;
+
   /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
   /// audio player. Used as a diagnostic toggle to rule out the equalizer as the
   /// cause of silent playback on some devices.
@@ -2095,6 +2128,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     this.listenBrainzToken,
     required this.listenBrainzEnabled,
     required this.lyricsOverlayEnabled,
+    required this.statusBarLyricsEnabled,
     required this.safeAudioMode,
     required this.localeCode,
     required this.membershipActive,
@@ -2114,6 +2148,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     }
     map['listen_brainz_enabled'] = Variable<bool>(listenBrainzEnabled);
     map['lyrics_overlay_enabled'] = Variable<bool>(lyricsOverlayEnabled);
+    map['status_bar_lyrics_enabled'] = Variable<bool>(statusBarLyricsEnabled);
     map['safe_audio_mode'] = Variable<bool>(safeAudioMode);
     map['locale_code'] = Variable<String>(localeCode);
     map['membership_active'] = Variable<bool>(membershipActive);
@@ -2136,6 +2171,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           : Value(listenBrainzToken),
       listenBrainzEnabled: Value(listenBrainzEnabled),
       lyricsOverlayEnabled: Value(lyricsOverlayEnabled),
+      statusBarLyricsEnabled: Value(statusBarLyricsEnabled),
       safeAudioMode: Value(safeAudioMode),
       localeCode: Value(localeCode),
       membershipActive: Value(membershipActive),
@@ -2168,6 +2204,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       lyricsOverlayEnabled: serializer.fromJson<bool>(
         json['lyricsOverlayEnabled'],
       ),
+      statusBarLyricsEnabled: serializer.fromJson<bool>(
+        json['statusBarLyricsEnabled'],
+      ),
       safeAudioMode: serializer.fromJson<bool>(json['safeAudioMode']),
       localeCode: serializer.fromJson<String>(json['localeCode']),
       membershipActive: serializer.fromJson<bool>(json['membershipActive']),
@@ -2187,6 +2226,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       'listenBrainzToken': serializer.toJson<String?>(listenBrainzToken),
       'listenBrainzEnabled': serializer.toJson<bool>(listenBrainzEnabled),
       'lyricsOverlayEnabled': serializer.toJson<bool>(lyricsOverlayEnabled),
+      'statusBarLyricsEnabled': serializer.toJson<bool>(statusBarLyricsEnabled),
       'safeAudioMode': serializer.toJson<bool>(safeAudioMode),
       'localeCode': serializer.toJson<String>(localeCode),
       'membershipActive': serializer.toJson<bool>(membershipActive),
@@ -2204,6 +2244,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     Value<String?> listenBrainzToken = const Value.absent(),
     bool? listenBrainzEnabled,
     bool? lyricsOverlayEnabled,
+    bool? statusBarLyricsEnabled,
     bool? safeAudioMode,
     String? localeCode,
     bool? membershipActive,
@@ -2220,6 +2261,7 @@ class Setting extends DataClass implements Insertable<Setting> {
         : this.listenBrainzToken,
     listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
     lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
+    statusBarLyricsEnabled: statusBarLyricsEnabled ?? this.statusBarLyricsEnabled,
     safeAudioMode: safeAudioMode ?? this.safeAudioMode,
     localeCode: localeCode ?? this.localeCode,
     membershipActive: membershipActive ?? this.membershipActive,
@@ -2252,6 +2294,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       lyricsOverlayEnabled: data.lyricsOverlayEnabled.present
           ? data.lyricsOverlayEnabled.value
           : this.lyricsOverlayEnabled,
+      statusBarLyricsEnabled: data.statusBarLyricsEnabled.present
+          ? data.statusBarLyricsEnabled.value
+          : this.statusBarLyricsEnabled,
       safeAudioMode: data.safeAudioMode.present
           ? data.safeAudioMode.value
           : this.safeAudioMode,
@@ -2279,6 +2324,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('listenBrainzToken: $listenBrainzToken, ')
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
+           ..write('statusBarLyricsEnabled: $statusBarLyricsEnabled, ')
           ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
@@ -2298,6 +2344,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     listenBrainzToken,
     listenBrainzEnabled,
     lyricsOverlayEnabled,
+    statusBarLyricsEnabled,
     safeAudioMode,
     localeCode,
     membershipActive,
@@ -2316,6 +2363,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.listenBrainzToken == this.listenBrainzToken &&
           other.listenBrainzEnabled == this.listenBrainzEnabled &&
           other.lyricsOverlayEnabled == this.lyricsOverlayEnabled &&
+          other.statusBarLyricsEnabled == this.statusBarLyricsEnabled &&
           other.safeAudioMode == this.safeAudioMode &&
           other.localeCode == this.localeCode &&
           other.membershipActive == this.membershipActive &&
@@ -2332,6 +2380,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<String?> listenBrainzToken;
   final Value<bool> listenBrainzEnabled;
   final Value<bool> lyricsOverlayEnabled;
+  final Value<bool> statusBarLyricsEnabled;
   final Value<bool> safeAudioMode;
   final Value<String> localeCode;
   final Value<bool> membershipActive;
@@ -2346,6 +2395,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.listenBrainzToken = const Value.absent(),
     this.listenBrainzEnabled = const Value.absent(),
     this.lyricsOverlayEnabled = const Value.absent(),
+    this.statusBarLyricsEnabled = const Value.absent(),
     this.safeAudioMode = const Value.absent(),
     this.localeCode = const Value.absent(),
     this.membershipActive = const Value.absent(),
@@ -2361,6 +2411,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.listenBrainzToken = const Value.absent(),
     this.listenBrainzEnabled = const Value.absent(),
     this.lyricsOverlayEnabled = const Value.absent(),
+    this.statusBarLyricsEnabled = const Value.absent(),
     this.safeAudioMode = const Value.absent(),
     this.localeCode = const Value.absent(),
     this.membershipActive = const Value.absent(),
@@ -2376,6 +2427,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<String>? listenBrainzToken,
     Expression<bool>? listenBrainzEnabled,
     Expression<bool>? lyricsOverlayEnabled,
+    Expression<bool>? statusBarLyricsEnabled,
     Expression<bool>? safeAudioMode,
     Expression<String>? localeCode,
     Expression<bool>? membershipActive,
@@ -2394,6 +2446,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         'listen_brainz_enabled': listenBrainzEnabled,
       if (lyricsOverlayEnabled != null)
         'lyrics_overlay_enabled': lyricsOverlayEnabled,
+      if (statusBarLyricsEnabled != null)
+        'status_bar_lyrics_enabled': statusBarLyricsEnabled,
       if (safeAudioMode != null) 'safe_audio_mode': safeAudioMode,
       if (localeCode != null) 'locale_code': localeCode,
       if (membershipActive != null) 'membership_active': membershipActive,
@@ -2411,6 +2465,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<String?>? listenBrainzToken,
     Value<bool>? listenBrainzEnabled,
     Value<bool>? lyricsOverlayEnabled,
+    Value<bool>? statusBarLyricsEnabled,
     Value<bool>? safeAudioMode,
     Value<String>? localeCode,
     Value<bool>? membershipActive,
@@ -2426,6 +2481,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       listenBrainzToken: listenBrainzToken ?? this.listenBrainzToken,
       listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
       lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
+      statusBarLyricsEnabled: statusBarLyricsEnabled ?? this.statusBarLyricsEnabled,
       safeAudioMode: safeAudioMode ?? this.safeAudioMode,
       localeCode: localeCode ?? this.localeCode,
       membershipActive: membershipActive ?? this.membershipActive,
@@ -2465,6 +2521,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         lyricsOverlayEnabled.value,
       );
     }
+    if (statusBarLyricsEnabled.present) {
+      map['status_bar_lyrics_enabled'] = Variable<bool>(
+        statusBarLyricsEnabled.value,
+      );
+    }
     if (safeAudioMode.present) {
       map['safe_audio_mode'] = Variable<bool>(safeAudioMode.value);
     }
@@ -2492,6 +2553,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('listenBrainzToken: $listenBrainzToken, ')
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
+           ..write('statusBarLyricsEnabled: $statusBarLyricsEnabled, ')
           ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')

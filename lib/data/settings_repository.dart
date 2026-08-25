@@ -26,6 +26,10 @@ class SettingsRepository {
     return database.saveSettings(lyricsOverlayEnabled: enabled);
   }
 
+  Future<void> updateStatusBarLyrics({required bool enabled}) {
+    return database.saveSettings(statusBarLyricsEnabled: enabled);
+  }
+
   Future<void> updateSafeAudioMode({required bool enabled}) {
     return database.saveSettings(safeAudioMode: enabled);
   }

@@ -278,6 +278,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lyricsOverlayPermissionNeeded => '需要悬浮窗权限，请在系统设置中授予后重试';
 
   @override
+  String get statusBarLyrics => '状态栏歌词 (Lyricon)';
+
+  @override
+  String get statusBarLyricsDesc =>
+      '将当前播放的歌曲与歌词同步到状态栏（需设备已安装 LSPosed 与 Lyricon），未安装时自动忽略。';
+
+  @override
   String get sectionNetwork => '网络';
 
   @override

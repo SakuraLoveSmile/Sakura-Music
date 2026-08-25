@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Keep the +N build number strictly increasing across releases: Android
 # split-per-abi APKs encode versionCode as ABI*1000 + N (e.g. arm64 = 2000 + N),
 # so resetting N downgrades the app and fails installation.
-version: 0.2.8-alpha.1+15
+version: 0.3.0-alpha.1+16
 
 environment:
   sdk: ^3.11.1
@@ -57,6 +57,9 @@ dependencies:
   subsonic_api:
     path: packages/subsonic_api
   window_manager: ^0.5.2
+  win32: ^6.0.0
+  # Pure-Dart FFI helpers (free/malloc) used by the crash-report message box.
+  ffi: ^2.1.3
   package_info_plus: ^10.2.1
   url_launcher: ^6.3.2
   open_filex: ^4.7.0

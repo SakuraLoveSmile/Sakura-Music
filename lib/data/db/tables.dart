@@ -90,6 +90,12 @@ class Settings extends Table {
   BoolColumn get lyricsOverlayEnabled =>
       boolean().withDefault(const Constant(false))();
 
+  /// When enabled, the currently playing song and its timed lyrics are pushed
+  /// to the Lyricon status-bar lyrics center service (requires LSPosed +
+  /// Lyricon on the device). Degrades silently when Lyricon is not installed.
+  BoolColumn get statusBarLyricsEnabled =>
+      boolean().withDefault(const Constant(false))();
+
   /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
   /// audio player. Used as a diagnostic toggle to rule out the equalizer as the
   /// cause of silent playback on some devices.

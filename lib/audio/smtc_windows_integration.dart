@@ -4,12 +4,18 @@ import 'dart:io';
 import 'package:smtc_windows/smtc_windows.dart';
 
 import 'audio_player_service.dart';
+import 'core/crash_report.dart';
 
 /// Bridges the desktop player to Windows System Media Transport Controls.
 /// The package is only constructed on Windows, keeping other platforms inert.
+///
+/// [enabled] is set from the bootstrap's `smtcWindowsReady` flag. When false
+/// (the SMTC native library failed to load) the bridge stays inert: no
+/// `SMTCWindows()` is constructed and no streams are subscribed, so playback
+/// keeps working without media-control integration.
 class SmtcWindowsIntegration {
-  SmtcWindowsIntegration({required this.service}) {
-    if (!Platform.isWindows) {
+  SmtcWindowsIntegration({required this.service, this.enabled = true}) {
+    if (!Platform.isWindows || !enabled) {
       return;
     }
     _smtc = SMTCWindows();
@@ -30,6 +36,7 @@ class SmtcWindowsIntegration {
   }
 
   final AudioPlayerService service;
+  final bool enabled;
   SMTCWindows? _smtc;
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
@@ -39,44 +46,49 @@ class SmtcWindowsIntegration {
     if (smtc == null) {
       return;
     }
-    final item = snapshot.currentItem;
-    final duration = snapshot.duration ?? item?.duration ?? Duration.zero;
-    unawaited(
-      smtc.updateMetadata(
-        MusicMetadata(
-          title: item?.title,
-          artist: item?.artist,
-          album: item?.album,
-          thumbnail: item?.artworkUrl,
+    try {
+      final item = snapshot.currentItem;
+      final duration = snapshot.duration ?? item?.duration ?? Duration.zero;
+      unawaited(
+        smtc.updateMetadata(
+          MusicMetadata(
+            title: item?.title,
+            artist: item?.artist,
+            album: item?.album,
+            thumbnail: item?.artworkUrl,
+          ),
         ),
-      ),
-    );
-    unawaited(
-      smtc.updateTimeline(
-        PlaybackTimeline(
-          startTimeMs: 0,
-          endTimeMs: duration.inMilliseconds,
-          positionMs: snapshot.position.inMilliseconds,
+      );
+      unawaited(
+        smtc.updateTimeline(
+          PlaybackTimeline(
+            startTimeMs: 0,
+            endTimeMs: duration.inMilliseconds,
+            positionMs: snapshot.position.inMilliseconds,
+          ),
         ),
-      ),
-    );
-    unawaited(smtc.setShuffleEnabled(snapshot.shuffle));
-    unawaited(
-      smtc.setRepeatMode(switch (snapshot.loopMode) {
-        AppLoopMode.off => RepeatMode.none,
-        AppLoopMode.all => RepeatMode.list,
-        AppLoopMode.one => RepeatMode.track,
-      }),
-    );
-    unawaited(
-      smtc.setPlaybackStatus(
-        item == null
-            ? PlaybackStatus.stopped
-            : snapshot.playing
-            ? PlaybackStatus.playing
-            : PlaybackStatus.paused,
-      ),
-    );
+      );
+      unawaited(smtc.setShuffleEnabled(snapshot.shuffle));
+      unawaited(
+        smtc.setRepeatMode(switch (snapshot.loopMode) {
+          AppLoopMode.off => RepeatMode.none,
+          AppLoopMode.all => RepeatMode.list,
+          AppLoopMode.one => RepeatMode.track,
+        }),
+      );
+      unawaited(
+        smtc.setPlaybackStatus(
+          item == null
+              ? PlaybackStatus.stopped
+              : snapshot.playing
+              ? PlaybackStatus.playing
+              : PlaybackStatus.paused,
+        ),
+      );
+    } catch (error, stack) {
+      // A transient SMTC call failure must never break playback.
+      logCrash(error, stack, context: 'SmtcWindowsIntegration._publishSnapshot');
+    }
   }
 
   void _onButton(PressedButton button) {

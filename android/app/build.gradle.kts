@@ -66,6 +66,12 @@ android {
     }
 }
 
+dependencies {
+    // Lyricon status-bar lyrics provider SDK (resolved from mavenCentral,
+    // already present in the root allprojects repositories).
+    implementation("io.github.proify.lyricon:provider:0.1.70")
+}
+
 flutter {
     source = "../.."
 }
