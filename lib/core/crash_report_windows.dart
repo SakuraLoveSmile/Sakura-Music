@@ -25,8 +25,8 @@ void showFatalErrorDialog(String message, String logPath) {
     final captionPtr = 'SakuraMusic — Fatal Error'.toNativeUtf16();
     // MB_OK (0x0) | MB_ICONERROR (0x10).
     messageBoxW(nullptr, textPtr, captionPtr, 0x10);
-    free(textPtr);
-    free(captionPtr);
+    malloc.free(textPtr);
+    malloc.free(captionPtr);
   } catch (_) {
     // If even the message box cannot be shown, the log file remains.
   }
