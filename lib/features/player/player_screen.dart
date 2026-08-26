@@ -207,10 +207,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           return _EmptyPlayer(onBrowse: () => context.go('/home'));
         }
 
-        final showOled =
-            _isMobilePlatform &&
-            !isWide &&
-            _mobileMode == _MobileStageMode.oled;
+        final showOled = _mobileMode == _MobileStageMode.oled;
         if (showOled) {
           return OledLyricsStage(
             service: service,
