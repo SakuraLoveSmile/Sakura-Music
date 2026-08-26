@@ -266,7 +266,11 @@ class UpdateDialog extends ConsumerWidget {
     if (asset == null) {
       return Text(
         context.l10n.noMatchingAsset,
-        style: const TextStyle(color: Colors.white60, height: 1.4, fontSize: 12),
+        style: const TextStyle(
+          color: Colors.white60,
+          height: 1.4,
+          fontSize: 12,
+        ),
       );
     }
     return Text(

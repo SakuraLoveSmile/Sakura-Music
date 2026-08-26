@@ -243,10 +243,7 @@ class _AlbumHeader extends StatelessWidget {
           child: FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF1E7BF6),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -266,10 +263,7 @@ class _AlbumHeader extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF2A2C37),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -280,11 +274,7 @@ class _AlbumHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        StarButton(
-          isStarred: isFavorite,
-          size: 22,
-          onPressed: onFavorite,
-        ),
+        StarButton(isStarred: isFavorite, size: 22, onPressed: onFavorite),
       ],
     );
 
@@ -390,12 +380,8 @@ Future<void> _playSongs(
     await service.play();
   } catch (error) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.playbackFailed(error.toString())),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.playbackFailed(error.toString()))),
       );
     }
   }

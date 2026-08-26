@@ -15,6 +15,7 @@ part 'app_database.g.dart';
     Downloads,
     CachedAlbums,
     CachedArtists,
+    DailyRecommends,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -22,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,6 +84,17 @@ class AppDatabase extends _$AppDatabase {
         // (from < 4) already include the column via the table definition.
         await m.addColumn(settings, settings.statusBarLyricsEnabled);
       }
+      if (from < 13) {
+        // V13: server protocol type + richer recent-play metadata +
+        // per-server daily recommendation cache.
+        await m.addColumn(servers, servers.type);
+        if (from >= 9) {
+          await m.addColumn(recentPlays, recentPlays.album);
+          await m.addColumn(recentPlays, recentPlays.albumId);
+          await m.addColumn(recentPlays, recentPlays.artistId);
+        }
+        await m.createTable(dailyRecommends);
+      }
     },
   );
 
@@ -115,12 +127,18 @@ class AppDatabase extends _$AppDatabase {
     required int serverId,
     String? title,
     String? artist,
+    String? album,
+    String? albumId,
+    String? artistId,
   }) {
     return recordRecentPlay(
       songId: songId,
       serverId: serverId,
       title: title,
       artist: artist,
+      album: album,
+      albumId: albumId,
+      artistId: artistId,
     );
   }
 
@@ -129,6 +147,9 @@ class AppDatabase extends _$AppDatabase {
     required int serverId,
     String? title,
     String? artist,
+    String? album,
+    String? albumId,
+    String? artistId,
   }) async {
     final now = DateTime.now();
     final cutoff = now.subtract(const Duration(minutes: 5));
@@ -153,12 +174,18 @@ class AppDatabase extends _$AppDatabase {
       );
     }
     // Keep the freshest metadata the player has seen for this row.
-    if (title != null || artist != null) {
-      await (update(recentPlays)..where((table) => table.id.equals(id)))
-          .write(
+    if (title != null ||
+        artist != null ||
+        album != null ||
+        albumId != null ||
+        artistId != null) {
+      await (update(recentPlays)..where((table) => table.id.equals(id))).write(
         RecentPlaysCompanion(
           title: title == null ? const Value.absent() : Value(title),
           artist: artist == null ? const Value.absent() : Value(artist),
+          album: album == null ? const Value.absent() : Value(album),
+          albumId: albumId == null ? const Value.absent() : Value(albumId),
+          artistId: artistId == null ? const Value.absent() : Value(artistId),
         ),
       );
     }
@@ -183,10 +210,7 @@ class AppDatabase extends _$AppDatabase {
     return rows.map((row) => row.songId).toList(growable: false);
   }
 
-  Future<List<RecentPlay>> getRecentPlays({
-    int? serverId,
-    int limit = 20,
-  }) {
+  Future<List<RecentPlay>> getRecentPlays({int? serverId, int limit = 20}) {
     final query = select(recentPlays)
       ..orderBy(<OrderingTerm Function(RecentPlays)>[
         (table) => OrderingTerm.desc(table.playedAt),
@@ -326,9 +350,7 @@ class AppDatabase extends _$AppDatabase {
         statusBarLyricsEnabled: Value(
           statusBarLyricsEnabled ?? current?.statusBarLyricsEnabled ?? false,
         ),
-        safeAudioMode: Value(
-          safeAudioMode ?? current?.safeAudioMode ?? false,
-        ),
+        safeAudioMode: Value(safeAudioMode ?? current?.safeAudioMode ?? false),
         localeCode: Value(localeCode ?? current?.localeCode ?? 'zh'),
         membershipActive: Value(
           membershipActive ?? current?.membershipActive ?? false,
@@ -526,6 +548,44 @@ class AppDatabase extends _$AppDatabase {
         );
       });
     });
+  }
+
+  /// Emits recent plays for a server ordered by `playedAt` descending, capped
+  /// to [limit] rows. Used by the home history and the top-played aggregation.
+  Stream<List<RecentPlay>> watchRecentPlays({int? serverId, int limit = 200}) {
+    final query = select(recentPlays)
+      ..orderBy(<OrderingTerm Function(RecentPlays)>[
+        (table) => OrderingTerm.desc(table.playedAt),
+      ])
+      ..limit(limit);
+    if (serverId != null) {
+      query.where((table) => table.serverId.equals(serverId));
+    }
+    return query.watch();
+  }
+
+  /// Returns the cached daily recommendation for [serverId] on [date], or
+  /// `null` when no cache exists for that date yet.
+  Future<DailyRecommend?> getDailyRecommend(int serverId, String date) {
+    return (select(dailyRecommends)..where(
+          (table) => table.serverId.equals(serverId) & table.date.equals(date),
+        ))
+        .getSingleOrNull();
+  }
+
+  /// Inserts or replaces the daily recommendation cache row for [serverId].
+  Future<void> upsertDailyRecommend(
+    int serverId,
+    String date,
+    String songsJson,
+  ) {
+    return into(dailyRecommends).insertOnConflictUpdate(
+      DailyRecommendsCompanion(
+        serverId: Value(serverId),
+        date: Value(date),
+        songsJson: Value(songsJson),
+      ),
+    );
   }
 
   Future<List<CachedAlbum>> getCachedAlbums(int serverId) {

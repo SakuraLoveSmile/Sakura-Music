@@ -74,10 +74,9 @@ class MembershipController extends AsyncNotifier<MembershipState> {
     }
     state = const AsyncData((active: true, method: 'code'));
     try {
-      await ref.read(settingsRepositoryProvider).updateMembership(
-        active: true,
-        method: 'code',
-      );
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateMembership(active: true, method: 'code');
       return true;
     } catch (error, stackTrace) {
       ref.invalidateSelf();
@@ -92,10 +91,9 @@ class MembershipController extends AsyncNotifier<MembershipState> {
     final previous = state.value ?? (active: false, method: null);
     state = AsyncData(next);
     try {
-      await ref.read(settingsRepositoryProvider).updateMembership(
-        active: next.active,
-        method: next.method,
-      );
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateMembership(active: next.active, method: next.method);
     } catch (error, stackTrace) {
       state = AsyncData(previous);
       Error.throwWithStackTrace(error, stackTrace);
@@ -107,10 +105,9 @@ class MembershipController extends AsyncNotifier<MembershipState> {
     final previous = state.value ?? (active: false, method: null);
     state = const AsyncData(next);
     try {
-      await ref.read(settingsRepositoryProvider).updateMembership(
-        active: false,
-        method: null,
-      );
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateMembership(active: false, method: null);
     } catch (error, stackTrace) {
       state = AsyncData(previous);
       Error.throwWithStackTrace(error, stackTrace);
@@ -122,4 +119,3 @@ final membershipControllerProvider =
     AsyncNotifierProvider<MembershipController, MembershipState>(
       MembershipController.new,
     );
-

@@ -48,10 +48,12 @@ class AppearanceNotifier extends AsyncNotifier<AppAppearance> {
     final previous = state.value ?? const AppAppearance();
     state = AsyncData(next);
     try {
-      await ref.read(settingsRepositoryProvider).updateAppearance(
-        themeMode: next.themeMode.name,
-        seedColorValue: next.seedColorValue,
-      );
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateAppearance(
+            themeMode: next.themeMode.name,
+            seedColorValue: next.seedColorValue,
+          );
     } catch (error, stackTrace) {
       state = AsyncData(previous);
       Error.throwWithStackTrace(error, stackTrace);

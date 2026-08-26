@@ -87,7 +87,11 @@ class SmtcWindowsIntegration {
       );
     } catch (error, stack) {
       // A transient SMTC call failure must never break playback.
-      logCrash(error, stack, context: 'SmtcWindowsIntegration._publishSnapshot');
+      logCrash(
+        error,
+        stack,
+        context: 'SmtcWindowsIntegration._publishSnapshot',
+      );
     }
   }
 

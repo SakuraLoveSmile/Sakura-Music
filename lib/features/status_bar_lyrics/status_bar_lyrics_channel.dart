@@ -17,10 +17,10 @@ class StatusBarLyricLine {
   final String text;
 
   Map<String, Object?> toMap() => <String, Object?>{
-        'begin': beginMs,
-        'end': endMs,
-        'text': text,
-      };
+    'begin': beginMs,
+    'end': endMs,
+    'text': text,
+  };
 }
 
 /// Boundary for talking to the Android Lyricon status-bar lyrics bridge. The

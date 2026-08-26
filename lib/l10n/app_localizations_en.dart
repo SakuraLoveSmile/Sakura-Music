@@ -178,6 +178,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get loadError => 'Failed to load';
+
+  @override
   String get testConnection => 'Test connection';
 
   @override
@@ -199,6 +202,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get back => 'Back';
+
+  @override
+  String get exitConfirmTitle => 'Exit app?';
+
+  @override
+  String get exitConfirmMessage => 'Are you sure you want to exit SakuraMusic?';
+
+  @override
+  String get exitApp => 'Exit';
 
   @override
   String get switchLibrary => 'Switch library';
@@ -272,9 +284,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicRoaming => 'Music roaming';
-
-  @override
-  String get audiobooksPodcasts => 'Audiobooks / podcasts';
 
   @override
   String get streamingQuality => 'Streaming quality';
@@ -1229,16 +1238,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get endOfSong => 'End of Current Track';
 
   @override
-  String get coverView => 'Cover View';
+  String get coverView => 'Cover';
 
   @override
   String get lyricsView => 'Lyrics View';
+
+  @override
+  String get oledLyricsView => 'OLED Lyrics';
 
   @override
   String get songInfo => 'Song Info';
 
   @override
   String get trackDetails => 'Track Details';
+
+  @override
+  String get trackInfoTitle => 'Title';
+
+  @override
+  String get trackInfoArtist => 'Artist';
+
+  @override
+  String get trackInfoAlbum => 'Album';
+
+  @override
+  String get trackInfoDuration => 'Duration';
+
+  @override
+  String get trackInfoId => 'Track ID';
 
   @override
   String get audioQuality => 'Audio Quality';

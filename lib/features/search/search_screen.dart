@@ -13,7 +13,11 @@ import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.initialQuery});
+
+  /// When provided (e.g. from the player's "view artist/album" fallback),
+  /// the screen opens already searching for this keyword.
+  final String? initialQuery;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -23,6 +27,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
   Timer? _debounce;
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _controller.text = widget.initialQuery!;
+      _query = widget.initialQuery!;
+    }
+  }
 
   @override
   void dispose() {

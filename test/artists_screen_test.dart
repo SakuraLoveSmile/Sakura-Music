@@ -23,17 +23,18 @@ Widget _buildTestApp(Widget child, {List<dynamic> overrides = const []}) {
 
 void main() {
   group('Artist UI Components', () {
-    testWidgets('ArtistAvatar renders fallback initial when no client or image', (
-      tester,
-    ) async {
-      const artist = Artist(id: '1', name: 'Taylor Swift', albumCount: 10);
-      await tester.pumpWidget(
-        _buildTestApp(const Scaffold(body: ArtistAvatar(artist: artist))),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'ArtistAvatar renders fallback initial when no client or image',
+      (tester) async {
+        const artist = Artist(id: '1', name: 'Taylor Swift', albumCount: 10);
+        await tester.pumpWidget(
+          _buildTestApp(const Scaffold(body: ArtistAvatar(artist: artist))),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('T'), findsOneWidget);
-    });
+        expect(find.text('T'), findsOneWidget);
+      },
+    );
 
     testWidgets('ArtistCard renders name and album count', (tester) async {
       const artist = Artist(id: '1', name: 'Taylor Swift', albumCount: 10);
@@ -78,33 +79,34 @@ void main() {
       const Artist(id: '3', name: 'Adele', albumCount: 4),
     ];
 
-    testWidgets('ArtistsScreen renders in grid mode and switches to list mode', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _buildTestApp(
-          const ArtistsScreen(),
-          overrides: [
-            artistsProvider.overrideWith((ref) async => mockArtists),
-            activeSubsonicClientProvider.overrideWithValue(null),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'ArtistsScreen renders in grid mode and switches to list mode',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildTestApp(
+            const ArtistsScreen(),
+            overrides: [
+              artistsProvider.overrideWith((ref) async => mockArtists),
+              activeSubsonicClientProvider.overrideWithValue(null),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('艺术家'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
-      expect(find.text('Adele'), findsOneWidget);
-      expect(find.text('Jay Chou'), findsOneWidget);
-      expect(find.text('Taylor Swift'), findsOneWidget);
+        expect(find.text('艺术家'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
+        expect(find.text('Adele'), findsOneWidget);
+        expect(find.text('Jay Chou'), findsOneWidget);
+        expect(find.text('Taylor Swift'), findsOneWidget);
 
-      final switchBtn = find.byTooltip('列表视图');
-      expect(switchBtn, findsOneWidget);
-      await tester.tap(switchBtn);
-      await tester.pumpAndSettle();
+        final switchBtn = find.byTooltip('列表视图');
+        expect(switchBtn, findsOneWidget);
+        await tester.tap(switchBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.byTooltip('网格视图'), findsOneWidget);
-    });
+        expect(find.byTooltip('网格视图'), findsOneWidget);
+      },
+    );
 
     testWidgets('ArtistsScreen filters artists via in-page search', (
       tester,
@@ -154,9 +156,7 @@ void main() {
           name: 'Midnights',
           year: 2022,
           artist: 'Taylor Swift',
-          songs: [
-            Song(id: 's-3', title: 'Anti-Hero', duration: 200),
-          ],
+          songs: [Song(id: 's-3', title: 'Anti-Hero', duration: 200)],
         ),
       ],
     );
@@ -164,62 +164,64 @@ void main() {
     const mockInfo = ArtistInfo2(
       artistId: 'art-1',
       name: 'Taylor Swift',
-      biography: 'Taylor Alison Swift is an American singer-songwriter.<br/>Read more on Last.fm',
-      similarArtists: [
-        Artist(id: 'art-2', name: 'Olivia Rodrigo'),
-      ],
+      biography:
+          'Taylor Alison Swift is an American singer-songwriter.<br/>Read more on Last.fm',
+      similarArtists: [Artist(id: 'art-2', name: 'Olivia Rodrigo')],
     );
 
-    testWidgets('ArtistDetailsScreen renders hero header, songs, albums, and similar artists', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'ArtistDetailsScreen renders hero header, songs, albums, and similar artists',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final mockClient = SubsonicClient(
-        baseUrl: 'http://localhost:4040',
-        username: 'admin',
-        password: 'password',
-      );
+        final mockClient = SubsonicClient(
+          baseUrl: 'http://localhost:4040',
+          username: 'admin',
+          password: 'password',
+        );
 
-      await tester.pumpWidget(
-        _buildTestApp(
-          const ArtistDetailsScreen(artistId: 'art-1'),
-          overrides: [
-            activeSubsonicClientProvider.overrideWithValue(mockClient),
-            artistDetailsProvider('art-1').overrideWith((ref) async => mockArtist),
-            artistInfoProvider('art-1').overrideWith((ref) async => mockInfo),
-            artworkPaletteProvider.overrideWith(
-              (ref, url) async => const ArtworkPalette(
-                vibrant: Color(0xFF1E7BF6),
-                muted: Color(0xFF1B1C23),
+        await tester.pumpWidget(
+          _buildTestApp(
+            const ArtistDetailsScreen(artistId: 'art-1'),
+            overrides: [
+              activeSubsonicClientProvider.overrideWithValue(mockClient),
+              artistDetailsProvider(
+                'art-1',
+              ).overrideWith((ref) async => mockArtist),
+              artistInfoProvider('art-1').overrideWith((ref) async => mockInfo),
+              artworkPaletteProvider.overrideWith(
+                (ref, url) async => const ArtworkPalette(
+                  vibrant: Color(0xFF1E7BF6),
+                  muted: Color(0xFF1B1C23),
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Taylor Swift'), findsAtLeastNWidgets(1));
-      expect(find.text('播放全部'), findsOneWidget);
-      expect(find.text('随机播放'), findsOneWidget);
+        expect(find.text('Taylor Swift'), findsAtLeastNWidgets(1));
+        expect(find.text('播放全部'), findsOneWidget);
+        expect(find.text('随机播放'), findsOneWidget);
 
-      expect(find.text('关于艺术家'), findsOneWidget);
-      expect(find.textContaining('Taylor Alison Swift'), findsOneWidget);
-      expect(find.textContaining('<br/>'), findsNothing);
+        expect(find.text('关于艺术家'), findsOneWidget);
+        expect(find.textContaining('Taylor Alison Swift'), findsOneWidget);
+        expect(find.textContaining('<br/>'), findsNothing);
 
-      expect(find.text('热门歌曲'), findsOneWidget);
-      expect(find.text('Blank Space'), findsOneWidget);
-      expect(find.text('Style'), findsOneWidget);
-      expect(find.text('Anti-Hero'), findsOneWidget);
+        expect(find.text('热门歌曲'), findsOneWidget);
+        expect(find.text('Blank Space'), findsOneWidget);
+        expect(find.text('Style'), findsOneWidget);
+        expect(find.text('Anti-Hero'), findsOneWidget);
 
-      expect(find.text('1989'), findsOneWidget);
-      expect(find.text('Midnights'), findsOneWidget);
+        expect(find.text('1989'), findsOneWidget);
+        expect(find.text('Midnights'), findsOneWidget);
 
-      expect(find.text('相似艺术家'), findsOneWidget);
-      expect(find.text('Olivia Rodrigo'), findsOneWidget);
-    });
+        expect(find.text('相似艺术家'), findsOneWidget);
+        expect(find.text('Olivia Rodrigo'), findsOneWidget);
+      },
+    );
   });
 }

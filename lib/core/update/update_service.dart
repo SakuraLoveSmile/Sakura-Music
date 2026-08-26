@@ -77,10 +77,7 @@ class UpdateService {
           : null;
     }
 
-    Future<Response<Object?>> fetch(
-      String url,
-      Map<String, String> headers,
-    ) =>
+    Future<Response<Object?>> fetch(String url, Map<String, String> headers) =>
         _dio.get<Object?>(url, options: Options(headers: headers));
 
     const primaryHeaders = <String, String>{
@@ -93,10 +90,10 @@ class UpdateService {
     //    egress IPs, so we always send one.
     try {
       return parseRelease(
-        await fetch(
-          latestReleaseUrl,
-          <String, String>{...primaryHeaders, 'User-Agent': userAgent},
-        ),
+        await fetch(latestReleaseUrl, <String, String>{
+          ...primaryHeaders,
+          'User-Agent': userAgent,
+        }),
       );
     } on DioException {
       // Fall through to the mirror manifests.
@@ -106,10 +103,9 @@ class UpdateService {
     Object? lastError = const UpdateException('无法获取版本更新信息');
     for (final url in manifestMirrorUrls) {
       try {
-        final response = await fetch(
-          url,
-          <String, String>{'User-Agent': userAgent},
-        );
+        final response = await fetch(url, <String, String>{
+          'User-Agent': userAgent,
+        });
         return parseRelease(response);
       } on Object catch (error) {
         lastError = error;

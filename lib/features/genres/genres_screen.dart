@@ -42,7 +42,10 @@ class GenresScreen extends ConsumerWidget {
               SliverAppBar(
                 title: Text(
                   context.l10n.navGenres,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
                 ),
                 floating: true,
                 actions: <Widget>[
@@ -104,17 +107,18 @@ class GenresScreen extends ConsumerWidget {
                             final gradient =
                                 _gradients[index % _gradients.length];
 
+                            final covers = ref.watch(
+                              genreCoverArtsProvider(genre.name),
+                            );
+                            final coverUrls = covers.value ?? const <String>[];
+
                             return InkWell(
                               borderRadius: BorderRadius.circular(14),
                               onTap: () =>
                                   _openGenreDetail(context, ref, client, genre),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: gradient,
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+                                  color: gradient.first,
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: <BoxShadow>[
                                     BoxShadow(
@@ -126,53 +130,110 @@ class GenresScreen extends ConsumerWidget {
                                     ),
                                   ],
                                 ),
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                clipBehavior: Clip.antiAlias,
+                                child: Stack(
+                                  fit: StackFit.expand,
                                   children: <Widget>[
-                                    Text(
-                                      genre.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
+                                    // 2x2 cover-art collage background.
+                                    if (coverUrls.isNotEmpty)
+                                      Column(
+                                        children: <Widget>[
+                                          for (final row in <List<String>>[
+                                            coverUrls.take(2).toList(),
+                                            coverUrls.skip(2).take(2).toList(),
+                                          ])
+                                            Expanded(
+                                              child: Row(
+                                                children: <Widget>[
+                                                  for (final url in row)
+                                                    Expanded(
+                                                      child: Image.network(
+                                                        url,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (_, _, _) =>
+                                                            const SizedBox.shrink(),
+                                                      ),
+                                                    ),
+                                                  if (row.length == 1)
+                                                    const Expanded(
+                                                      child: SizedBox.shrink(),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    // Scrim keeps the labels readable.
+                                    DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: <Color>[
+                                            gradient.first.withValues(
+                                              alpha: 0.78,
+                                            ),
+                                            gradient.last.withValues(
+                                              alpha: 0.62,
+                                            ),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
                                       ),
                                     ),
-                                    Row(
-                                      children: <Widget>[
-                                        if (genre.songCount != null &&
-                                            genre.songCount! > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: <Widget>[
                                           Text(
-                                            context.l10n.genreSongCount(
-                                              genre.songCount ?? 0,
-                                            ),
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.75,
-                                              ),
-                                              fontSize: 12,
+                                            genre.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                        if (genre.albumCount != null &&
-                                            genre.albumCount! > 0) ...[
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            context.l10n.genreAlbumCount(
-                                              genre.albumCount ?? 0,
-                                            ),
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.75,
-                                              ),
-                                              fontSize: 12,
-                                            ),
+                                          Row(
+                                            children: <Widget>[
+                                              if (genre.songCount != null &&
+                                                  genre.songCount! > 0)
+                                                Text(
+                                                  context.l10n.genreSongCount(
+                                                    genre.songCount ?? 0,
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.75,
+                                                        ),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              if (genre.albumCount != null &&
+                                                  genre.albumCount! > 0) ...[
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  context.l10n.genreAlbumCount(
+                                                    genre.albumCount ?? 0,
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.75,
+                                                        ),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                         ],
-                                      ],
+                                      ),
                                     ),
                                   ],
                                 ),

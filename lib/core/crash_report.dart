@@ -28,13 +28,15 @@ Directory getCrashLogDirectory() {
     final home = Platform.environment['HOME'] ?? Directory.current.path;
     return Directory(_join([home, 'Library', 'Logs', _appName]));
   }
-  final stateHome = Platform.environment['XDG_STATE_HOME'] ??
+  final stateHome =
+      Platform.environment['XDG_STATE_HOME'] ??
       _join([Platform.environment['HOME'] ?? '.', '.local', 'state']);
   return Directory(_join([stateHome, _appName, 'logs']));
 }
 
 /// The concrete `error.log` file inside [getCrashLogDirectory].
-File getCrashLogFile() => File(_join([getCrashLogDirectory().path, 'error.log']));
+File getCrashLogFile() =>
+    File(_join([getCrashLogDirectory().path, 'error.log']));
 
 String _join(List<String> parts) =>
     parts.where((part) => part.isNotEmpty).join(Platform.pathSeparator);

@@ -170,6 +170,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get loadError => '加载失败';
+
+  @override
   String get testConnection => '测试连接';
 
   @override
@@ -191,6 +194,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get back => '返回';
+
+  @override
+  String get exitConfirmTitle => '退出应用？';
+
+  @override
+  String get exitConfirmMessage => '确定要退出 音流 吗？';
+
+  @override
+  String get exitApp => '退出';
 
   @override
   String get switchLibrary => '切换音乐库';
@@ -261,9 +273,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get musicRoaming => '音乐漫游';
-
-  @override
-  String get audiobooksPodcasts => '有声书/播客';
 
   @override
   String get streamingQuality => '在线播放音质';
@@ -1156,16 +1165,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get endOfSong => '播完当前歌曲后关闭';
 
   @override
-  String get coverView => '封面模式';
+  String get coverView => '封面';
 
   @override
   String get lyricsView => '歌词模式';
+
+  @override
+  String get oledLyricsView => '纯黑歌词';
 
   @override
   String get songInfo => '歌曲信息';
 
   @override
   String get trackDetails => '曲目详情';
+
+  @override
+  String get trackInfoTitle => '标题';
+
+  @override
+  String get trackInfoArtist => '艺术家';
+
+  @override
+  String get trackInfoAlbum => '专辑';
+
+  @override
+  String get trackInfoDuration => '时长';
+
+  @override
+  String get trackInfoId => '音轨 ID';
 
   @override
   String get audioQuality => '音质';

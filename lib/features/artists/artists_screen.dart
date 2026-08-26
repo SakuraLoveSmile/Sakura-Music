@@ -31,7 +31,10 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
     super.dispose();
   }
 
-  List<Artist> _filterAndSort(List<Artist> items, Set<String> starredArtistIds) {
+  List<Artist> _filterAndSort(
+    List<Artist> items,
+    Set<String> starredArtistIds,
+  ) {
     var filtered = items;
     if (_searchQuery.trim().isNotEmpty) {
       final query = _searchQuery.trim().toLowerCase();
@@ -180,10 +183,11 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                                   ? IconButton(
                                       tooltip: context.l10n.clear,
                                       padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints.tightFor(
-                                        width: 28,
-                                        height: 28,
-                                      ),
+                                      constraints:
+                                          const BoxConstraints.tightFor(
+                                            width: 28,
+                                            height: 28,
+                                          ),
                                       icon: const Icon(
                                         Icons.close_rounded,
                                         size: 16,
@@ -195,8 +199,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                                       },
                                     )
                                   : null,
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                              ),
                             ),
                             onChanged: (val) =>
                                 setState(() => _searchQuery = val),
@@ -218,12 +223,14 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E7BF6)
-                                    .withValues(alpha: 0.15),
+                                color: const Color(
+                                  0xFF1E7BF6,
+                                ).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color(0xFF1E7BF6)
-                                      .withValues(alpha: 0.3),
+                                  color: const Color(
+                                    0xFF1E7BF6,
+                                  ).withValues(alpha: 0.3),
                                   width: 0.8,
                                 ),
                               ),
@@ -293,122 +300,135 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                       initialValue: _sortOption,
                       onSelected: (option) =>
                           setState(() => _sortOption = option),
-                      itemBuilder: (context) => <PopupMenuEntry<ArtistSortOption>>[
-                        PopupMenuItem(
-                          value: ArtistSortOption.nameAsc,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.sort_by_alpha_rounded,
-                                size: 18,
-                                color: _sortOption == ArtistSortOption.nameAsc
-                                    ? const Color(0xFF1E7BF6)
-                                    : Colors.white70,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                context.l10n.sortNameAsc,
-                                style: TextStyle(
-                                  color: _sortOption == ArtistSortOption.nameAsc
-                                      ? const Color(0xFF5BA4FF)
-                                      : Colors.white,
-                                  fontWeight:
-                                      _sortOption == ArtistSortOption.nameAsc
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: ArtistSortOption.nameDesc,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.sort_by_alpha_rounded,
-                                size: 18,
-                                color: _sortOption == ArtistSortOption.nameDesc
-                                    ? const Color(0xFF1E7BF6)
-                                    : Colors.white70,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                context.l10n.sortNameDesc,
-                                style: TextStyle(
-                                  color: _sortOption == ArtistSortOption.nameDesc
-                                      ? const Color(0xFF5BA4FF)
-                                      : Colors.white,
-                                  fontWeight:
-                                      _sortOption == ArtistSortOption.nameDesc
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: ArtistSortOption.albumCountDesc,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.album_rounded,
-                                size: 18,
-                                color:
-                                    _sortOption == ArtistSortOption.albumCountDesc
+                      itemBuilder: (context) =>
+                          <PopupMenuEntry<ArtistSortOption>>[
+                            PopupMenuItem(
+                              value: ArtistSortOption.nameAsc,
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.sort_by_alpha_rounded,
+                                    size: 18,
+                                    color:
+                                        _sortOption == ArtistSortOption.nameAsc
                                         ? const Color(0xFF1E7BF6)
                                         : Colors.white70,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                context.l10n.sortAlbumCount,
-                                style: TextStyle(
-                                  color:
-                                      _sortOption == ArtistSortOption.albumCountDesc
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    context.l10n.sortNameAsc,
+                                    style: TextStyle(
+                                      color:
+                                          _sortOption ==
+                                              ArtistSortOption.nameAsc
                                           ? const Color(0xFF5BA4FF)
                                           : Colors.white,
-                                  fontWeight:
-                                      _sortOption ==
+                                      fontWeight:
+                                          _sortOption ==
+                                              ArtistSortOption.nameAsc
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: ArtistSortOption.nameDesc,
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.sort_by_alpha_rounded,
+                                    size: 18,
+                                    color:
+                                        _sortOption == ArtistSortOption.nameDesc
+                                        ? const Color(0xFF1E7BF6)
+                                        : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    context.l10n.sortNameDesc,
+                                    style: TextStyle(
+                                      color:
+                                          _sortOption ==
+                                              ArtistSortOption.nameDesc
+                                          ? const Color(0xFF5BA4FF)
+                                          : Colors.white,
+                                      fontWeight:
+                                          _sortOption ==
+                                              ArtistSortOption.nameDesc
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: ArtistSortOption.albumCountDesc,
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.album_rounded,
+                                    size: 18,
+                                    color:
+                                        _sortOption ==
+                                            ArtistSortOption.albumCountDesc
+                                        ? const Color(0xFF1E7BF6)
+                                        : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    context.l10n.sortAlbumCount,
+                                    style: TextStyle(
+                                      color:
+                                          _sortOption ==
+                                              ArtistSortOption.albumCountDesc
+                                          ? const Color(0xFF5BA4FF)
+                                          : Colors.white,
+                                      fontWeight:
+                                          _sortOption ==
                                               ArtistSortOption.albumCountDesc
                                           ? FontWeight.bold
                                           : FontWeight.normal,
-                                ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: ArtistSortOption.starredFirst,
-                          child: Row(
-                            children: <Widget>[
-                              Icon(
-                                Icons.favorite_rounded,
-                                size: 18,
-                                color:
-                                    _sortOption == ArtistSortOption.starredFirst
+                            ),
+                            PopupMenuItem(
+                              value: ArtistSortOption.starredFirst,
+                              child: Row(
+                                children: <Widget>[
+                                  Icon(
+                                    Icons.favorite_rounded,
+                                    size: 18,
+                                    color:
+                                        _sortOption ==
+                                            ArtistSortOption.starredFirst
                                         ? const Color(0xFFFF453A)
                                         : Colors.white70,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                context.l10n.favorite,
-                                style: TextStyle(
-                                  color:
-                                      _sortOption == ArtistSortOption.starredFirst
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    context.l10n.favorite,
+                                    style: TextStyle(
+                                      color:
+                                          _sortOption ==
+                                              ArtistSortOption.starredFirst
                                           ? const Color(0xFF5BA4FF)
                                           : Colors.white,
-                                  fontWeight:
-                                      _sortOption ==
+                                      fontWeight:
+                                          _sortOption ==
                                               ArtistSortOption.starredFirst
                                           ? FontWeight.bold
                                           : FontWeight.normal,
-                                ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
+                            ),
+                          ],
                     ),
                     // Refresh
                     IconButton(
@@ -498,16 +518,17 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                         return SliverGrid.builder(
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 14,
-                            childAspectRatio: 0.76,
-                          ),
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 14,
+                                childAspectRatio: 0.76,
+                              ),
                           itemCount: items.length,
                           itemBuilder: (context, index) {
                             final artist = items[index];
-                            final isFav =
-                                starredIds.artists.contains(artist.id);
+                            final isFav = starredIds.artists.contains(
+                              artist.id,
+                            );
                             return ArtistCard(
                               artist: artist,
                               client: client,
@@ -563,9 +584,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      context.l10n.starFailed(
-                                        error.toString(),
-                                      ),
+                                      context.l10n.starFailed(error.toString()),
                                     ),
                                   ),
                                 );
@@ -587,4 +606,3 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
     );
   }
 }
-

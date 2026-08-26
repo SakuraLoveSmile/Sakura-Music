@@ -110,8 +110,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                 vertical: 20,
                               ),
                               child: ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 860),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 860,
+                                ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: <Widget>[
@@ -189,8 +190,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                                 SizedBox(width: 14),
                                                 Expanded(
                                                   flex: 9,
-                                                  child:
-                                                      NativeExperienceCard(),
+                                                  child: NativeExperienceCard(),
                                                 ),
                                               ],
                                             ),
@@ -220,11 +220,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                           ),
                                         ),
                                         InkWell(
-                                          onTap: () => PrivacyPolicyDialog.show(
-                                            context,
+                                          onTap: () =>
+                                              PrivacyPolicyDialog.show(context),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 2,

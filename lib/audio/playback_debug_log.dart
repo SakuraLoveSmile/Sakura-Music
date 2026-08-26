@@ -36,7 +36,8 @@ class PlaybackDebugLog {
   Stream<PlaybackLogEntry> get stream => _controller.stream;
 
   /// A snapshot of the buffered entries, oldest first.
-  List<PlaybackLogEntry> get entries => List<PlaybackLogEntry>.unmodifiable(_entries);
+  List<PlaybackLogEntry> get entries =>
+      List<PlaybackLogEntry>.unmodifiable(_entries);
 
   int get length => _entries.length;
 

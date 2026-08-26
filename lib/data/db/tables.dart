@@ -14,6 +14,10 @@ class Servers extends Table {
 
   TextColumn get token => text().nullable()();
 
+  /// Server protocol family. `null` for rows created before this column
+  /// existed; those are treated as Subsonic-compatible (Navidrome included).
+  TextColumn get type => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -29,6 +33,14 @@ class RecentPlays extends Table {
   TextColumn get title => text().nullable()();
 
   TextColumn get artist => text().nullable()();
+
+  // Extra denormalized metadata so history, top-played and the player can
+  // render and navigate (album/artist) without a server round trip.
+  TextColumn get album => text().nullable()();
+
+  TextColumn get albumId => text().nullable()();
+
+  TextColumn get artistId => text().nullable()();
 
   DateTimeColumn get playedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -162,4 +174,18 @@ class CachedArtists extends Table {
   TextColumn get payload => text()();
 
   DateTimeColumn get fetchedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Per-server daily recommendation cache. One row keyed by `serverId`
+/// (primary key) holds the songs recommended for a single calendar date.
+/// The next day simply overwrites the previous row.
+class DailyRecommends extends Table {
+  IntColumn get serverId => integer()();
+
+  TextColumn get date => text()();
+
+  TextColumn get songsJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {serverId};
 }

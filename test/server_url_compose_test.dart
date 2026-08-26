@@ -81,7 +81,11 @@ void main() {
       ]) {
         final parts = decomposeBaseUrl(url);
         expect(
-          composeBaseUrl(scheme: parts.scheme, host: parts.host, port: parts.port),
+          composeBaseUrl(
+            scheme: parts.scheme,
+            host: parts.host,
+            port: parts.port,
+          ),
           url,
         );
       }

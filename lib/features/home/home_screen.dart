@@ -7,6 +7,8 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/playable_item_builder.dart';
 import '../../core/providers.dart';
 import '../../data/download_manager.dart';
+import '../../data/server_repository.dart';
+import '../webdav/webdav_browse_screen.dart';
 import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 
@@ -15,10 +17,15 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final client = ref.watch(activeSubsonicClientProvider);
-    if (client == null) {
+    final server = ref.watch(activeServerProvider);
+    if (server == null) {
       return const SafeArea(child: NoServerView());
     }
+    // WebDAV sources have no Subsonic-style home: route to the file browser.
+    if (server.type == 'webdav') {
+      return const SafeArea(child: WebDavBrowseScreen());
+    }
+    final client = ref.watch(activeSubsonicClientProvider)!;
     final starred = ref.watch(starredIdsProvider);
     final playerService = ref.watch(audioPlayerProvider);
 
@@ -35,13 +42,13 @@ class HomeScreen extends ConsumerWidget {
           child: SafeArea(
             child: RefreshIndicator(
               onRefresh: () async {
+                // Recent plays and top-played are live Drift streams that
+                // refresh automatically; the daily mix is intentionally
+                // cached per day, so only album lists are refreshed here.
                 ref
-                  ..invalidate(dailyRecommendSongsProvider)
                   ..invalidate(newestAlbumsProvider)
                   ..invalidate(frequentAlbumsProvider)
-                  ..invalidate(frequentSongsProvider)
-                  ..invalidate(randomAlbumsProvider)
-                  ..invalidate(recentPlaysProvider);
+                  ..invalidate(randomAlbumsProvider);
               },
               child: CustomScrollView(
                 slivers: <Widget>[
@@ -500,6 +507,9 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                     id: play.songId,
                     title: play.title ?? play.songId,
                     artist: play.artist,
+                    album: play.album,
+                    albumId: play.albumId,
+                    artistId: play.artistId,
                   ),
                 )
                 .toList();

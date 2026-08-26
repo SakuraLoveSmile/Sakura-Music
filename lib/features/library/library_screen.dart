@@ -54,12 +54,9 @@ class LibraryScreen extends ConsumerWidget {
             ],
             body: starred.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) =>
-                  Center(
-                    child: Text(
-                      context.l10n.favoritesLoadFailed(error.toString()),
-                    ),
-                  ),
+              error: (error, stackTrace) => Center(
+                child: Text(context.l10n.favoritesLoadFailed(error.toString())),
+              ),
               data: (value) => TabBarView(
                 children: <Widget>[
                   _FavoriteSongs(songs: value.songs, client: client, ref: ref),
@@ -114,13 +111,9 @@ class _FavoriteSongs extends StatelessWidget {
               await ref.read(starredProvider.notifier).toggleSong(song);
             } catch (error) {
               if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.l10n.unstarFailed(error.toString()),
-                    ),
+                    content: Text(context.l10n.unstarFailed(error.toString())),
                   ),
                 );
               }
@@ -189,13 +182,9 @@ class _FavoriteAlbums extends StatelessWidget {
               await ref.read(starredProvider.notifier).toggleAlbum(album);
             } catch (error) {
               if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.l10n.unstarFailed(error.toString()),
-                    ),
+                    content: Text(context.l10n.unstarFailed(error.toString())),
                   ),
                 );
               }
@@ -238,13 +227,9 @@ class _FavoriteArtists extends StatelessWidget {
               await ref.read(starredProvider.notifier).toggleArtist(artist);
             } catch (error) {
               if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.l10n.unstarFailed(error.toString()),
-                    ),
+                    content: Text(context.l10n.unstarFailed(error.toString())),
                   ),
                 );
               }

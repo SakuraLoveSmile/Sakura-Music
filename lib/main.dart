@@ -20,19 +20,22 @@ Future<void> main() async {
   // Wrap the ENTIRE bootstrap (engine init, crash-handler install, and the
   // per-stage startup) so an unhandled async error before runApp never silently
   // blanks the already-created native window.
-  runZonedGuarded(() async {
-    // Initialise the engine first so the framework's error plumbing is wired
-    // before we install our own handlers.
-    WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(
+    () async {
+      // Initialise the engine first so the framework's error plumbing is wired
+      // before we install our own handlers.
+      WidgetsFlutterBinding.ensureInitialized();
 
-    // Install crash visibility before any other work so a failure below is
-    // always recorded (and, on Windows, surfaced via a native dialog).
-    initCrashReporting();
+      // Install crash visibility before any other work so a failure below is
+      // always recorded (and, on Windows, surfaced via a native dialog).
+      initCrashReporting();
 
-    await _bootstrap();
-  }, (error, stack) {
-    reportFatalStartupError(error, stack);
-  });
+      await _bootstrap();
+    },
+    (error, stack) {
+      reportFatalStartupError(error, stack);
+    },
+  );
 }
 
 /// Per-stage desktop/mobile startup. Every external integration is isolated in
@@ -79,9 +82,8 @@ Future<void> _bootstrap() async {
       logCrash(error, stack, context: 'readSafeAudioMode');
     }
     final audioHandler = await AudioService.init<AudioServiceHandler>(
-      builder: () => AudioServiceHandler(
-        disableEqualizerPipeline: safeAudioMode,
-      ),
+      builder: () =>
+          AudioServiceHandler(disableEqualizerPipeline: safeAudioMode),
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'com.sakuramusic.app.audio',
         androidNotificationChannelName: 'SakuraMusic 播放',
@@ -140,7 +142,8 @@ final class CrashReportingObserver extends ProviderObserver {
     logCrash(
       error,
       stackTrace,
-      context: 'provider:${context.provider.name ?? context.provider.runtimeType.toString()}',
+      context:
+          'provider:${context.provider.name ?? context.provider.runtimeType.toString()}',
     );
   }
 }
@@ -166,11 +169,7 @@ Widget _buildErrorWidget(FlutterErrorDetails details) {
               child: Text('界面渲染出错 / Render error'),
             ),
             const SizedBox(height: 12),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Text(message),
-              ),
-            ),
+            Expanded(child: SingleChildScrollView(child: Text(message))),
           ],
         ),
       ),

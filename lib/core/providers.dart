@@ -11,6 +11,11 @@ final activeSubsonicClientProvider = Provider<SubsonicClient?>((ref) {
   if (server == null) {
     return null;
   }
+  // WebDAV sources are not Subsonic-compatible; never build a Subsonic client
+  // for them so the rest of the app routes them to the WebDAV backend.
+  if (server.type == 'webdav') {
+    return null;
+  }
   return SubsonicClient(
     baseUrl: server.baseUrl,
     username: server.username,
@@ -214,12 +219,48 @@ final randomSongsProvider = FutureProvider<List<Song>>((ref) {
   return client.getRandomSongs(size: 12);
 });
 
-final dailyRecommendSongsProvider = FutureProvider<List<Song>>((ref) {
+final dailyRecommendSongsProvider = FutureProvider<List<Song>>((ref) async {
+  final server = ref.watch(activeServerProvider);
+  if (server == null) {
+    return const <Song>[];
+  }
   final client = ref.watch(activeSubsonicClientProvider);
   if (client == null) {
     return const <Song>[];
   }
-  return client.getRandomSongs(size: 50);
+  // Local date key. The cached recommendation is stable for the whole day;
+  // the next calendar day overwrites it on first load.
+  final now = DateTime.now();
+  final date =
+      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  final database = ref.watch(databaseProvider);
+
+  final cached = await database.getDailyRecommend(server.id, date);
+  if (cached != null && cached.songsJson.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(cached.songsJson);
+      if (decoded is List) {
+        return <Song>[
+          for (final entry in decoded)
+            Song.fromJson(entry as Map<String, dynamic>),
+        ];
+      }
+    } catch (_) {
+      // Corrupted cache: fall through and refresh from the server.
+    }
+  }
+
+  final songs = await client.getRandomSongs(size: 20);
+  try {
+    await database.upsertDailyRecommend(
+      server.id,
+      date,
+      jsonEncode(songs.map((song) => song.toJson()).toList(growable: false)),
+    );
+  } catch (_) {
+    // Caching is best effort; the in-memory list is still returned.
+  }
+  return songs;
 });
 
 final songsListProvider = FutureProvider<List<Song>>((ref) {
@@ -230,12 +271,44 @@ final songsListProvider = FutureProvider<List<Song>>((ref) {
   return client.getRandomSongs(size: 50);
 });
 
-final frequentSongsProvider = FutureProvider<List<Song>>((ref) {
-  final client = ref.watch(activeSubsonicClientProvider);
-  if (client == null) {
-    return const <Song>[];
-  }
-  return client.getRandomSongs(size: 10);
+/// Aggregates recent-play events into a most-frequently-played list. The
+/// underlying `RecentPlays` stream already caps the history, so a plain Dart
+/// aggregation here is sufficient (no SQL grouping needed). Songs are ordered
+/// by play count, ties broken by the most recent play time.
+final frequentSongsProvider = StreamProvider<List<Song>>((ref) {
+  final server = ref.watch(activeServerProvider);
+  final serverId = server?.id;
+  final stream = ref
+      .watch(databaseProvider)
+      .watchRecentPlays(serverId: serverId, limit: 200);
+  return stream.map((plays) {
+    final latest = <String, RecentPlay>{};
+    final counts = <String, int>{};
+    for (final play in plays) {
+      final id = play.songId;
+      counts[id] = (counts[id] ?? 0) + 1;
+      latest.putIfAbsent(id, () => play);
+    }
+    final entries = counts.entries.toList(growable: false);
+    entries.sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      if (byCount != 0) return byCount;
+      final timeA = latest[a.key]!.playedAt;
+      final timeB = latest[b.key]!.playedAt;
+      return timeB.compareTo(timeA);
+    });
+    return <Song>[
+      for (final entry in entries)
+        Song(
+          id: entry.key,
+          title: latest[entry.key]!.title ?? entry.key,
+          artist: latest[entry.key]!.artist,
+          album: latest[entry.key]!.album,
+          albumId: latest[entry.key]!.albumId,
+          artistId: latest[entry.key]!.artistId,
+        ),
+    ];
+  });
 });
 
 final genresProvider = FutureProvider<List<Genre>>((ref) {
@@ -255,6 +328,31 @@ final songsByGenreProvider = FutureProvider.family<List<Song>, String>((
     return const <Song>[];
   }
   return client.getSongsByGenre(genre, count: 50);
+});
+
+/// Returns up to 4 representative cover-art URLs for a genre, used by the
+/// genre grid's 2x2 cover preview. Only a small sample of songs is fetched.
+final genreCoverArtsProvider = FutureProvider.family<List<String>, String>((
+  ref,
+  genre,
+) async {
+  final client = ref.watch(activeSubsonicClientProvider);
+  if (client == null || genre.trim().isEmpty) {
+    return const <String>[];
+  }
+  try {
+    final songs = await client.getSongsByGenre(genre, count: 8);
+    final covers = <String>{};
+    for (final song in songs) {
+      final coverArt = song.coverArt;
+      if (coverArt != null && coverArt.isNotEmpty) {
+        covers.add(client.coverArtUrl(coverArt, size: 300));
+      }
+    }
+    return covers.take(4).toList(growable: false);
+  } catch (_) {
+    return const <String>[];
+  }
 });
 
 final playlistsProvider = FutureProvider<List<Playlist>>((ref) {
@@ -291,18 +389,14 @@ final recentSearchHistoryProvider = FutureProvider<List<String>>((ref) {
   return ref.watch(databaseProvider).getSearchHistory();
 });
 
-final recentPlayIdsProvider = FutureProvider<List<String>>((ref) {
-  return ref
-      .watch(databaseProvider)
-      .getRecentPlayIds(serverId: ref.watch(activeServerProvider)?.id);
-});
-
 /// Recent plays with the denormalized song metadata recorded at play time, so
-/// the home history renders titles without per-song server lookups.
-final recentPlaysProvider = FutureProvider<List<RecentPlay>>((ref) {
+/// the home history renders titles without per-song server lookups. This is a
+/// live Drift stream: writes refresh the home automatically.
+final recentPlaysProvider = StreamProvider<List<RecentPlay>>((ref) {
+  final serverId = ref.watch(activeServerProvider)?.id;
   return ref
       .watch(databaseProvider)
-      .getRecentPlays(serverId: ref.watch(activeServerProvider)?.id);
+      .watchRecentPlays(serverId: serverId, limit: 50);
 });
 
 class StarredNotifier extends AsyncNotifier<Starred2> {

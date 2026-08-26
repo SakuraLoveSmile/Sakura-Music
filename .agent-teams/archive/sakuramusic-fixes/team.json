@@ -1,0 +1,71 @@
+{
+  "name": "sakuramusic-fixes",
+  "id": "sakuramusic-fixes",
+  "description": "Implement the 11-item SakuraMusic fix plan: DB schema v11, daily recommendations, top-played fix, recent-plays live refresh, lyrics centering, LAN discovery, WebDAV source, remove audiobooks, genre cover grid, Navidrome artist images, player-screen artist/album/song-info. Captain owns the shared core (db/providers/audio model/home/l10n) to avoid conflicts; members own independent UI leaves.",
+  "captainSessionId": "session-2cae6c98-fd44-416d-9ae1-b05f23bc5d4c",
+  "createdAt": 1787740716778,
+  "members": [
+    {
+      "id": "4fcebfa3-7904-478d-ad7c-ce911a470491",
+      "name": "nav_engineer",
+      "role": "Navigation/return-key engineer: app_shell PopScope + exit confirm l10n usage",
+      "provider": "opencode-go",
+      "model": "hy3",
+      "reasoningEffort": "high",
+      "joinedAt": 1787740724497,
+      "status": "removed"
+    },
+    {
+      "id": "f9779f7a-fec1-4065-b570-58ab4606feb4",
+      "name": "lan_engineer",
+      "role": "LAN discovery engineer: AndroidManifest, lan_discovery_service, add_server_screen failure UI",
+      "provider": "opencode-go",
+      "model": "hy3",
+      "reasoningEffort": "high",
+      "joinedAt": 1787740724513,
+      "status": "removed"
+    },
+    {
+      "id": "963307fb-2cbc-4a1d-a7d2-3d1de6b6bcfd",
+      "name": "webdav_engineer",
+      "role": "WebDAV engineer: server config form, server icons, WebDAV browse screen, server picker type display",
+      "provider": "opencode-go",
+      "model": "hy3",
+      "reasoningEffort": "high",
+      "joinedAt": 1787740724533,
+      "status": "removed"
+    },
+    {
+      "id": "0bbd314f-462e-4d36-bc31-edd1ac627220",
+      "name": "genres_engineer",
+      "role": "Genres cover-grid engineer: genres_screen 2x2 cover preview using genreCoverArtsProvider",
+      "provider": "opencode-go",
+      "model": "hy3",
+      "reasoningEffort": "high",
+      "joinedAt": 1787740724566,
+      "status": "removed"
+    },
+    {
+      "id": "4168f3d7-5659-4a35-9fdb-bf6614e5bc6e",
+      "name": "artist_engineer",
+      "role": "Artist images engineer: media_widgets ArtistListTile avatar + artist_details_screen fallback order",
+      "provider": "opencode-go",
+      "model": "hy3",
+      "reasoningEffort": "high",
+      "joinedAt": 1787740724594,
+      "status": "removed"
+    },
+    {
+      "id": "6c5b66a9-20c9-4a1c-8498-6da49409d009",
+      "name": "test_engineer",
+      "role": "Test engineer: extend database_test, audio model test, widget_test, player_widgets_test, webdav XML test",
+      "provider": "opencode-go",
+      "model": "hy3",
+      "reasoningEffort": "high",
+      "joinedAt": 1787740724619,
+      "status": "removed"
+    }
+  ],
+  "tasks": [],
+  "taskSeq": 0
+}

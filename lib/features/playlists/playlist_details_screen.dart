@@ -27,12 +27,9 @@ class PlaylistDetailsScreen extends ConsumerWidget {
       child: SafeArea(
         child: playlist.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stackTrace) =>
-              Center(
-                child: Text(
-                  context.l10n.playlistsLoadFailed(error.toString()),
-                ),
-              ),
+          error: (error, stackTrace) => Center(
+            child: Text(context.l10n.playlistsLoadFailed(error.toString())),
+          ),
           data: (value) {
             final starredIds = ref.watch(starredIdsProvider);
             return CustomScrollView(
@@ -174,12 +171,8 @@ Future<void> _play(
     }
   } catch (error) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.playbackFailed(error.toString())),
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.playbackFailed(error.toString()))),
       );
     }
   }

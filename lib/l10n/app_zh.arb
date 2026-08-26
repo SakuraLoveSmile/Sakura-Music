@@ -68,6 +68,7 @@
     }
   },
   "saveFailed": "保存失败：{error}",
+  "loadError": "加载失败",
   "@saveFailed": {
     "placeholders": {
       "error": {}
@@ -85,6 +86,9 @@
   },
   "cancel": "取消",
   "back": "返回",
+  "exitConfirmTitle": "退出应用？",
+  "exitConfirmMessage": "确定要退出 音流 吗？",
+  "exitApp": "退出",
   "switchLibrary": "切换音乐库",
   "membership": "会员",
   "membershipActivated": "已激活",
@@ -108,7 +112,6 @@
   "autoPlayOnLaunch": "启动后自动播放",
   "fadeTransition": "淡入淡出",
   "musicRoaming": "音乐漫游",
-  "audiobooksPodcasts": "有声书/播客",
   "streamingQuality": "在线播放音质",
   "equalizerSettings": "均衡器设置",
   "lyricsOverlay": "桌面悬浮歌词",
@@ -559,12 +562,18 @@
   "playbackSpeed": "播放速度",
   "speedNormal": "标准 (1.0x)",
   "endOfSong": "播完当前歌曲后关闭",
-  "coverView": "封面模式",
+  "coverView": "封面",
   "lyricsView": "歌词模式",
+  "oledLyricsView": "纯黑歌词",
   "viewArtist": "查看艺术家",
   "viewAlbum": "查看专辑",
   "songInfo": "歌曲信息",
   "trackDetails": "曲目详情",
+  "trackInfoTitle": "标题",
+  "trackInfoArtist": "艺术家",
+  "trackInfoAlbum": "专辑",
+  "trackInfoDuration": "时长",
+  "trackInfoId": "音轨 ID",
   "audioQuality": "音质",
   "cancelSleepTimer": "取消定时关闭",
   "sleepTimerCancelled": "已取消定时关闭"

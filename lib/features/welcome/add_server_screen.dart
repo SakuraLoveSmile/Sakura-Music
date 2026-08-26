@@ -66,9 +66,9 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
         extra: AddServerConfigArgs(protocol: item),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.comingSoon)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.comingSoon)));
     }
   }
 
@@ -172,7 +172,11 @@ class _TopBar extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              icon: const Icon(Icons.chevron_left, size: 18, color: Colors.white),
+              icon: const Icon(
+                Icons.chevron_left,
+                size: 18,
+                color: Colors.white,
+              ),
               padding: EdgeInsets.zero,
               tooltip: context.l10n.back,
               onPressed: onBack,
@@ -262,11 +266,8 @@ class _LanDiscoveryCard extends StatelessWidget {
       child: state.searching && state.servers.isEmpty
           ? _Searching()
           : state.servers.isEmpty
-              ? _EmptyLan()
-              : _DiscoveredList(
-                  servers: state.servers,
-                  onTapServer: onTapServer,
-                ),
+          ? _EmptyLan()
+          : _DiscoveredList(servers: state.servers, onTapServer: onTapServer),
     );
   }
 }
@@ -280,7 +281,10 @@ class _Searching extends StatelessWidget {
         const SizedBox(
           width: 28,
           height: 28,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
@@ -344,10 +348,7 @@ class _EmptyLan extends StatelessWidget {
 }
 
 class _DiscoveredList extends StatelessWidget {
-  const _DiscoveredList({
-    required this.servers,
-    required this.onTapServer,
-  });
+  const _DiscoveredList({required this.servers, required this.onTapServer});
 
   final List<DiscoveredServer> servers;
   final void Function(DiscoveredServer server) onTapServer;
@@ -362,7 +363,10 @@ class _DiscoveredList extends StatelessWidget {
       itemBuilder: (context, index) {
         final server = servers[index];
         return ListTile(
-          leading: ServerBrandIcon(id: server.displayType.toLowerCase(), size: 40),
+          leading: ServerBrandIcon(
+            id: server.displayType.toLowerCase(),
+            size: 40,
+          ),
           title: Text(
             server.name,
             style: const TextStyle(color: Colors.white, fontSize: 14),

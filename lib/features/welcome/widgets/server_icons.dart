@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 /// Assets are stored in `assets/icons/servers/`.
 
 class _ServerAssetLogo extends StatelessWidget {
-  const _ServerAssetLogo({
-    required this.assetPath,
-    this.size = 58,
-  });
+  const _ServerAssetLogo({required this.assetPath, this.size = 58});
 
   final String assetPath;
   final double size;
@@ -20,11 +17,8 @@ class _ServerAssetLogo extends StatelessWidget {
       height: size,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.medium,
-      errorBuilder: (context, error, stackTrace) => Icon(
-        Icons.dns,
-        size: size * 0.6,
-        color: Colors.blue,
-      ),
+      errorBuilder: (context, error, stackTrace) =>
+          Icon(Icons.dns, size: size * 0.6, color: Colors.blue),
     );
   }
 }
@@ -113,20 +107,6 @@ class AudioStationLogo extends StatelessWidget {
   }
 }
 
-class AudiobookshelfLogo extends StatelessWidget {
-  const AudiobookshelfLogo({super.key, this.size = 58});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ServerAssetLogo(
-      assetPath: 'assets/icons/servers/audiobookshelf.png',
-      size: size,
-    );
-  }
-}
-
 /// Picks the brand logo for a server-type id used by the add-server grid.
 class ServerBrandIcon extends StatelessWidget {
   const ServerBrandIcon({super.key, required this.id, this.size = 58});
@@ -142,10 +122,10 @@ class ServerBrandIcon extends StatelessWidget {
       'plex' => PlexLogo(size: size),
       'jellyfin' => JellyfinLogo(size: size),
       'emby' => EmbyLogo(size: size),
-      'audiostation' || 'audio station' || 'synology' => AudioStationLogo(size: size),
-      'audiobookshelf' => AudiobookshelfLogo(size: size),
+      'audiostation' ||
+      'audio station' ||
+      'synology' => AudioStationLogo(size: size),
       _ => Icon(Icons.dns, size: size * 0.6, color: Colors.blue),
     };
   }
 }
-

@@ -177,13 +177,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _buildDivider(),
                 _buildActionTile(
-                  icon: Icons.headphones_rounded,
-                  iconColor: const Color(0xFFFF9500),
-                  title: context.l10n.audiobooksPodcasts,
-                  onTap: () => context.go('/radios'),
-                ),
-                _buildDivider(),
-                _buildActionTile(
                   icon: Icons.graphic_eq_rounded,
                   iconColor: const Color(0xFFAF52DE),
                   title: context.l10n.streamingQuality,
@@ -389,8 +382,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ? const Color(0xFFFF9500)
                         : Colors.white.withValues(alpha: 0.4),
                     fontSize: 13,
-                    fontWeight:
-                        isActivated ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isActivated
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -580,9 +574,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(context.l10n.upToDate)));
     } else if (state.status == UpdateStatus.error) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(state.errorMessage ?? context.l10n.updateCheckFailed),
         ),
@@ -756,7 +748,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1E2028),
-        title: Text(dialogContext.l10n.proxyDialogTitle, style: const TextStyle(color: Colors.white)),
+        title: Text(
+          dialogContext.l10n.proxyDialogTitle,
+          style: const TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
