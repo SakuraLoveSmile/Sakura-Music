@@ -2,61 +2,61 @@
   "tag_name": "v0.3.0-alpha.2",
   "html_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.0-alpha.2",
   "body": "",
-  "published_at": "2026-08-26T16:08:55Z",
+  "published_at": "2026-08-26T16:24:10Z",
   "assets": [
     {
       "name": "SakuraMusic-android-arm64-v8a.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-android-arm64-v8a.apk",
       "size": 31854177,
-      "digest": "sha256:c7ea24481a02a6ae341eae9ba1b9f9856de8f6d40cb8681feb9b9bb881c73c51"
+      "digest": "sha256:9ee2b76d8833d9b0f1aca86c7135c998b3ded1ba6de13e637b3aef66986ca560"
     },
     {
       "name": "SakuraMusic-android-armeabi-v7a.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-android-armeabi-v7a.apk",
       "size": 28919761,
-      "digest": "sha256:a1940d028e12e7a00afdad378d4a866dd267fe26b0066b0bae5e865f14e7d025"
+      "digest": "sha256:0e7d4605fa4f50e962165efa07069c72594dd9673cbd4b75c3b374e5db727442"
     },
     {
       "name": "SakuraMusic-android-universal.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-android-universal.apk",
       "size": 90811807,
-      "digest": "sha256:e0a54e83babeb54a2b4edfa2b6cbfe1625adc4398143c477bac7b306071105f2"
+      "digest": "sha256:f25b82802cc4967e0b09921ecc2dce861244d675cbe8e98f4dbe359a57fad0c6"
     },
     {
       "name": "SakuraMusic-android-x86_64.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-android-x86_64.apk",
       "size": 34171419,
-      "digest": "sha256:4914b166a89ba4700417f4381bfb11db8a8a33bf067fddfd854d33455db0ec69"
+      "digest": "sha256:192621048246612ade25d8d138f5aaa9e0a8f7a94f4469efe5d4f269587af499"
     },
     {
       "name": "SakuraMusic-ios-Runner.app.zip",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-ios-Runner.app.zip",
-      "size": 12897069,
-      "digest": "sha256:52e7441d5eade313e6d17fcb9f9fa472976475a4457967a34b1316ff66751a84"
+      "size": 12897071,
+      "digest": "sha256:d35ced2eaf350db6a566d75b599a39da8f98a2b3d596c37a635c68163cf0a629"
     },
     {
       "name": "SakuraMusic-ios-unsigned.ipa",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-ios-unsigned.ipa",
-      "size": 12884343,
-      "digest": "sha256:bf2ac7aba51d937c6076ed4b226c5361f04f2728ba9d64d4ccdff14e6017a0b7"
+      "size": 12884342,
+      "digest": "sha256:188bb83fb5f32a964a48b989e4b9fc3d30db6743a1f8ecb71a4ef9cba6001156"
     },
     {
       "name": "SakuraMusic-macos.dmg",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-macos.dmg",
-      "size": 37149511,
-      "digest": "sha256:b65053b7025ec43a0352b8c45f0c987b061db36265a073463ced73c17fad8413"
+      "size": 37149517,
+      "digest": "sha256:b5c98092f0fb292b6e0bc34320c0de8d5d56a897b6092d1da9767def84ad39a9"
     },
     {
       "name": "SakuraMusic-macos.zip",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-macos.zip",
-      "size": 32601903,
-      "digest": "sha256:3c00ef544f61ee55cb5c3151e8601149eb3b9dbba4d3e46a0814d08b16e3ed31"
+      "size": 32601905,
+      "digest": "sha256:c0457bf281659a48139a3db6ffebb49760cdbc01311635e43f60d8bb6ad2c42e"
     },
     {
       "name": "SakuraMusic-windows-x64.zip",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.2/SakuraMusic-windows-x64.zip",
-      "size": 23234337,
-      "digest": "sha256:ff67c8ffb1f2676739a2e03601a809c77e47ae2467ae0b2176a4a2c15deba5a9"
+      "size": 23234340,
+      "digest": "sha256:08c5ea8584196faa3a4312789a4f080e1e11789504f188747a2e94162b654414"
     }
   ]
 }
