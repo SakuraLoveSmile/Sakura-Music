@@ -1000,21 +1000,14 @@ String? resolveArtistImageUrl({
   SubsonicClient? client,
   int size = 300,
 }) {
-  if (client != null) {
-    // 1. If artist has explicit coverArt (e.g. 'ar-...' or album ID) from server
-    if (artist.coverArt != null && artist.coverArt!.trim().isNotEmpty) {
+  // 1. If artist has explicit coverArt (e.g. 'ar-...' or album ID) from server
+  if (artist.coverArt != null && artist.coverArt!.trim().isNotEmpty) {
+    if (client != null) {
       return client.coverArtUrl(artist.coverArt!.trim(), size: size);
-    }
-    // 2. Navidrome / OpenSubsonic canonical artist cover ID: 'ar-<artist_id>'
-    if (artist.id.isNotEmpty) {
-      final coverId = artist.id.startsWith('ar-')
-          ? artist.id
-          : 'ar-${artist.id}';
-      return client.coverArtUrl(coverId, size: size);
     }
   }
 
-  // 3. If direct HTTP / HTTPS image URL is present in artistImageUrl
+  // 2. If artistImageUrl is present from server
   if (artist.artistImageUrl != null &&
       artist.artistImageUrl!.trim().isNotEmpty) {
     final url = artist.artistImageUrl!.trim();
@@ -1026,9 +1019,10 @@ String? resolveArtistImageUrl({
     }
   }
 
-  // 4. Fallback if artist.id is present
+  // 3. Fallback to Navidrome / OpenSubsonic canonical artist cover ID: 'ar-<artist_id>'
   if (client != null && artist.id.isNotEmpty) {
-    return client.coverArtUrl(artist.id, size: size);
+    final coverId = artist.id.startsWith('ar-') ? artist.id : 'ar-${artist.id}';
+    return client.coverArtUrl(coverId, size: size);
   }
 
   return null;
@@ -1115,7 +1109,6 @@ class ArtistAvatar extends StatelessWidget {
         ? placeholder
         : CachedNetworkImage(
             imageUrl: effectiveImageUrl,
-            cacheKey: 'artist_${artist.id}_${(radius * 2).toInt()}',
             fit: BoxFit.cover,
             fadeInDuration: const Duration(milliseconds: 150),
             fadeOutDuration: Duration.zero,

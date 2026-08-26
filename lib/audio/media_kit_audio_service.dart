@@ -121,7 +121,9 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
     await _mpvCacheReady;
     await _player.open(
       Playlist(
-        _queue.map((item) => Media(item.streamUrl)).toList(growable: false),
+        _queue
+            .map((item) => Media(item.streamUrl, httpHeaders: item.headers))
+            .toList(growable: false),
         index: _index,
       ),
       play: false,
@@ -395,7 +397,9 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
     await _mpvCacheReady;
     await _player.open(
       Playlist(
-        _queue.map((item) => Media(item.streamUrl)).toList(growable: false),
+        _queue
+            .map((item) => Media(item.streamUrl, httpHeaders: item.headers))
+            .toList(growable: false),
         index: _index,
       ),
       play: wasPlaying,

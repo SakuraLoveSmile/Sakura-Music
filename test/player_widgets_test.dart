@@ -730,52 +730,53 @@ void main() {
     },
   );
 
-  testWidgets(
-    'OledLyricsStage toggles play/pause on double tap',
-    (WidgetTester tester) async {
-      tester.view.physicalSize = const Size(844, 390);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+  testWidgets('OledLyricsStage toggles play/pause on double tap', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(844, 390);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
 
-      final service = _TestAudioPlayerService();
-      addTearDown(service.dispose);
+    final service = _TestAudioPlayerService();
+    addTearDown(service.dispose);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            lyricsProvider.overrideWith((ref, query) async => const <ParsedLyricsLine>[]),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: const Locale('zh'),
-            home: Scaffold(
-              body: OledLyricsStage(
-                service: service,
-                item: sampleItem,
-                playing: true,
-                duration: const Duration(minutes: 3, seconds: 45),
-                onExit: () {},
-              ),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          lyricsProvider.overrideWith(
+            (ref, query) async => const <ParsedLyricsLine>[],
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: Scaffold(
+            body: OledLyricsStage(
+              service: service,
+              item: sampleItem,
+              playing: true,
+              duration: const Duration(minutes: 3, seconds: 45),
+              onExit: () {},
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-      // Double tap on OLED stage to pause
-      await tester.tap(find.byType(OledLyricsStage));
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.byType(OledLyricsStage));
-      await tester.pumpAndSettle();
+    // Double tap on OLED stage to pause
+    await tester.tap(find.byType(OledLyricsStage));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byType(OledLyricsStage));
+    await tester.pumpAndSettle();
 
-      expect(service.pauseCount, 1);
-    },
-  );
+    expect(service.pauseCount, 1);
+  });
 
   testWidgets(
     'OledLyricsStage toggles HUD visibility on single tap and auto-hides after 3.5s',
@@ -793,7 +794,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            lyricsProvider.overrideWith((ref, query) async => const <ParsedLyricsLine>[]),
+            lyricsProvider.overrideWith(
+              (ref, query) async => const <ParsedLyricsLine>[],
+            ),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -816,24 +819,32 @@ void main() {
 
       // Initially, controls overlay is opacity 0
       final animatedOpacityFinder = find.byWidgetPredicate(
-        (widget) => widget is AnimatedOpacity && widget.duration == const Duration(milliseconds: 250),
+        (widget) =>
+            widget is AnimatedOpacity &&
+            widget.duration == const Duration(milliseconds: 250),
       );
       expect(animatedOpacityFinder, findsOneWidget);
-      final initialOpacity = tester.widget<AnimatedOpacity>(animatedOpacityFinder).opacity;
+      final initialOpacity = tester
+          .widget<AnimatedOpacity>(animatedOpacityFinder)
+          .opacity;
       expect(initialOpacity, 0.0);
 
       // Single tap reveals HUD overlay
       await tester.tap(find.byType(OledLyricsStage));
       await tester.pump(const Duration(milliseconds: 300));
 
-      final visibleOpacity = tester.widget<AnimatedOpacity>(animatedOpacityFinder).opacity;
+      final visibleOpacity = tester
+          .widget<AnimatedOpacity>(animatedOpacityFinder)
+          .opacity;
       expect(visibleOpacity, 1.0);
 
       // Wait 3.5 seconds for auto-hide
       await tester.pump(const Duration(milliseconds: 3600));
       await tester.pump(const Duration(milliseconds: 300));
 
-      final hiddenOpacity = tester.widget<AnimatedOpacity>(animatedOpacityFinder).opacity;
+      final hiddenOpacity = tester
+          .widget<AnimatedOpacity>(animatedOpacityFinder)
+          .opacity;
       expect(hiddenOpacity, 0.0);
     },
   );
@@ -853,7 +864,10 @@ void main() {
 
       const parsedLyrics = <ParsedLyricsLine>[
         ParsedLyricsLine(timeMs: 0, text: 'First Line'),
-        ParsedLyricsLine(timeMs: 5000, text: 'Second Line\nSecond Line Translation'),
+        ParsedLyricsLine(
+          timeMs: 5000,
+          text: 'Second Line\nSecond Line Translation',
+        ),
         ParsedLyricsLine(timeMs: 10000, text: 'Third Line'),
       ];
 
@@ -923,7 +937,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            lyricsProvider.overrideWith((ref, query) async => const <ParsedLyricsLine>[]),
+            lyricsProvider.overrideWith(
+              (ref, query) async => const <ParsedLyricsLine>[],
+            ),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

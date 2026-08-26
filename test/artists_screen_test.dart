@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,86 @@ Widget _buildTestApp(Widget child, {List<dynamic> overrides = const []}) {
 }
 
 void main() {
+  group('resolveArtistImageUrl', () {
+    final client = SubsonicClient(
+      baseUrl: 'https://music.example.com',
+      username: 'user',
+      password: 'pwd',
+    );
+
+    test('prioritizes explicit coverArt over artistImageUrl and id', () {
+      const artist = Artist(
+        id: 'art-123',
+        name: 'Artist Name',
+        coverArt: 'cover-999',
+        artistImageUrl: 'https://images.example.com/artist.jpg',
+      );
+      final url = resolveArtistImageUrl(artist: artist, client: client);
+      expect(url, contains('getCoverArt'));
+      expect(url, contains('id=cover-999'));
+    });
+
+    test(
+      'uses absolute artistImageUrl when coverArt is absent, even if id is set',
+      () {
+        const artist = Artist(
+          id: 'art-123',
+          name: 'Artist Name',
+          coverArt: null,
+          artistImageUrl: 'https://images.example.com/artist.jpg',
+        );
+        final url = resolveArtistImageUrl(artist: artist, client: client);
+        expect(url, equals('https://images.example.com/artist.jpg'));
+      },
+    );
+
+    test(
+      'uses client.coverArtUrl for relative artistImageUrl when coverArt is absent',
+      () {
+        const artist = Artist(
+          id: 'art-123',
+          name: 'Artist Name',
+          coverArt: null,
+          artistImageUrl: 'rel-img-456',
+        );
+        final url = resolveArtistImageUrl(artist: artist, client: client);
+        expect(url, contains('getCoverArt'));
+        expect(url, contains('id=rel-img-456'));
+      },
+    );
+
+    test(
+      'falls back to ar-<id> when coverArt and artistImageUrl are absent',
+      () {
+        const artist = Artist(
+          id: '123',
+          name: 'Artist Name',
+          coverArt: null,
+          artistImageUrl: null,
+        );
+        final url = resolveArtistImageUrl(artist: artist, client: client);
+        expect(url, contains('getCoverArt'));
+        expect(url, contains('id=ar-123'));
+      },
+    );
+
+    test(
+      'does not duplicate ar- prefix if artist.id already starts with ar-',
+      () {
+        const artist = Artist(id: 'ar-123', name: 'Artist Name');
+        final url = resolveArtistImageUrl(artist: artist, client: client);
+        expect(url, contains('id=ar-123'));
+        expect(url, isNot(contains('id=ar-ar-123')));
+      },
+    );
+
+    test('returns null when client is null and no absolute URL', () {
+      const artist = Artist(id: '123', name: 'Artist Name');
+      final url = resolveArtistImageUrl(artist: artist, client: null);
+      expect(url, isNull);
+    });
+  });
+
   group('Artist UI Components', () {
     testWidgets(
       'ArtistAvatar renders fallback initial when no client or image',
@@ -33,6 +114,29 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('T'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ArtistAvatar renders CachedNetworkImage when imageUrl is provided',
+      (tester) async {
+        const artist = Artist(id: '1', name: 'Taylor Swift', albumCount: 10);
+        await tester.pumpWidget(
+          _buildTestApp(
+            const Scaffold(
+              body: ArtistAvatar(
+                artist: artist,
+                imageUrl: 'https://example.com/taylor.jpg',
+              ),
+            ),
+          ),
+        );
+
+        final imageFinder = find.byType(CachedNetworkImage);
+        expect(imageFinder, findsOneWidget);
+        final cachedImage = tester.widget<CachedNetworkImage>(imageFinder);
+        expect(cachedImage.imageUrl, 'https://example.com/taylor.jpg');
+        expect(cachedImage.cacheKey, isNull);
       },
     );
 
