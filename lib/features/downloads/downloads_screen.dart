@@ -70,7 +70,9 @@ class DownloadsScreen extends ConsumerWidget {
                   sliver: SliverMainAxisGroup(
                     slivers: <Widget>[
                       if (active.isNotEmpty) ...<Widget>[
-                        _DownloadSectionHeader(title: context.l10n.sectionInProgress),
+                        _DownloadSectionHeader(
+                          title: context.l10n.sectionInProgress,
+                        ),
                         SliverList.builder(
                           itemCount: active.length,
                           itemBuilder: (context, index) => _downloadTile(
@@ -83,7 +85,9 @@ class DownloadsScreen extends ConsumerWidget {
                         ),
                       ],
                       if (completed.isNotEmpty) ...<Widget>[
-                        _DownloadSectionHeader(title: context.l10n.sectionCompleted),
+                        _DownloadSectionHeader(
+                          title: context.l10n.sectionCompleted,
+                        ),
                         SliverList.builder(
                           itemCount: completed.length,
                           itemBuilder: (context, index) => _downloadTile(

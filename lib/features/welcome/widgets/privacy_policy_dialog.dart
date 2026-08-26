@@ -19,10 +19,7 @@ class PrivacyPolicyDialog extends StatelessWidget {
       backgroundColor: const Color(0xFF1C1E24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: ConstrainedBox(

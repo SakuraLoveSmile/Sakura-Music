@@ -19,7 +19,9 @@ class LocaleNotifier extends Notifier<String> {
     try {
       final row = await ref.read(settingsRepositoryProvider).read();
       final code = row?.localeCode;
-      if (code != null && code != state && supportedLocaleCodes.contains(code)) {
+      if (code != null &&
+          code != state &&
+          supportedLocaleCodes.contains(code)) {
         state = code;
       }
     } catch (_) {

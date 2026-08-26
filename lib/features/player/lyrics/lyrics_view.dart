@@ -12,6 +12,7 @@ class LyricsView extends ConsumerStatefulWidget {
     required this.position,
     required this.onSeek,
     this.textAlign = TextAlign.center,
+    this.oled = false,
     super.key,
   });
 
@@ -19,6 +20,7 @@ class LyricsView extends ConsumerStatefulWidget {
   final Duration position;
   final ValueChanged<Duration> onSeek;
   final TextAlign textAlign;
+  final bool oled;
 
   @override
   ConsumerState<LyricsView> createState() => _LyricsViewState();
@@ -27,6 +29,7 @@ class LyricsView extends ConsumerStatefulWidget {
 class _LyricsViewState extends ConsumerState<LyricsView> {
   final _scrollController = ScrollController();
   int _lastIndex = -1;
+  List<GlobalKey> _lineKeys = <GlobalKey>[];
 
   @override
   void dispose() {
@@ -41,6 +44,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       return;
     }
     _lastIndex = -1;
+    _lineKeys = <GlobalKey>[];
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
     }
@@ -58,35 +62,45 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       ),
     );
     return lyrics.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: SizedBox.square(
           dimension: 28,
           child: CircularProgressIndicator(
             strokeWidth: 2.5,
-            color: Color(0xFF1E7BF6),
+            color: widget.oled ? Colors.white : const Color(0xFF1E7BF6),
           ),
         ),
       ),
-      error: (error, stackTrace) => const _NoLyrics(),
+      error: (error, stackTrace) => _NoLyrics(oled: widget.oled),
       data: (lines) {
         if (lines == null || lines.isEmpty) {
-          return const _NoLyrics();
+          return _NoLyrics(oled: widget.oled);
         }
         final activeIndex = _activeIndex(lines, widget.position.inMilliseconds);
+        if (_lineKeys.length != lines.length) {
+          _lineKeys = List<GlobalKey>.generate(
+            lines.length,
+            (_) => GlobalKey(),
+          );
+        }
         if (activeIndex != _lastIndex) {
+          final firstPosition = _lastIndex == -1;
           _lastIndex = activeIndex;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || !_scrollController.hasClients || activeIndex < 0) {
+            if (!mounted || activeIndex < 0) {
               return;
             }
-            final target = (activeIndex * 60.0 - 130).clamp(
-              0.0,
-              _scrollController.position.maxScrollExtent,
-            );
-            _scrollController.animateTo(
-              target,
-              duration: const Duration(milliseconds: 320),
-              curve: Curves.easeInOutCubic,
+            final keyContext = _lineKeys[activeIndex].currentContext;
+            if (keyContext == null) {
+              return;
+            }
+            Scrollable.ensureVisible(
+              keyContext,
+              alignment: 0.5,
+              duration: firstPosition
+                  ? Duration.zero
+                  : const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
             );
           });
         }
@@ -104,45 +118,39 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
             stops: <double>[0.0, 0.08, 0.92, 1.0],
           ).createShader(rect),
           blendMode: BlendMode.dstIn,
-          child: ListView.separated(
+          child: SingleChildScrollView(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(vertical: 140, horizontal: 24),
-            itemCount: lines.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 14),
-            itemBuilder: (context, index) {
-              final active = index == activeIndex;
-              final isPassed = index < activeIndex;
-              return InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _seekToLine(lines[index]),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 12,
-                  ),
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    style: TextStyle(
-                      color: active
-                          ? Colors.white
-                          : isPassed
-                              ? Colors.white.withValues(alpha: 0.35)
-                              : Colors.white.withValues(alpha: 0.5),
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                      fontSize: active ? 22 : 16.5,
-                      height: 1.45,
-                      letterSpacing: active ? 0.2 : 0.0,
-                    ),
-                    child: Text(
-                      lines[index].text,
-                      textAlign: widget.textAlign,
+            padding: EdgeInsets.symmetric(
+              vertical: widget.oled ? 180 : 140,
+              horizontal: 24,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (int i = 0; i < lines.length; i++)
+                  InkWell(
+                    key: _lineKeys[i],
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _seekToLine(lines[i]),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
+                        style: _lineTextStyle(
+                          i == activeIndex,
+                          i < activeIndex,
+                        ),
+                        child: Text(lines[i].text, textAlign: widget.textAlign),
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+              ],
+            ),
           ),
         );
       },
@@ -151,6 +159,29 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
 
   void _seekToLine(ParsedLyricsLine line) {
     widget.onSeek(Duration(milliseconds: line.timeMs));
+  }
+
+  TextStyle _lineTextStyle(bool active, bool passed) {
+    final color = widget.oled
+        ? (active
+              ? Colors.white
+              : passed
+              ? Colors.white.withValues(alpha: 0.28)
+              : Colors.white.withValues(alpha: 0.45))
+        : (active
+              ? Colors.white
+              : passed
+              ? Colors.white.withValues(alpha: 0.35)
+              : Colors.white.withValues(alpha: 0.5));
+    return TextStyle(
+      color: color,
+      fontWeight: active
+          ? (widget.oled ? FontWeight.w900 : FontWeight.w800)
+          : FontWeight.w500,
+      fontSize: active ? (widget.oled ? 28 : 22) : 17,
+      height: 1.45,
+      letterSpacing: active ? 0.2 : 0.0,
+    );
   }
 
   int _activeIndex(List<ParsedLyricsLine> lines, int positionMs) {
@@ -186,11 +217,7 @@ class CompactLyricsPreview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lyrics = ref.watch(
       lyricsProvider(
-        LyricsQuery(
-          id: item.id,
-          artist: item.artist,
-          title: item.title,
-        ),
+        LyricsQuery(id: item.id, artist: item.artist, title: item.title),
       ),
     );
 
@@ -211,7 +238,9 @@ class CompactLyricsPreview extends ConsumerWidget {
           }
         }
         final currentText = lines[active].text;
-        final nextText = active + 1 < lines.length ? lines[active + 1].text : '';
+        final nextText = active + 1 < lines.length
+            ? lines[active + 1].text
+            : '';
 
         return Material(
           color: Colors.transparent,
@@ -223,9 +252,7 @@ class CompactLyricsPreview extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -265,7 +292,9 @@ class CompactLyricsPreview extends ConsumerWidget {
 }
 
 class _NoLyrics extends StatelessWidget {
-  const _NoLyrics();
+  const _NoLyrics({this.oled = false});
+
+  final bool oled;
 
   @override
   Widget build(BuildContext context) {
@@ -276,20 +305,26 @@ class _NoLyrics extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: oled
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.white.withValues(alpha: 0.04),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lyrics_outlined,
               size: 40,
-              color: Colors.white38,
+              color: oled
+                  ? Colors.white.withValues(alpha: 0.4)
+                  : Colors.white38,
             ),
           ),
           const SizedBox(height: 14),
           Text(
             context.l10n.noLyrics,
-            style: const TextStyle(
-              color: Colors.white54,
+            style: TextStyle(
+              color: oled
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : Colors.white54,
               fontSize: 14,
             ),
           ),

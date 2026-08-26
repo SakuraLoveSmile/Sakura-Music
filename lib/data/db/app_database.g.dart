@@ -72,6 +72,15 @@ class $ServersTable extends Servers with TableInfo<$ServersTable, Server> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -92,6 +101,7 @@ class $ServersTable extends Servers with TableInfo<$ServersTable, Server> {
     username,
     password,
     token,
+    type,
     createdAt,
   ];
   @override
@@ -147,6 +157,12 @@ class $ServersTable extends Servers with TableInfo<$ServersTable, Server> {
         token.isAcceptableOrUnknown(data['token']!, _tokenMeta),
       );
     }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -186,6 +202,10 @@ class $ServersTable extends Servers with TableInfo<$ServersTable, Server> {
         DriftSqlType.string,
         data['${effectivePrefix}token'],
       ),
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -206,6 +226,10 @@ class Server extends DataClass implements Insertable<Server> {
   final String username;
   final String password;
   final String? token;
+
+  /// Server protocol family. `null` for rows created before this column
+  /// existed; those are treated as Subsonic-compatible (Navidrome included).
+  final String? type;
   final DateTime createdAt;
   const Server({
     required this.id,
@@ -214,6 +238,7 @@ class Server extends DataClass implements Insertable<Server> {
     required this.username,
     required this.password,
     this.token,
+    this.type,
     required this.createdAt,
   });
   @override
@@ -226,6 +251,9 @@ class Server extends DataClass implements Insertable<Server> {
     map['password'] = Variable<String>(password);
     if (!nullToAbsent || token != null) {
       map['token'] = Variable<String>(token);
+    }
+    if (!nullToAbsent || type != null) {
+      map['type'] = Variable<String>(type);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -241,6 +269,7 @@ class Server extends DataClass implements Insertable<Server> {
       token: token == null && nullToAbsent
           ? const Value.absent()
           : Value(token),
+      type: type == null && nullToAbsent ? const Value.absent() : Value(type),
       createdAt: Value(createdAt),
     );
   }
@@ -257,6 +286,7 @@ class Server extends DataClass implements Insertable<Server> {
       username: serializer.fromJson<String>(json['username']),
       password: serializer.fromJson<String>(json['password']),
       token: serializer.fromJson<String?>(json['token']),
+      type: serializer.fromJson<String?>(json['type']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -270,6 +300,7 @@ class Server extends DataClass implements Insertable<Server> {
       'username': serializer.toJson<String>(username),
       'password': serializer.toJson<String>(password),
       'token': serializer.toJson<String?>(token),
+      'type': serializer.toJson<String?>(type),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -281,6 +312,7 @@ class Server extends DataClass implements Insertable<Server> {
     String? username,
     String? password,
     Value<String?> token = const Value.absent(),
+    Value<String?> type = const Value.absent(),
     DateTime? createdAt,
   }) => Server(
     id: id ?? this.id,
@@ -289,6 +321,7 @@ class Server extends DataClass implements Insertable<Server> {
     username: username ?? this.username,
     password: password ?? this.password,
     token: token.present ? token.value : this.token,
+    type: type.present ? type.value : this.type,
     createdAt: createdAt ?? this.createdAt,
   );
   Server copyWithCompanion(ServersCompanion data) {
@@ -299,6 +332,7 @@ class Server extends DataClass implements Insertable<Server> {
       username: data.username.present ? data.username.value : this.username,
       password: data.password.present ? data.password.value : this.password,
       token: data.token.present ? data.token.value : this.token,
+      type: data.type.present ? data.type.value : this.type,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -312,14 +346,23 @@ class Server extends DataClass implements Insertable<Server> {
           ..write('username: $username, ')
           ..write('password: $password, ')
           ..write('token: $token, ')
+          ..write('type: $type, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, baseUrl, username, password, token, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    baseUrl,
+    username,
+    password,
+    token,
+    type,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -330,6 +373,7 @@ class Server extends DataClass implements Insertable<Server> {
           other.username == this.username &&
           other.password == this.password &&
           other.token == this.token &&
+          other.type == this.type &&
           other.createdAt == this.createdAt);
 }
 
@@ -340,6 +384,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
   final Value<String> username;
   final Value<String> password;
   final Value<String?> token;
+  final Value<String?> type;
   final Value<DateTime> createdAt;
   const ServersCompanion({
     this.id = const Value.absent(),
@@ -348,6 +393,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
     this.username = const Value.absent(),
     this.password = const Value.absent(),
     this.token = const Value.absent(),
+    this.type = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ServersCompanion.insert({
@@ -357,6 +403,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
     required String username,
     required String password,
     this.token = const Value.absent(),
+    this.type = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name),
        baseUrl = Value(baseUrl),
@@ -369,6 +416,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
     Expression<String>? username,
     Expression<String>? password,
     Expression<String>? token,
+    Expression<String>? type,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -378,6 +426,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
       if (username != null) 'username': username,
       if (password != null) 'password': password,
       if (token != null) 'token': token,
+      if (type != null) 'type': type,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -389,6 +438,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
     Value<String>? username,
     Value<String>? password,
     Value<String?>? token,
+    Value<String?>? type,
     Value<DateTime>? createdAt,
   }) {
     return ServersCompanion(
@@ -398,6 +448,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
       username: username ?? this.username,
       password: password ?? this.password,
       token: token ?? this.token,
+      type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -423,6 +474,9 @@ class ServersCompanion extends UpdateCompanion<Server> {
     if (token.present) {
       map['token'] = Variable<String>(token.value);
     }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -438,6 +492,7 @@ class ServersCompanion extends UpdateCompanion<Server> {
           ..write('username: $username, ')
           ..write('password: $password, ')
           ..write('token: $token, ')
+          ..write('type: $type, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -501,6 +556,37 @@ class $RecentPlaysTable extends RecentPlays
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _albumMeta = const VerificationMeta('album');
+  @override
+  late final GeneratedColumn<String> album = GeneratedColumn<String>(
+    'album',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _albumIdMeta = const VerificationMeta(
+    'albumId',
+  );
+  @override
+  late final GeneratedColumn<String> albumId = GeneratedColumn<String>(
+    'album_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _artistIdMeta = const VerificationMeta(
+    'artistId',
+  );
+  @override
+  late final GeneratedColumn<String> artistId = GeneratedColumn<String>(
+    'artist_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _playedAtMeta = const VerificationMeta(
     'playedAt',
   );
@@ -520,6 +606,9 @@ class $RecentPlaysTable extends RecentPlays
     serverId,
     title,
     artist,
+    album,
+    albumId,
+    artistId,
     playedAt,
   ];
   @override
@@ -565,6 +654,24 @@ class $RecentPlaysTable extends RecentPlays
         artist.isAcceptableOrUnknown(data['artist']!, _artistMeta),
       );
     }
+    if (data.containsKey('album')) {
+      context.handle(
+        _albumMeta,
+        album.isAcceptableOrUnknown(data['album']!, _albumMeta),
+      );
+    }
+    if (data.containsKey('album_id')) {
+      context.handle(
+        _albumIdMeta,
+        albumId.isAcceptableOrUnknown(data['album_id']!, _albumIdMeta),
+      );
+    }
+    if (data.containsKey('artist_id')) {
+      context.handle(
+        _artistIdMeta,
+        artistId.isAcceptableOrUnknown(data['artist_id']!, _artistIdMeta),
+      );
+    }
     if (data.containsKey('played_at')) {
       context.handle(
         _playedAtMeta,
@@ -600,6 +707,18 @@ class $RecentPlaysTable extends RecentPlays
         DriftSqlType.string,
         data['${effectivePrefix}artist'],
       ),
+      album: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album'],
+      ),
+      albumId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album_id'],
+      ),
+      artistId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}artist_id'],
+      ),
       playedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}played_at'],
@@ -619,6 +738,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
   final int serverId;
   final String? title;
   final String? artist;
+  final String? album;
+  final String? albumId;
+  final String? artistId;
   final DateTime playedAt;
   const RecentPlay({
     required this.id,
@@ -626,6 +748,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     required this.serverId,
     this.title,
     this.artist,
+    this.album,
+    this.albumId,
+    this.artistId,
     required this.playedAt,
   });
   @override
@@ -639,6 +764,15 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     }
     if (!nullToAbsent || artist != null) {
       map['artist'] = Variable<String>(artist);
+    }
+    if (!nullToAbsent || album != null) {
+      map['album'] = Variable<String>(album);
+    }
+    if (!nullToAbsent || albumId != null) {
+      map['album_id'] = Variable<String>(albumId);
+    }
+    if (!nullToAbsent || artistId != null) {
+      map['artist_id'] = Variable<String>(artistId);
     }
     map['played_at'] = Variable<DateTime>(playedAt);
     return map;
@@ -655,6 +789,15 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       artist: artist == null && nullToAbsent
           ? const Value.absent()
           : Value(artist),
+      album: album == null && nullToAbsent
+          ? const Value.absent()
+          : Value(album),
+      albumId: albumId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(albumId),
+      artistId: artistId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(artistId),
       playedAt: Value(playedAt),
     );
   }
@@ -670,6 +813,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       serverId: serializer.fromJson<int>(json['serverId']),
       title: serializer.fromJson<String?>(json['title']),
       artist: serializer.fromJson<String?>(json['artist']),
+      album: serializer.fromJson<String?>(json['album']),
+      albumId: serializer.fromJson<String?>(json['albumId']),
+      artistId: serializer.fromJson<String?>(json['artistId']),
       playedAt: serializer.fromJson<DateTime>(json['playedAt']),
     );
   }
@@ -682,6 +828,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       'serverId': serializer.toJson<int>(serverId),
       'title': serializer.toJson<String?>(title),
       'artist': serializer.toJson<String?>(artist),
+      'album': serializer.toJson<String?>(album),
+      'albumId': serializer.toJson<String?>(albumId),
+      'artistId': serializer.toJson<String?>(artistId),
       'playedAt': serializer.toJson<DateTime>(playedAt),
     };
   }
@@ -692,6 +841,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     int? serverId,
     Value<String?> title = const Value.absent(),
     Value<String?> artist = const Value.absent(),
+    Value<String?> album = const Value.absent(),
+    Value<String?> albumId = const Value.absent(),
+    Value<String?> artistId = const Value.absent(),
     DateTime? playedAt,
   }) => RecentPlay(
     id: id ?? this.id,
@@ -699,6 +851,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     serverId: serverId ?? this.serverId,
     title: title.present ? title.value : this.title,
     artist: artist.present ? artist.value : this.artist,
+    album: album.present ? album.value : this.album,
+    albumId: albumId.present ? albumId.value : this.albumId,
+    artistId: artistId.present ? artistId.value : this.artistId,
     playedAt: playedAt ?? this.playedAt,
   );
   RecentPlay copyWithCompanion(RecentPlaysCompanion data) {
@@ -708,6 +863,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
       title: data.title.present ? data.title.value : this.title,
       artist: data.artist.present ? data.artist.value : this.artist,
+      album: data.album.present ? data.album.value : this.album,
+      albumId: data.albumId.present ? data.albumId.value : this.albumId,
+      artistId: data.artistId.present ? data.artistId.value : this.artistId,
       playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
     );
   }
@@ -720,14 +878,26 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
           ..write('serverId: $serverId, ')
           ..write('title: $title, ')
           ..write('artist: $artist, ')
+          ..write('album: $album, ')
+          ..write('albumId: $albumId, ')
+          ..write('artistId: $artistId, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, songId, serverId, title, artist, playedAt);
+  int get hashCode => Object.hash(
+    id,
+    songId,
+    serverId,
+    title,
+    artist,
+    album,
+    albumId,
+    artistId,
+    playedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -737,6 +907,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
           other.serverId == this.serverId &&
           other.title == this.title &&
           other.artist == this.artist &&
+          other.album == this.album &&
+          other.albumId == this.albumId &&
+          other.artistId == this.artistId &&
           other.playedAt == this.playedAt);
 }
 
@@ -746,6 +919,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
   final Value<int> serverId;
   final Value<String?> title;
   final Value<String?> artist;
+  final Value<String?> album;
+  final Value<String?> albumId;
+  final Value<String?> artistId;
   final Value<DateTime> playedAt;
   const RecentPlaysCompanion({
     this.id = const Value.absent(),
@@ -753,6 +929,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     this.serverId = const Value.absent(),
     this.title = const Value.absent(),
     this.artist = const Value.absent(),
+    this.album = const Value.absent(),
+    this.albumId = const Value.absent(),
+    this.artistId = const Value.absent(),
     this.playedAt = const Value.absent(),
   });
   RecentPlaysCompanion.insert({
@@ -761,6 +940,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     required int serverId,
     this.title = const Value.absent(),
     this.artist = const Value.absent(),
+    this.album = const Value.absent(),
+    this.albumId = const Value.absent(),
+    this.artistId = const Value.absent(),
     this.playedAt = const Value.absent(),
   }) : songId = Value(songId),
        serverId = Value(serverId);
@@ -770,6 +952,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     Expression<int>? serverId,
     Expression<String>? title,
     Expression<String>? artist,
+    Expression<String>? album,
+    Expression<String>? albumId,
+    Expression<String>? artistId,
     Expression<DateTime>? playedAt,
   }) {
     return RawValuesInsertable({
@@ -778,6 +963,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
       if (serverId != null) 'server_id': serverId,
       if (title != null) 'title': title,
       if (artist != null) 'artist': artist,
+      if (album != null) 'album': album,
+      if (albumId != null) 'album_id': albumId,
+      if (artistId != null) 'artist_id': artistId,
       if (playedAt != null) 'played_at': playedAt,
     });
   }
@@ -788,6 +976,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     Value<int>? serverId,
     Value<String?>? title,
     Value<String?>? artist,
+    Value<String?>? album,
+    Value<String?>? albumId,
+    Value<String?>? artistId,
     Value<DateTime>? playedAt,
   }) {
     return RecentPlaysCompanion(
@@ -796,6 +987,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
       serverId: serverId ?? this.serverId,
       title: title ?? this.title,
       artist: artist ?? this.artist,
+      album: album ?? this.album,
+      albumId: albumId ?? this.albumId,
+      artistId: artistId ?? this.artistId,
       playedAt: playedAt ?? this.playedAt,
     );
   }
@@ -818,6 +1012,15 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     if (artist.present) {
       map['artist'] = Variable<String>(artist.value);
     }
+    if (album.present) {
+      map['album'] = Variable<String>(album.value);
+    }
+    if (albumId.present) {
+      map['album_id'] = Variable<String>(albumId.value);
+    }
+    if (artistId.present) {
+      map['artist_id'] = Variable<String>(artistId.value);
+    }
     if (playedAt.present) {
       map['played_at'] = Variable<DateTime>(playedAt.value);
     }
@@ -832,6 +1035,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
           ..write('serverId: $serverId, ')
           ..write('title: $title, ')
           ..write('artist: $artist, ')
+          ..write('album: $album, ')
+          ..write('albumId: $albumId, ')
+          ..write('artistId: $artistId, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
@@ -1812,17 +2018,18 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
   static const VerificationMeta _statusBarLyricsEnabledMeta =
       const VerificationMeta('statusBarLyricsEnabled');
   @override
-  late final GeneratedColumn<bool> statusBarLyricsEnabled = GeneratedColumn<bool>(
-    'status_bar_lyrics_enabled',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("status_bar_lyrics_enabled" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
+  late final GeneratedColumn<bool> statusBarLyricsEnabled =
+      GeneratedColumn<bool>(
+        'status_bar_lyrics_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("status_bar_lyrics_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   static const VerificationMeta _safeAudioModeMeta = const VerificationMeta(
     'safeAudioMode',
   );
@@ -1836,7 +2043,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'CHECK ("safe_audio_mode" IN (0, 1))',
     ),
-    defaultValue: const Constant(false),
+    defaultValue: const Constant(true),
   );
   static const VerificationMeta _localeCodeMeta = const VerificationMeta(
     'localeCode',
@@ -2105,8 +2312,8 @@ class Setting extends DataClass implements Insertable<Setting> {
   final bool lyricsOverlayEnabled;
 
   /// When enabled, the currently playing song and its timed lyrics are pushed
-  /// to the Lyricon status-bar lyrics center service. Degrades silently when
-  /// Lyricon is not installed on the device.
+  /// to the Lyricon status-bar lyrics center service (requires LSPosed +
+  /// Lyricon on the device). Degrades silently when Lyricon is not installed.
   final bool statusBarLyricsEnabled;
 
   /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
@@ -2261,7 +2468,8 @@ class Setting extends DataClass implements Insertable<Setting> {
         : this.listenBrainzToken,
     listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
     lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
-    statusBarLyricsEnabled: statusBarLyricsEnabled ?? this.statusBarLyricsEnabled,
+    statusBarLyricsEnabled:
+        statusBarLyricsEnabled ?? this.statusBarLyricsEnabled,
     safeAudioMode: safeAudioMode ?? this.safeAudioMode,
     localeCode: localeCode ?? this.localeCode,
     membershipActive: membershipActive ?? this.membershipActive,
@@ -2324,7 +2532,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('listenBrainzToken: $listenBrainzToken, ')
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
-           ..write('statusBarLyricsEnabled: $statusBarLyricsEnabled, ')
+          ..write('statusBarLyricsEnabled: $statusBarLyricsEnabled, ')
           ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
@@ -2481,7 +2689,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       listenBrainzToken: listenBrainzToken ?? this.listenBrainzToken,
       listenBrainzEnabled: listenBrainzEnabled ?? this.listenBrainzEnabled,
       lyricsOverlayEnabled: lyricsOverlayEnabled ?? this.lyricsOverlayEnabled,
-      statusBarLyricsEnabled: statusBarLyricsEnabled ?? this.statusBarLyricsEnabled,
+      statusBarLyricsEnabled:
+          statusBarLyricsEnabled ?? this.statusBarLyricsEnabled,
       safeAudioMode: safeAudioMode ?? this.safeAudioMode,
       localeCode: localeCode ?? this.localeCode,
       membershipActive: membershipActive ?? this.membershipActive,
@@ -2553,7 +2762,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('listenBrainzToken: $listenBrainzToken, ')
           ..write('listenBrainzEnabled: $listenBrainzEnabled, ')
           ..write('lyricsOverlayEnabled: $lyricsOverlayEnabled, ')
-           ..write('statusBarLyricsEnabled: $statusBarLyricsEnabled, ')
+          ..write('statusBarLyricsEnabled: $statusBarLyricsEnabled, ')
           ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
@@ -3956,6 +4165,256 @@ class CachedArtistsCompanion extends UpdateCompanion<CachedArtist> {
   }
 }
 
+class $DailyRecommendsTable extends DailyRecommends
+    with TableInfo<$DailyRecommendsTable, DailyRecommend> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DailyRecommendsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _serverIdMeta = const VerificationMeta(
+    'serverId',
+  );
+  @override
+  late final GeneratedColumn<int> serverId = GeneratedColumn<int>(
+    'server_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _songsJsonMeta = const VerificationMeta(
+    'songsJson',
+  );
+  @override
+  late final GeneratedColumn<String> songsJson = GeneratedColumn<String>(
+    'songs_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [serverId, date, songsJson];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'daily_recommends';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DailyRecommend> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('server_id')) {
+      context.handle(
+        _serverIdMeta,
+        serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('songs_json')) {
+      context.handle(
+        _songsJsonMeta,
+        songsJson.isAcceptableOrUnknown(data['songs_json']!, _songsJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_songsJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {serverId};
+  @override
+  DailyRecommend map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DailyRecommend(
+      serverId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_id'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      songsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}songs_json'],
+      )!,
+    );
+  }
+
+  @override
+  $DailyRecommendsTable createAlias(String alias) {
+    return $DailyRecommendsTable(attachedDatabase, alias);
+  }
+}
+
+class DailyRecommend extends DataClass implements Insertable<DailyRecommend> {
+  final int serverId;
+  final String date;
+  final String songsJson;
+  const DailyRecommend({
+    required this.serverId,
+    required this.date,
+    required this.songsJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['server_id'] = Variable<int>(serverId);
+    map['date'] = Variable<String>(date);
+    map['songs_json'] = Variable<String>(songsJson);
+    return map;
+  }
+
+  DailyRecommendsCompanion toCompanion(bool nullToAbsent) {
+    return DailyRecommendsCompanion(
+      serverId: Value(serverId),
+      date: Value(date),
+      songsJson: Value(songsJson),
+    );
+  }
+
+  factory DailyRecommend.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DailyRecommend(
+      serverId: serializer.fromJson<int>(json['serverId']),
+      date: serializer.fromJson<String>(json['date']),
+      songsJson: serializer.fromJson<String>(json['songsJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'serverId': serializer.toJson<int>(serverId),
+      'date': serializer.toJson<String>(date),
+      'songsJson': serializer.toJson<String>(songsJson),
+    };
+  }
+
+  DailyRecommend copyWith({int? serverId, String? date, String? songsJson}) =>
+      DailyRecommend(
+        serverId: serverId ?? this.serverId,
+        date: date ?? this.date,
+        songsJson: songsJson ?? this.songsJson,
+      );
+  DailyRecommend copyWithCompanion(DailyRecommendsCompanion data) {
+    return DailyRecommend(
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      date: data.date.present ? data.date.value : this.date,
+      songsJson: data.songsJson.present ? data.songsJson.value : this.songsJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyRecommend(')
+          ..write('serverId: $serverId, ')
+          ..write('date: $date, ')
+          ..write('songsJson: $songsJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(serverId, date, songsJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DailyRecommend &&
+          other.serverId == this.serverId &&
+          other.date == this.date &&
+          other.songsJson == this.songsJson);
+}
+
+class DailyRecommendsCompanion extends UpdateCompanion<DailyRecommend> {
+  final Value<int> serverId;
+  final Value<String> date;
+  final Value<String> songsJson;
+  const DailyRecommendsCompanion({
+    this.serverId = const Value.absent(),
+    this.date = const Value.absent(),
+    this.songsJson = const Value.absent(),
+  });
+  DailyRecommendsCompanion.insert({
+    this.serverId = const Value.absent(),
+    required String date,
+    required String songsJson,
+  }) : date = Value(date),
+       songsJson = Value(songsJson);
+  static Insertable<DailyRecommend> custom({
+    Expression<int>? serverId,
+    Expression<String>? date,
+    Expression<String>? songsJson,
+  }) {
+    return RawValuesInsertable({
+      if (serverId != null) 'server_id': serverId,
+      if (date != null) 'date': date,
+      if (songsJson != null) 'songs_json': songsJson,
+    });
+  }
+
+  DailyRecommendsCompanion copyWith({
+    Value<int>? serverId,
+    Value<String>? date,
+    Value<String>? songsJson,
+  }) {
+    return DailyRecommendsCompanion(
+      serverId: serverId ?? this.serverId,
+      date: date ?? this.date,
+      songsJson: songsJson ?? this.songsJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (serverId.present) {
+      map['server_id'] = Variable<int>(serverId.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (songsJson.present) {
+      map['songs_json'] = Variable<String>(songsJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyRecommendsCompanion(')
+          ..write('serverId: $serverId, ')
+          ..write('date: $date, ')
+          ..write('songsJson: $songsJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3967,6 +4426,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DownloadsTable downloads = $DownloadsTable(this);
   late final $CachedAlbumsTable cachedAlbums = $CachedAlbumsTable(this);
   late final $CachedArtistsTable cachedArtists = $CachedArtistsTable(this);
+  late final $DailyRecommendsTable dailyRecommends = $DailyRecommendsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3980,6 +4442,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     downloads,
     cachedAlbums,
     cachedArtists,
+    dailyRecommends,
   ];
 }
 
@@ -3991,6 +4454,7 @@ typedef $$ServersTableCreateCompanionBuilder =
       required String username,
       required String password,
       Value<String?> token,
+      Value<String?> type,
       Value<DateTime> createdAt,
     });
 typedef $$ServersTableUpdateCompanionBuilder =
@@ -4001,6 +4465,7 @@ typedef $$ServersTableUpdateCompanionBuilder =
       Value<String> username,
       Value<String> password,
       Value<String?> token,
+      Value<String?> type,
       Value<DateTime> createdAt,
     });
 
@@ -4040,6 +4505,11 @@ class $$ServersTableFilterComposer
 
   ColumnFilters<String> get token => $composableBuilder(
     column: $table.token,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4088,6 +4558,11 @@ class $$ServersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -4120,6 +4595,9 @@ class $$ServersTableAnnotationComposer
 
   GeneratedColumn<String> get token =>
       $composableBuilder(column: $table.token, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4159,6 +4637,7 @@ class $$ServersTableTableManager
                 Value<String> username = const Value.absent(),
                 Value<String> password = const Value.absent(),
                 Value<String?> token = const Value.absent(),
+                Value<String?> type = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ServersCompanion(
                 id: id,
@@ -4167,6 +4646,7 @@ class $$ServersTableTableManager
                 username: username,
                 password: password,
                 token: token,
+                type: type,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -4177,6 +4657,7 @@ class $$ServersTableTableManager
                 required String username,
                 required String password,
                 Value<String?> token = const Value.absent(),
+                Value<String?> type = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ServersCompanion.insert(
                 id: id,
@@ -4185,6 +4666,7 @@ class $$ServersTableTableManager
                 username: username,
                 password: password,
                 token: token,
+                type: type,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -4216,6 +4698,9 @@ typedef $$RecentPlaysTableCreateCompanionBuilder =
       required int serverId,
       Value<String?> title,
       Value<String?> artist,
+      Value<String?> album,
+      Value<String?> albumId,
+      Value<String?> artistId,
       Value<DateTime> playedAt,
     });
 typedef $$RecentPlaysTableUpdateCompanionBuilder =
@@ -4225,6 +4710,9 @@ typedef $$RecentPlaysTableUpdateCompanionBuilder =
       Value<int> serverId,
       Value<String?> title,
       Value<String?> artist,
+      Value<String?> album,
+      Value<String?> albumId,
+      Value<String?> artistId,
       Value<DateTime> playedAt,
     });
 
@@ -4259,6 +4747,21 @@ class $$RecentPlaysTableFilterComposer
 
   ColumnFilters<String> get artist => $composableBuilder(
     column: $table.artist,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get albumId => $composableBuilder(
+    column: $table.albumId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get artistId => $composableBuilder(
+    column: $table.artistId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4302,6 +4805,21 @@ class $$RecentPlaysTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get album => $composableBuilder(
+    column: $table.album,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get albumId => $composableBuilder(
+    column: $table.albumId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get artistId => $composableBuilder(
+    column: $table.artistId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get playedAt => $composableBuilder(
     column: $table.playedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4331,6 +4849,15 @@ class $$RecentPlaysTableAnnotationComposer
 
   GeneratedColumn<String> get artist =>
       $composableBuilder(column: $table.artist, builder: (column) => column);
+
+  GeneratedColumn<String> get album =>
+      $composableBuilder(column: $table.album, builder: (column) => column);
+
+  GeneratedColumn<String> get albumId =>
+      $composableBuilder(column: $table.albumId, builder: (column) => column);
+
+  GeneratedColumn<String> get artistId =>
+      $composableBuilder(column: $table.artistId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get playedAt =>
       $composableBuilder(column: $table.playedAt, builder: (column) => column);
@@ -4372,6 +4899,9 @@ class $$RecentPlaysTableTableManager
                 Value<int> serverId = const Value.absent(),
                 Value<String?> title = const Value.absent(),
                 Value<String?> artist = const Value.absent(),
+                Value<String?> album = const Value.absent(),
+                Value<String?> albumId = const Value.absent(),
+                Value<String?> artistId = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => RecentPlaysCompanion(
                 id: id,
@@ -4379,6 +4909,9 @@ class $$RecentPlaysTableTableManager
                 serverId: serverId,
                 title: title,
                 artist: artist,
+                album: album,
+                albumId: albumId,
+                artistId: artistId,
                 playedAt: playedAt,
               ),
           createCompanionCallback:
@@ -4388,6 +4921,9 @@ class $$RecentPlaysTableTableManager
                 required int serverId,
                 Value<String?> title = const Value.absent(),
                 Value<String?> artist = const Value.absent(),
+                Value<String?> album = const Value.absent(),
+                Value<String?> albumId = const Value.absent(),
+                Value<String?> artistId = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => RecentPlaysCompanion.insert(
                 id: id,
@@ -4395,6 +4931,9 @@ class $$RecentPlaysTableTableManager
                 serverId: serverId,
                 title: title,
                 artist: artist,
+                album: album,
+                albumId: albumId,
+                artistId: artistId,
                 playedAt: playedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -4890,6 +5429,7 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<String?> listenBrainzToken,
       Value<bool> listenBrainzEnabled,
       Value<bool> lyricsOverlayEnabled,
+      Value<bool> statusBarLyricsEnabled,
       Value<bool> safeAudioMode,
       Value<String> localeCode,
       Value<bool> membershipActive,
@@ -4906,6 +5446,7 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<String?> listenBrainzToken,
       Value<bool> listenBrainzEnabled,
       Value<bool> lyricsOverlayEnabled,
+      Value<bool> statusBarLyricsEnabled,
       Value<bool> safeAudioMode,
       Value<String> localeCode,
       Value<bool> membershipActive,
@@ -4963,6 +5504,11 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<bool> get lyricsOverlayEnabled => $composableBuilder(
     column: $table.lyricsOverlayEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get statusBarLyricsEnabled => $composableBuilder(
+    column: $table.statusBarLyricsEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5041,6 +5587,11 @@ class $$SettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get statusBarLyricsEnabled => $composableBuilder(
+    column: $table.statusBarLyricsEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get safeAudioMode => $composableBuilder(
     column: $table.safeAudioMode,
     builder: (column) => ColumnOrderings(column),
@@ -5112,6 +5663,11 @@ class $$SettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get statusBarLyricsEnabled => $composableBuilder(
+    column: $table.statusBarLyricsEnabled,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get safeAudioMode => $composableBuilder(
     column: $table.safeAudioMode,
     builder: (column) => column,
@@ -5170,6 +5726,7 @@ class $$SettingsTableTableManager
                 Value<String?> listenBrainzToken = const Value.absent(),
                 Value<bool> listenBrainzEnabled = const Value.absent(),
                 Value<bool> lyricsOverlayEnabled = const Value.absent(),
+                Value<bool> statusBarLyricsEnabled = const Value.absent(),
                 Value<bool> safeAudioMode = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
                 Value<bool> membershipActive = const Value.absent(),
@@ -5184,6 +5741,7 @@ class $$SettingsTableTableManager
                 listenBrainzToken: listenBrainzToken,
                 listenBrainzEnabled: listenBrainzEnabled,
                 lyricsOverlayEnabled: lyricsOverlayEnabled,
+                statusBarLyricsEnabled: statusBarLyricsEnabled,
                 safeAudioMode: safeAudioMode,
                 localeCode: localeCode,
                 membershipActive: membershipActive,
@@ -5200,6 +5758,7 @@ class $$SettingsTableTableManager
                 Value<String?> listenBrainzToken = const Value.absent(),
                 Value<bool> listenBrainzEnabled = const Value.absent(),
                 Value<bool> lyricsOverlayEnabled = const Value.absent(),
+                Value<bool> statusBarLyricsEnabled = const Value.absent(),
                 Value<bool> safeAudioMode = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
                 Value<bool> membershipActive = const Value.absent(),
@@ -5214,6 +5773,7 @@ class $$SettingsTableTableManager
                 listenBrainzToken: listenBrainzToken,
                 listenBrainzEnabled: listenBrainzEnabled,
                 lyricsOverlayEnabled: lyricsOverlayEnabled,
+                statusBarLyricsEnabled: statusBarLyricsEnabled,
                 safeAudioMode: safeAudioMode,
                 localeCode: localeCode,
                 membershipActive: membershipActive,
@@ -5958,6 +6518,168 @@ typedef $$CachedArtistsTableProcessedTableManager =
       CachedArtist,
       PrefetchHooks Function()
     >;
+typedef $$DailyRecommendsTableCreateCompanionBuilder =
+    DailyRecommendsCompanion Function({
+      Value<int> serverId,
+      required String date,
+      required String songsJson,
+    });
+typedef $$DailyRecommendsTableUpdateCompanionBuilder =
+    DailyRecommendsCompanion Function({
+      Value<int> serverId,
+      Value<String> date,
+      Value<String> songsJson,
+    });
+
+class $$DailyRecommendsTableFilterComposer
+    extends Composer<_$AppDatabase, $DailyRecommendsTable> {
+  $$DailyRecommendsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get songsJson => $composableBuilder(
+    column: $table.songsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DailyRecommendsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DailyRecommendsTable> {
+  $$DailyRecommendsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get songsJson => $composableBuilder(
+    column: $table.songsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DailyRecommendsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DailyRecommendsTable> {
+  $$DailyRecommendsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get songsJson =>
+      $composableBuilder(column: $table.songsJson, builder: (column) => column);
+}
+
+class $$DailyRecommendsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DailyRecommendsTable,
+          DailyRecommend,
+          $$DailyRecommendsTableFilterComposer,
+          $$DailyRecommendsTableOrderingComposer,
+          $$DailyRecommendsTableAnnotationComposer,
+          $$DailyRecommendsTableCreateCompanionBuilder,
+          $$DailyRecommendsTableUpdateCompanionBuilder,
+          (
+            DailyRecommend,
+            BaseReferences<
+              _$AppDatabase,
+              $DailyRecommendsTable,
+              DailyRecommend
+            >,
+          ),
+          DailyRecommend,
+          PrefetchHooks Function()
+        > {
+  $$DailyRecommendsTableTableManager(
+    _$AppDatabase db,
+    $DailyRecommendsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DailyRecommendsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DailyRecommendsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DailyRecommendsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> serverId = const Value.absent(),
+                Value<String> date = const Value.absent(),
+                Value<String> songsJson = const Value.absent(),
+              }) => DailyRecommendsCompanion(
+                serverId: serverId,
+                date: date,
+                songsJson: songsJson,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> serverId = const Value.absent(),
+                required String date,
+                required String songsJson,
+              }) => DailyRecommendsCompanion.insert(
+                serverId: serverId,
+                date: date,
+                songsJson: songsJson,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DailyRecommendsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DailyRecommendsTable,
+      DailyRecommend,
+      $$DailyRecommendsTableFilterComposer,
+      $$DailyRecommendsTableOrderingComposer,
+      $$DailyRecommendsTableAnnotationComposer,
+      $$DailyRecommendsTableCreateCompanionBuilder,
+      $$DailyRecommendsTableUpdateCompanionBuilder,
+      (
+        DailyRecommend,
+        BaseReferences<_$AppDatabase, $DailyRecommendsTable, DailyRecommend>,
+      ),
+      DailyRecommend,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5978,4 +6700,6 @@ class $AppDatabaseManager {
       $$CachedAlbumsTableTableManager(_db, _db.cachedAlbums);
   $$CachedArtistsTableTableManager get cachedArtists =>
       $$CachedArtistsTableTableManager(_db, _db.cachedArtists);
+  $$DailyRecommendsTableTableManager get dailyRecommends =>
+      $$DailyRecommendsTableTableManager(_db, _db.dailyRecommends);
 }

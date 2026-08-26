@@ -182,8 +182,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                         offset: const Offset(0, 40),
                                         color: const Color(0xFF22252E),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                         onSelected: (option) => setState(
                                           () => _sortOption = option,
@@ -191,42 +192,46 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                         itemBuilder: (context) => SongSortOption
                                             .values
                                             .map(
-                                              (
-                                                opt,
-                                              ) => PopupMenuItem<SongSortOption>(
-                                                value: opt,
-                                                child: Row(
-                                                  children: <Widget>[
-                                                    Text(
-                                                      _songSortOptionLabel(
-                                                        context,
-                                                        opt,
-                                                      ),
-                                                      style: TextStyle(
-                                                        color: _sortOption ==
-                                                                opt
-                                                            ? const Color(
-                                                                0xFF1E7BF6,
-                                                              )
-                                                            : Colors.white,
-                                                        fontWeight:
-                                                            _sortOption == opt
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
-                                                        fontSize: 13,
-                                                      ),
+                                              (opt) =>
+                                                  PopupMenuItem<SongSortOption>(
+                                                    value: opt,
+                                                    child: Row(
+                                                      children: <Widget>[
+                                                        Text(
+                                                          _songSortOptionLabel(
+                                                            context,
+                                                            opt,
+                                                          ),
+                                                          style: TextStyle(
+                                                            color:
+                                                                _sortOption ==
+                                                                    opt
+                                                                ? const Color(
+                                                                    0xFF1E7BF6,
+                                                                  )
+                                                                : Colors.white,
+                                                            fontWeight:
+                                                                _sortOption ==
+                                                                    opt
+                                                                ? FontWeight
+                                                                      .bold
+                                                                : FontWeight
+                                                                      .normal,
+                                                            fontSize: 13,
+                                                          ),
+                                                        ),
+                                                        const Spacer(),
+                                                        if (_sortOption == opt)
+                                                          const Icon(
+                                                            Icons.check,
+                                                            size: 16,
+                                                            color: Color(
+                                                              0xFF1E7BF6,
+                                                            ),
+                                                          ),
+                                                      ],
                                                     ),
-                                                    const Spacer(),
-                                                    if (_sortOption == opt)
-                                                      const Icon(
-                                                        Icons.check,
-                                                        size: 16,
-                                                        color:
-                                                            Color(0xFF1E7BF6),
-                                                      ),
-                                                  ],
-                                                ),
-                                              ),
+                                                  ),
                                             )
                                             .toList(),
                                         child: Row(
@@ -253,9 +258,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                horizontal: 5,
-                                                vertical: 1,
-                                              ),
+                                                    horizontal: 5,
+                                                    vertical: 1,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.08,
@@ -269,10 +274,8 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                                 ),
                                                 style: TextStyle(
                                                   fontSize: 11,
-                                                  color:
-                                                      Colors.white.withValues(
-                                                    alpha: 0.6,
-                                                  ),
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.6),
                                                 ),
                                               ),
                                             ),
@@ -290,8 +293,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                         shuffle: false,
                                       ),
                                       style: FilledButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF1E7BF6),
+                                        backgroundColor: const Color(
+                                          0xFF1E7BF6,
+                                        ),
                                         foregroundColor: Colors.white,
                                         elevation: 0,
                                         padding: const EdgeInsets.symmetric(
@@ -300,8 +304,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                         ),
                                         minimumSize: const Size(0, 36),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(18),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
                                         ),
                                       ),
                                       icon: const Icon(
@@ -326,8 +331,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                         shuffle: true,
                                       ),
                                       style: OutlinedButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF22242D),
+                                        backgroundColor: const Color(
+                                          0xFF22242D,
+                                        ),
                                         foregroundColor: Colors.white,
                                         side: BorderSide(
                                           color: Colors.white.withValues(
@@ -341,8 +347,9 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                                         ),
                                         minimumSize: const Size(0, 36),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(18),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
                                         ),
                                       ),
                                       icon: const Icon(

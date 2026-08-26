@@ -49,7 +49,10 @@ class EqualizerControls extends ConsumerWidget {
                     ),
                   ),
                   if (!supported)
-                    Text(context.l10n.iosNotSupported, style: const TextStyle(fontSize: 12)),
+                    Text(
+                      context.l10n.iosNotSupported,
+                      style: const TextStyle(fontSize: 12),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -65,7 +68,9 @@ class EqualizerControls extends ConsumerWidget {
               ),
               DropdownButtonFormField<EqualizerPreset>(
                 initialValue: settings.preset,
-                decoration: InputDecoration(labelText: context.l10n.presetLabel),
+                decoration: InputDecoration(
+                  labelText: context.l10n.presetLabel,
+                ),
                 items: EqualizerPreset.values
                     .map(
                       (preset) => DropdownMenuItem<EqualizerPreset>(

@@ -19,10 +19,7 @@ class WelcomeAppLogo extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: <Color>[
-            Color(0xFF0A84FF),
-            Color(0xFF0055B3),
-          ],
+          colors: <Color>[Color(0xFF0A84FF), Color(0xFF0055B3)],
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
@@ -299,10 +296,7 @@ class NativeExperienceCard extends StatelessWidget {
 
 /// Bottom full-width banner: 全平台支持 (All-platform support) + 新增服务器 button
 class CrossPlatformBannerCard extends StatelessWidget {
-  const CrossPlatformBannerCard({
-    required this.onAddServer,
-    super.key,
-  });
+  const CrossPlatformBannerCard({required this.onAddServer, super.key});
 
   final VoidCallback onAddServer;
 
@@ -333,8 +327,9 @@ class CrossPlatformBannerCard extends StatelessWidget {
                 _IconBadge(
                   icon: Icons.apple,
                   color: const Color(0xFF30D158),
-                  backgroundColor:
-                      const Color(0xFF30D158).withValues(alpha: 0.16),
+                  backgroundColor: const Color(
+                    0xFF30D158,
+                  ).withValues(alpha: 0.16),
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -367,8 +362,9 @@ class CrossPlatformBannerCard extends StatelessWidget {
               _IconBadge(
                 icon: Icons.apple,
                 color: const Color(0xFF30D158),
-                backgroundColor:
-                    const Color(0xFF30D158).withValues(alpha: 0.16),
+                backgroundColor: const Color(
+                  0xFF30D158,
+                ).withValues(alpha: 0.16),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -435,11 +431,7 @@ class _AddServerButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Icon(
-                  Icons.add_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                const Icon(Icons.add_circle, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.addServer,
@@ -479,9 +471,7 @@ class _IconBadge extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Center(
-        child: Icon(icon, color: color, size: 22),
-      ),
+      child: Center(child: Icon(icon, color: color, size: 22)),
     );
   }
 }
@@ -507,15 +497,15 @@ class _FeatureCardContainer extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF181A20).withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor.withValues(alpha: 0.75), width: 1.2),
+          border: Border.all(
+            color: borderColor.withValues(alpha: 0.75),
+            width: 1.2,
+          ),
         ),
         child: Stack(
           children: <Widget>[
             ?watermark,
-            Padding(
-              padding: padding,
-              child: child,
-            ),
+            Padding(padding: padding, child: child),
           ],
         ),
       ),

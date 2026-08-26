@@ -40,7 +40,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final hasServer = ref.read(activeServerProvider) != null;
       final isSettings = path == '/settings' || path.startsWith('/settings/');
       final isWelcome = path == '/welcome';
-      final isAddServer = path == '/add-server' || path.startsWith('/add-server/');
+      final isAddServer =
+          path == '/add-server' || path.startsWith('/add-server/');
 
       // Keep the initial home route visible while the local server list is
       // still loading; the refresh listener below will redirect once the
@@ -188,8 +189,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/search',
         parentNavigatorKey: rootNavigatorKey,
-        pageBuilder: (context, state) =>
-            const NoTransitionPage(child: SearchScreen()),
+        pageBuilder: (context, state) => NoTransitionPage(
+          child: SearchScreen(initialQuery: state.uri.queryParameters['q']),
+        ),
       ),
       GoRoute(
         path: '/welcome',

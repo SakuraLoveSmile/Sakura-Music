@@ -56,12 +56,11 @@ class LanDiscoveryState {
     bool? searching,
     List<DiscoveredServer>? servers,
     String? error,
-  }) =>
-      LanDiscoveryState(
-        searching: searching ?? this.searching,
-        servers: servers ?? this.servers,
-        error: error ?? this.error,
-      );
+  }) => LanDiscoveryState(
+    searching: searching ?? this.searching,
+    servers: servers ?? this.servers,
+    error: error ?? this.error,
+  );
 }
 
 const List<String> _discoveryTypes = <String>[
@@ -71,16 +70,15 @@ const List<String> _discoveryTypes = <String>[
 
 final lanDiscoveryProvider =
     NotifierProvider<LanDiscoveryNotifier, LanDiscoveryState>(
-  LanDiscoveryNotifier.new,
-);
+      LanDiscoveryNotifier.new,
+    );
 
 /// Discovers Navidrome / Subsonic servers on the local network using the
 /// platform NSD stack. The page starts and stops discovery with its lifecycle
 /// and exposes a deduplicated list of [DiscoveredServer].
 class LanDiscoveryNotifier extends Notifier<LanDiscoveryState> {
   final List<Discovery> _discoveries = <Discovery>[];
-  final Map<String, DiscoveredServer> _byKey =
-      <String, DiscoveredServer>{};
+  final Map<String, DiscoveredServer> _byKey = <String, DiscoveredServer>{};
 
   @override
   LanDiscoveryState build() {

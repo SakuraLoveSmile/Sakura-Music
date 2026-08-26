@@ -191,10 +191,7 @@ class _AlbumsError extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: onRetry,
-              child: Text(context.l10n.retry),
-            ),
+            OutlinedButton(onPressed: onRetry, child: Text(context.l10n.retry)),
           ],
         ),
       ),

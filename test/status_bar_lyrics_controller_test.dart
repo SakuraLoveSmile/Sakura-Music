@@ -15,19 +15,25 @@ class _FakeStatusBarChannel implements StatusBarLyricsChannel {
   int registerCalls = 0;
   int destroyCalls = 0;
   int clearCalls = 0;
-  final List<({
-    String id,
-    String name,
-    String? artist,
-    int durationMs,
-    List<StatusBarLyricLine> lines,
-  })> songs = <({
-    String id,
-    String name,
-    String? artist,
-    int durationMs,
-    List<StatusBarLyricLine> lines,
-  })>[];
+  final List<
+    ({
+      String id,
+      String name,
+      String? artist,
+      int durationMs,
+      List<StatusBarLyricLine> lines,
+    })
+  >
+  songs =
+      <
+        ({
+          String id,
+          String name,
+          String? artist,
+          int durationMs,
+          List<StatusBarLyricLine> lines,
+        })
+      >[];
   final List<int> positions = <int>[];
   final List<bool> states = <bool>[];
 
@@ -179,69 +185,76 @@ const PlayerSnapshot _emptySnapshot = PlayerSnapshot(
 );
 
 void main() {
-  test('pushes the whole song once on change and dedups position/state',
-      () async {
-    final channel = _FakeStatusBarChannel();
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-    final lyrics = <ParsedLyricsLine>[
-      const ParsedLyricsLine(timeMs: 0, text: 'first'),
-      const ParsedLyricsLine(timeMs: 10000, text: 'second'),
-    ];
-    final container = _container(channel, database, _FakeLyricsService(lyrics));
-    addTearDown(container.dispose);
+  test(
+    'pushes the whole song once on change and dedups position/state',
+    () async {
+      final channel = _FakeStatusBarChannel();
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final lyrics = <ParsedLyricsLine>[
+        const ParsedLyricsLine(timeMs: 0, text: 'first'),
+        const ParsedLyricsLine(timeMs: 10000, text: 'second'),
+      ];
+      final container = _container(
+        channel,
+        database,
+        _FakeLyricsService(lyrics),
+      );
+      addTearDown(container.dispose);
 
-    final controller =
-        container.read(statusBarLyricsControllerProvider.notifier);
-    expect(container.read(statusBarLyricsControllerProvider), isFalse);
+      final controller = container.read(
+        statusBarLyricsControllerProvider.notifier,
+      );
+      expect(container.read(statusBarLyricsControllerProvider), isFalse);
 
-    // While disabled no snapshot may reach the channel.
-    controller.handleSnapshot(_snapshot());
-    expect(channel.songs, isEmpty);
-    expect(channel.registerCalls, 0);
+      // While disabled no snapshot may reach the channel.
+      controller.handleSnapshot(_snapshot());
+      expect(channel.songs, isEmpty);
+      expect(channel.registerCalls, 0);
 
-    await controller.setEnabled(true);
-    expect(channel.registerCalls, 1);
-    expect(container.read(statusBarLyricsControllerProvider), isTrue);
+      await controller.setEnabled(true);
+      expect(channel.registerCalls, 1);
+      expect(container.read(statusBarLyricsControllerProvider), isTrue);
 
-    // New song: placeholder (no lyrics) pushed, then lyrics load and the full
-    // song is pushed once.
-    controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
-    await Future<void>.delayed(Duration.zero);
-    expect(channel.songs, hasLength(2));
-    expect(channel.songs.first.lines, isEmpty);
-    final full = channel.songs.last;
-    expect(full.id, 'song-1');
-    expect(full.name, 'Test Song');
-    expect(full.artist, 'Tester');
-    expect(full.lines, hasLength(2));
-    expect(full.lines.first.beginMs, 0);
-    expect(full.lines.first.endMs, 10000);
-    expect(full.lines.last.beginMs, 10000);
-    // Last line end falls back to duration (0: item carries no duration).
-    expect(full.lines.last.endMs, 0);
-    expect(channel.states, <bool>[true]);
-    expect(channel.positions, <int>[0]);
+      // New song: placeholder (no lyrics) pushed, then lyrics load and the full
+      // song is pushed once.
+      controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
+      await Future<void>.delayed(Duration.zero);
+      expect(channel.songs, hasLength(2));
+      expect(channel.songs.first.lines, isEmpty);
+      final full = channel.songs.last;
+      expect(full.id, 'song-1');
+      expect(full.name, 'Test Song');
+      expect(full.artist, 'Tester');
+      expect(full.lines, hasLength(2));
+      expect(full.lines.first.beginMs, 0);
+      expect(full.lines.first.endMs, 10000);
+      expect(full.lines.last.beginMs, 10000);
+      // Last line end falls back to duration (0: item carries no duration).
+      expect(full.lines.last.endMs, 0);
+      expect(channel.states, <bool>[true]);
+      expect(channel.positions, <int>[0]);
 
-    // Unchanged state/position: nothing extra is pushed.
-    controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
-    expect(channel.songs, hasLength(2));
-    expect(channel.states, <bool>[true]);
-    expect(channel.positions, <int>[0]);
+      // Unchanged state/position: nothing extra is pushed.
+      controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
+      expect(channel.songs, hasLength(2));
+      expect(channel.states, <bool>[true]);
+      expect(channel.positions, <int>[0]);
 
-    // New position: only setPosition is pushed.
-    controller.handleSnapshot(_snapshot(positionMs: 5000, playing: true));
-    expect(channel.positions, <int>[0, 5000]);
-    expect(channel.songs, hasLength(2));
+      // New position: only setPosition is pushed.
+      controller.handleSnapshot(_snapshot(positionMs: 5000, playing: true));
+      expect(channel.positions, <int>[0, 5000]);
+      expect(channel.songs, hasLength(2));
 
-    // Pause: only setPlaybackState is pushed.
-    controller.handleSnapshot(_snapshot(positionMs: 5000, playing: false));
-    expect(channel.states, <bool>[true, false]);
+      // Pause: only setPlaybackState is pushed.
+      controller.handleSnapshot(_snapshot(positionMs: 5000, playing: false));
+      expect(channel.states, <bool>[true, false]);
 
-    // The enabled flag persists to settings.
-    final settings = await database.getSettings();
-    expect(settings?.statusBarLyricsEnabled, isTrue);
-  });
+      // The enabled flag persists to settings.
+      final settings = await database.getSettings();
+      expect(settings?.statusBarLyricsEnabled, isTrue);
+    },
+  );
 
   test('clears the song when the queue empties', () async {
     final channel = _FakeStatusBarChannel();
@@ -250,8 +263,9 @@ void main() {
     final container = _container(channel, database, null);
     addTearDown(container.dispose);
 
-    final controller =
-        container.read(statusBarLyricsControllerProvider.notifier);
+    final controller = container.read(
+      statusBarLyricsControllerProvider.notifier,
+    );
     await controller.setEnabled(true);
     controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
     await Future<void>.delayed(Duration.zero);
@@ -275,8 +289,9 @@ void main() {
     final container = _container(channel, database, null);
     addTearDown(container.dispose);
 
-    final controller =
-        container.read(statusBarLyricsControllerProvider.notifier);
+    final controller = container.read(
+      statusBarLyricsControllerProvider.notifier,
+    );
     await controller.setEnabled(true);
     expect(channel.registerCalls, 1);
 
@@ -288,32 +303,34 @@ void main() {
     expect(settings?.statusBarLyricsEnabled, isFalse);
   });
 
-  test('re-pushes the full song when lyrics arrive for the active song',
-      () async {
-    final channel = _FakeStatusBarChannel();
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-    final container = _container(channel, database, null);
-    addTearDown(container.dispose);
+  test(
+    're-pushes the full song when lyrics arrive for the active song',
+    () async {
+      final channel = _FakeStatusBarChannel();
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final container = _container(channel, database, null);
+      addTearDown(container.dispose);
 
-    final controller =
-        container.read(statusBarLyricsControllerProvider.notifier);
-    await controller.setEnabled(true);
+      final controller = container.read(
+        statusBarLyricsControllerProvider.notifier,
+      );
+      await controller.setEnabled(true);
 
-    // No lyrics service: placeholder pushed, no lines.
-    controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
-    await Future<void>.delayed(Duration.zero);
-    expect(channel.songs, hasLength(1));
-    expect(channel.songs.first.lines, isEmpty);
+      // No lyrics service: placeholder pushed, no lines.
+      controller.handleSnapshot(_snapshot(positionMs: 0, playing: true));
+      await Future<void>.delayed(Duration.zero);
+      expect(channel.songs, hasLength(1));
+      expect(channel.songs.first.lines, isEmpty);
 
-    // Lyrics arrive for the same song: the full song is re-pushed.
-    controller.debugSetLyrics(
-      'song-1',
-      <ParsedLyricsLine>[const ParsedLyricsLine(timeMs: 5000, text: 'hello')],
-    );
-    expect(channel.songs, hasLength(2));
-    expect(channel.songs.last.lines, hasLength(1));
-    expect(channel.songs.last.lines.first.text, 'hello');
-    expect(channel.songs.last.lines.first.beginMs, 5000);
-  });
+      // Lyrics arrive for the same song: the full song is re-pushed.
+      controller.debugSetLyrics('song-1', <ParsedLyricsLine>[
+        const ParsedLyricsLine(timeMs: 5000, text: 'hello'),
+      ]);
+      expect(channel.songs, hasLength(2));
+      expect(channel.songs.last.lines, hasLength(1));
+      expect(channel.songs.last.lines.first.text, 'hello');
+      expect(channel.songs.last.lines.first.beginMs, 5000);
+    },
+  );
 }

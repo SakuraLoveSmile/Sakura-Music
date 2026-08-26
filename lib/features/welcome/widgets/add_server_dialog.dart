@@ -32,10 +32,7 @@ final List<ServerProtocolItem> _dialogProtocols = <ServerProtocolItem>[
 ];
 
 class AddServerDialog extends ConsumerStatefulWidget {
-  const AddServerDialog({
-    this.serverToEdit,
-    super.key,
-  });
+  const AddServerDialog({this.serverToEdit, super.key});
 
   final Server? serverToEdit;
 
@@ -60,10 +57,7 @@ class _AddServerDialogState extends ConsumerState<AddServerDialog> {
       backgroundColor: const Color(0xFF1C1E24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(22),
-        side: BorderSide(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.12), width: 1),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(

@@ -178,7 +178,7 @@ class _ServerCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final serverType = inferServerType(server.baseUrl);
+    final serverType = server.type ?? inferServerType(server.baseUrl);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 450),
@@ -259,9 +259,9 @@ class _ServerCard extends ConsumerWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF30D158).withValues(
-                                  alpha: 0.16,
-                                ),
+                                color: const Color(
+                                  0xFF30D158,
+                                ).withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -313,9 +313,19 @@ class _ServerCard extends ConsumerWidget {
                       value: 'edit',
                       child: Row(
                         children: <Widget>[
-                          const Icon(Icons.edit_outlined, size: 16, color: Colors.white70),
+                          const Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: Colors.white70,
+                          ),
                           const SizedBox(width: 8),
-                          Text(context.l10n.edit, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                          Text(
+                            context.l10n.edit,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -323,9 +333,19 @@ class _ServerCard extends ConsumerWidget {
                       value: 'delete',
                       child: Row(
                         children: <Widget>[
-                          const Icon(Icons.delete_outline, size: 16, color: Color(0xFFFF453A)),
+                          const Icon(
+                            Icons.delete_outline,
+                            size: 16,
+                            color: Color(0xFFFF453A),
+                          ),
                           const SizedBox(width: 8),
-                          Text(context.l10n.delete, style: const TextStyle(color: Color(0xFFFF453A), fontSize: 13)),
+                          Text(
+                            context.l10n.delete,
+                            style: const TextStyle(
+                              color: Color(0xFFFF453A),
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),

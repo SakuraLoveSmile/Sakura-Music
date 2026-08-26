@@ -40,10 +40,9 @@ void main() {
     expect(playsWithMeta, hasLength(1));
     expect(playsWithMeta.single.title, 'First Song');
     expect(playsWithMeta.single.artist, 'Artist');
-    expect(
-      await database.getRecentPlayIds(serverId: serverId),
-      <String>['song-1'],
-    );
+    expect(await database.getRecentPlayIds(serverId: serverId), <String>[
+      'song-1',
+    ]);
 
     await database.recordSearch('  sakura  ');
     await database.recordSearch('j-pop');

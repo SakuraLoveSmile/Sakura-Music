@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:subsonic_api/subsonic_api.dart';
@@ -114,91 +115,122 @@ class AppShell extends ConsumerWidget {
     final activeServer = ref.watch(activeServerProvider);
     final serversAsync = ref.watch(serversProvider);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF131418),
-      body: Row(
-        children: <Widget>[
-          if (isWide)
-            _DesktopSidebar(
-              currentIndex: currentIndex,
-              navigationShell: navigationShell,
-              playlistsAsync: playlistsAsync,
-              activeServer: activeServer,
-              serversAsync: serversAsync,
-              onSwitchServer: (server) {
-                ref.read(selectedServerIdProvider.notifier).state = server.id;
-              },
-            ),
-          Expanded(
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: <Widget>[
-                  // Top Global Action Header
-                  _TopActionBar(
-                    isWide: isWide,
-                    activeServer: activeServer,
-                    serversAsync: serversAsync,
-                    onSwitchServer: (server) {
-                      ref.read(selectedServerIdProvider.notifier).state =
-                          server.id;
-                    },
-                  ),
-                  Expanded(child: navigationShell),
-                ],
+    // System back at the shell root asks for confirmation instead of
+    // instantly leaving the app.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) {
+          return;
+        }
+        final exit = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: const Color(0xFF1C1D22),
+            title: Text(context.l10n.exitConfirmTitle),
+            content: Text(context.l10n.exitConfirmMessage),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.l10n.cancel),
               ),
-            ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(context.l10n.exitApp),
+              ),
+            ],
           ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        );
+        if (exit ?? false) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF131418),
+        body: Row(
           children: <Widget>[
-            MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
-            if (!isWide)
-              NavigationBar(
-                // The bar shows a subset of the shell branches: favorites
-                // lives at branch 6 and artists at branch 3, so destination
-                // indexes must map through _bottomNavBranches.
-                selectedIndex: bottomNavIndex < 0 ? 0 : bottomNavIndex,
-                onDestinationSelected: (index) {
-                  final branch = _bottomNavBranches[index];
-                  navigationShell.goBranch(
-                    branch,
-                    initialLocation: branch == navigationShell.currentIndex,
-                  );
+            if (isWide)
+              _DesktopSidebar(
+                currentIndex: currentIndex,
+                navigationShell: navigationShell,
+                playlistsAsync: playlistsAsync,
+                activeServer: activeServer,
+                serversAsync: serversAsync,
+                onSwitchServer: (server) {
+                  ref.read(selectedServerIdProvider.notifier).state = server.id;
                 },
-                destinations: <NavigationDestination>[
-                  NavigationDestination(
-                    icon: const Icon(Icons.explore_outlined),
-                    selectedIcon: const Icon(Icons.explore_rounded),
-                    label: context.l10n.navDiscover,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.music_note_outlined),
-                    selectedIcon: const Icon(Icons.music_note_rounded),
-                    label: context.l10n.navSongs,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.album_outlined),
-                    selectedIcon: const Icon(Icons.album_rounded),
-                    label: context.l10n.navAlbums,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.favorite_border_rounded),
-                    selectedIcon: const Icon(Icons.favorite_rounded),
-                    label: context.l10n.navLiked,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.person_outline_rounded),
-                    selectedIcon: const Icon(Icons.person_rounded),
-                    label: context.l10n.navArtists,
-                  ),
-                ],
               ),
+            Expanded(
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: <Widget>[
+                    // Top Global Action Header
+                    _TopActionBar(
+                      isWide: isWide,
+                      activeServer: activeServer,
+                      serversAsync: serversAsync,
+                      onSwitchServer: (server) {
+                        ref.read(selectedServerIdProvider.notifier).state =
+                            server.id;
+                      },
+                    ),
+                    Expanded(child: navigationShell),
+                  ],
+                ),
+              ),
+            ),
           ],
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
+              if (!isWide)
+                NavigationBar(
+                  // The bar shows a subset of the shell branches: favorites
+                  // lives at branch 6 and artists at branch 3, so destination
+                  // indexes must map through _bottomNavBranches.
+                  selectedIndex: bottomNavIndex < 0 ? 0 : bottomNavIndex,
+                  onDestinationSelected: (index) {
+                    final branch = _bottomNavBranches[index];
+                    navigationShell.goBranch(
+                      branch,
+                      initialLocation: branch == navigationShell.currentIndex,
+                    );
+                  },
+                  destinations: <NavigationDestination>[
+                    NavigationDestination(
+                      icon: const Icon(Icons.explore_outlined),
+                      selectedIcon: const Icon(Icons.explore_rounded),
+                      label: context.l10n.navDiscover,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.music_note_outlined),
+                      selectedIcon: const Icon(Icons.music_note_rounded),
+                      label: context.l10n.navSongs,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.album_outlined),
+                      selectedIcon: const Icon(Icons.album_rounded),
+                      label: context.l10n.navAlbums,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.favorite_border_rounded),
+                      selectedIcon: const Icon(Icons.favorite_rounded),
+                      label: context.l10n.navLiked,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.person_outline_rounded),
+                      selectedIcon: const Icon(Icons.person_rounded),
+                      label: context.l10n.navArtists,
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -222,8 +254,8 @@ class _TopActionBar extends StatelessWidget {
     final uri = Uri.tryParse(server.baseUrl);
     final host = uri != null && uri.host.isNotEmpty
         ? (uri.hasPort && uri.port != 80 && uri.port != 443
-            ? '${uri.host}:${uri.port}'
-            : uri.host)
+              ? '${uri.host}:${uri.port}'
+              : uri.host)
         : server.baseUrl;
     return '$host · ${server.username}';
   }
@@ -372,8 +404,9 @@ class _TopActionBar extends StatelessWidget {
                           vertical: 1.5,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              const Color(0xFF1E7BF6).withValues(alpha: 0.18),
+                          color: const Color(
+                            0xFF1E7BF6,
+                          ).withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -394,8 +427,10 @@ class _TopActionBar extends StatelessWidget {
                     enabled: false,
                     child: Text(
                       context.l10n.noServers,
-                      style:
-                          const TextStyle(color: Colors.white38, fontSize: 13),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 13,
+                      ),
                     ),
                   )
                 else
@@ -412,8 +447,9 @@ class _TopActionBar extends StatelessWidget {
                               height: 30,
                               decoration: BoxDecoration(
                                 color: isCurrent
-                                    ? const Color(0xFF1E7BF6)
-                                        .withValues(alpha: 0.18)
+                                    ? const Color(
+                                        0xFF1E7BF6,
+                                      ).withValues(alpha: 0.18)
                                     : Colors.white.withValues(alpha: 0.05),
                                 shape: BoxShape.circle,
                               ),
@@ -453,8 +489,9 @@ class _TopActionBar extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.4),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       fontSize: 11,
                                     ),
                                   ),
@@ -532,10 +569,11 @@ class _TopActionBar extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: (activeServer != null
-                                  ? const Color(0xFF34C759)
-                                  : const Color(0xFFFF9500))
-                              .withValues(alpha: 0.6),
+                          color:
+                              (activeServer != null
+                                      ? const Color(0xFF34C759)
+                                      : const Color(0xFFFF9500))
+                                  .withValues(alpha: 0.6),
                           blurRadius: 4,
                         ),
                       ],
@@ -575,9 +613,7 @@ class _TopActionBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1E2028),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: IconButton(
               icon: const Icon(
@@ -600,9 +636,7 @@ class _TopActionBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1E2028),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             ),
             child: IconButton(
               icon: const Icon(

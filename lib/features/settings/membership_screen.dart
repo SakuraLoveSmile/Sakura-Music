@@ -51,9 +51,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
 
     if (success) {
       _codeController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.activationSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.activationSuccess)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.activationCodeInvalid)),
@@ -80,9 +80,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
   Future<void> _handleDeactivate() async {
     await ref.read(membershipControllerProvider.notifier).deactivate();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.deactivatedSuccess)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.deactivatedSuccess)));
   }
 
   @override
@@ -312,10 +312,9 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: (isActive
-                    ? const Color(0xFFFF9500)
-                    : const Color(0xFFFF5E3A))
-                .withValues(alpha: 0.25),
+            color:
+                (isActive ? const Color(0xFFFF9500) : const Color(0xFFFF5E3A))
+                    .withValues(alpha: 0.25),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -468,9 +467,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
           ] else ...<Widget>[
             TextButton(
               onPressed: _handleDeactivate,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white70,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.white70),
               child: Text(
                 context.l10n.deactivateMembership,
                 style: const TextStyle(fontSize: 13),
@@ -651,9 +648,7 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
                 label: Text(context.l10n.goToStar),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  side: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -706,4 +701,3 @@ class _MembershipScreenState extends ConsumerState<MembershipScreen> {
     );
   }
 }
-

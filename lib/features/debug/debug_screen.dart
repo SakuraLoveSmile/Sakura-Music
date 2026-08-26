@@ -49,7 +49,9 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
       final session = await AudioSession.instance;
       final devices = await session.getDevices();
       if (mounted) {
-        setState(() => _outputDevices = devices.where((d) => d.isOutput).toList());
+        setState(
+          () => _outputDevices = devices.where((d) => d.isOutput).toList(),
+        );
       }
       _devicesSub = session.devicesStream.listen((set) {
         if (!mounted) {
@@ -80,9 +82,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
     final applied = await ref
         .read(audioPlayerProvider)
         .setPreferredOutputDevice(deviceId);
-    playbackDebugLog.add(
-      'DebugScreen select output device applied: $applied',
-    );
+    playbackDebugLog.add('DebugScreen select output device applied: $applied');
     if (!mounted) {
       return;
     }
@@ -120,9 +120,9 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
     final item = snapshot?.currentItem;
     if (item == null || item.streamUrl.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.debugNoTrack)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.debugNoTrack)));
       }
       return;
     }
@@ -208,10 +208,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
             onChanged: _toggleSafeAudioMode,
           ),
           const SizedBox(height: 16),
-          _SelfTestCard(
-            testing: _selfTesting,
-            onToggle: _toggleSelfTest,
-          ),
+          _SelfTestCard(testing: _selfTesting, onToggle: _toggleSelfTest),
           const SizedBox(height: 16),
           _LogCard(),
         ],
@@ -233,7 +230,9 @@ class _SnapshotCard extends ConsumerWidget {
         final data = snapshot.data;
         final rows = <String, String>{
           l10n.debugStatus: data?.status.name ?? '—',
-          l10n.debugPlaying: (data?.playing ?? false) ? l10n.debugPlaying : 'false',
+          l10n.debugPlaying: (data?.playing ?? false)
+              ? l10n.debugPlaying
+              : 'false',
           l10n.debugPosition: _fmt(data?.position),
           l10n.debugDuration: _fmt(data?.duration),
           l10n.debugVolume: (data?.volume ?? 0).toStringAsFixed(2),
@@ -359,8 +358,7 @@ class _DeviceTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (selected)
-                Icon(Icons.check, size: 14, color: highlightColor),
+              if (selected) Icon(Icons.check, size: 14, color: highlightColor),
             ],
           ),
         ),
@@ -436,10 +434,7 @@ class _SelfTestCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  icon: Icon(
-                    testing ? Icons.stop : Icons.play_arrow,
-                    size: 18,
-                  ),
+                  icon: Icon(testing ? Icons.stop : Icons.play_arrow, size: 18),
                   label: Text(
                     testing ? l10n.debugSelfTestStop : l10n.debugSelfTestStart,
                   ),
@@ -447,7 +442,10 @@ class _SelfTestCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: testing
                       ? const Color(0xFF30D158).withValues(alpha: 0.18)
@@ -480,9 +478,9 @@ class _LogCard extends StatelessWidget {
             ClipboardData(text: playbackDebugLog.copyAllText()),
           );
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.debugCopied)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(l10n.debugCopied)));
           }
         },
         icon: const Icon(Icons.copy, size: 16),

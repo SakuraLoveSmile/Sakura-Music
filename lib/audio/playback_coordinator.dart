@@ -27,7 +27,10 @@ class PlaybackCoordinator {
   late final StreamSubscription<PlayerSnapshot> _subscription;
   Timer? _saveTimer;
   PlayerSnapshot? _lastSnapshot;
-  final Set<String> _recordedSongIds = <String>{};
+  // Per-play recording guard: each distinct song play is recorded at most
+  // once. The guard resets whenever the active song changes, so replaying a
+  // song later (after the 5-minute DB de-duplication window) is allowed.
+  bool _recordedActive = false;
   bool _restoring = true;
   bool _disposed = false;
 
@@ -77,9 +80,15 @@ class PlaybackCoordinator {
     }
 
     _scheduleSave(snapshot);
-    if (previous != null &&
-        previous.currentItem?.id != snapshot.currentItem?.id) {
+
+    final item = snapshot.currentItem;
+    final changed = previous != null && previous.currentItem?.id != item?.id;
+    if (changed) {
+      // The previously active song is ending. Record it once more if it was
+      // skipped before the half-way point (guarded by its own recorded state).
       unawaited(_recordRecentPlayIfEligible(previous, force: true));
+      // Starting a new song resets the per-play recording guard.
+      _recordedActive = false;
     }
     if (snapshot.status == PlayerStatus.completed || _hasPassedHalf(snapshot)) {
       unawaited(_recordRecentPlayIfEligible(snapshot));
@@ -103,7 +112,7 @@ class PlaybackCoordinator {
         (!force && !_hasPassedHalf(snapshot))) {
       return;
     }
-    if (!_recordedSongIds.add(item.id)) {
+    if (_recordedActive) {
       return;
     }
     if (serverId != null) {
@@ -113,11 +122,15 @@ class PlaybackCoordinator {
           serverId: serverId!,
           title: item.title,
           artist: item.artist,
+          album: item.album,
+          albumId: item.albumId,
+          artistId: item.artistId,
         );
       } catch (_) {
         // History is best effort and must not interrupt playback.
       }
     }
+    _recordedActive = true;
   }
 
   void _scheduleSave(PlayerSnapshot snapshot) {

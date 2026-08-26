@@ -15,6 +15,7 @@ import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'equalizer_panel.dart';
 import 'lyrics/lyrics_view.dart';
+import 'lyrics/oled_lyrics_stage.dart';
 import 'queue_panel.dart';
 import 'smooth_position_builder.dart';
 
@@ -30,7 +31,7 @@ typedef _PlayerControlsState = ({
   int? currentIndex,
 });
 
-enum _MobileStageMode { cover, lyrics }
+enum _MobileStageMode { cover, lyrics, oled }
 
 class _PlaybackLyrics extends StatelessWidget {
   const _PlaybackLyrics({
@@ -71,9 +72,7 @@ class _AmbientPlayerBackground extends StatelessWidget {
     return Stack(
       children: <Widget>[
         // Base dark backdrop
-        Positioned.fill(
-          child: Container(color: const Color(0xFF0E0F13)),
-        ),
+        Positioned.fill(child: Container(color: const Color(0xFF0E0F13))),
 
         // Blurred Artwork Image
         if (item.artworkUrl != null)
@@ -151,6 +150,11 @@ class PlayerScreen extends ConsumerStatefulWidget {
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   _MobileStageMode _mobileMode = _MobileStageMode.cover;
 
+  bool get _isMobilePlatform {
+    final platform = Theme.of(context).platform;
+    return platform == TargetPlatform.android || platform == TargetPlatform.iOS;
+  }
+
   @override
   Widget build(BuildContext context) {
     final service = ref.watch(audioPlayerProvider);
@@ -201,6 +205,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         final item = state.item;
         if (item == null) {
           return _EmptyPlayer(onBrowse: () => context.go('/home'));
+        }
+
+        final showOled =
+            _isMobilePlatform &&
+            !isWide &&
+            _mobileMode == _MobileStageMode.oled;
+        if (showOled) {
+          return OledLyricsStage(
+            service: service,
+            item: item,
+            playing: state.playing,
+            duration: state.duration ?? item.duration ?? Duration.zero,
+            onExit: () => setState(() => _mobileMode = _MobileStageMode.cover),
+          );
         }
 
         final palette = item.artworkUrl == null
@@ -316,17 +334,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
           const Spacer(),
 
-          // Mobile Mode Switcher Pill (Cover vs Lyrics)
-          if (!isWide)
+          // Mobile Mode Switcher Pill (Cover / Lyrics / OLED)
+          if (!isWide && _isMobilePlatform)
             Container(
               height: 32,
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -342,12 +358,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     },
                   ),
                   _buildSegmentButton(
-                    title: context.l10n.lyricsView,
+                    title: context.l10n.lyrics,
                     icon: Icons.lyrics_rounded,
                     isSelected: _mobileMode == _MobileStageMode.lyrics,
                     onTap: () {
                       if (_mobileMode != _MobileStageMode.lyrics) {
                         setState(() => _mobileMode = _MobileStageMode.lyrics);
+                      }
+                    },
+                  ),
+                  _buildSegmentButton(
+                    title: context.l10n.oledLyricsView,
+                    icon: Icons.dark_mode_rounded,
+                    isSelected: _mobileMode == _MobileStageMode.oled,
+                    onTap: () {
+                      if (_mobileMode != _MobileStageMode.oled) {
+                        setState(() => _mobileMode = _MobileStageMode.oled);
                       }
                     },
                   ),
@@ -395,11 +421,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 case 'sleep':
                   _showSleepTimerModal(context, service);
                 case 'artist':
-                  if (item.artist != null && item.artist!.isNotEmpty) {
-                    context.go('/search?q=${Uri.encodeComponent(item.artist!)}');
+                  if (item.artistId != null && item.artistId!.isNotEmpty) {
+                    context.go(
+                      '/artists/${Uri.encodeComponent(item.artistId!)}',
+                    );
+                  } else if (item.artist != null && item.artist!.isNotEmpty) {
+                    context.go(
+                      '/search?q=${Uri.encodeComponent(item.artist!)}',
+                    );
                   }
                 case 'album':
-                  if (item.album != null && item.album!.isNotEmpty) {
+                  if (item.albumId != null && item.albumId!.isNotEmpty) {
+                    context.go('/albums/${Uri.encodeComponent(item.albumId!)}');
+                  } else if (item.album != null && item.album!.isNotEmpty) {
                     context.go('/search?q=${Uri.encodeComponent(item.album!)}');
                   }
               }
@@ -419,7 +453,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ],
                 ),
               ),
-              if (item.artist != null && item.artist!.isNotEmpty)
+              if ((item.artistId != null && item.artistId!.isNotEmpty) ||
+                  (item.artist != null && item.artist!.isNotEmpty))
                 PopupMenuItem<String>(
                   value: 'artist',
                   child: Row(
@@ -434,7 +469,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     ],
                   ),
                 ),
-              if (item.album != null && item.album!.isNotEmpty)
+              if ((item.albumId != null && item.albumId!.isNotEmpty) ||
+                  (item.album != null && item.album!.isNotEmpty))
                 PopupMenuItem<String>(
                   value: 'album',
                   child: Row(
@@ -511,9 +547,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF1E7BF6)
-              : Colors.transparent,
+          color: isSelected ? const Color(0xFF1E7BF6) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -546,7 +580,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required ArtworkPalette? palette,
     required bool isStarred,
   }) {
-    final glowColor = (palette?.vibrant ?? const Color(0xFF1E7BF6)).withValues(alpha: 0.35);
+    final glowColor = (palette?.vibrant ?? const Color(0xFF1E7BF6)).withValues(
+      alpha: 0.35,
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -632,14 +668,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               // Artist & Album
               Text(
                 [
-                  item.artist,
-                  item.album,
-                ].whereType<String>().join(' · ').isEmpty
+                      item.artist,
+                      item.album,
+                    ].whereType<String>().join(' · ').isEmpty
                     ? context.l10n.nowPlaying
-                    : [
-                        item.artist,
-                        item.album,
-                      ].whereType<String>().join(' · '),
+                    : [item.artist, item.album].whereType<String>().join(' · '),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -784,7 +817,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             // Album Artwork with tap to switch to lyrics
             InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: () => setState(() => _mobileMode = _MobileStageMode.lyrics),
+              onTap: () =>
+                  setState(() => _mobileMode = _MobileStageMode.lyrics),
               child: Container(
                 width: coverDimension,
                 height: coverDimension,
@@ -851,9 +885,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         const SizedBox(height: 3),
                         Text(
                           [
-                            item.artist,
-                            item.album,
-                          ].whereType<String>().join(' · ').isEmpty
+                                item.artist,
+                                item.album,
+                              ].whereType<String>().join(' · ').isEmpty
                               ? context.l10n.nowPlaying
                               : [
                                   item.artist,
@@ -909,12 +943,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               child: Center(
                 child: SmoothPositionBuilder(
                   service: service,
-                  builder: (context, position, controls) => CompactLyricsPreview(
-                    item: item,
-                    position: position,
-                    onTap: () =>
-                        setState(() => _mobileMode = _MobileStageMode.lyrics),
-                  ),
+                  builder: (context, position, controls) =>
+                      CompactLyricsPreview(
+                        item: item,
+                        position: position,
+                        onTap: () => setState(
+                          () => _mobileMode = _MobileStageMode.lyrics,
+                        ),
+                      ),
                 ),
               ),
             ),
@@ -1652,9 +1688,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       Navigator.of(sheetContext).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            context.l10n.sleepTimerSet(minutes),
-                          ),
+                          content: Text(context.l10n.sleepTimerSet(minutes)),
                         ),
                       );
                     },
@@ -1696,9 +1730,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.endOfSong),
-                    ),
+                    SnackBar(content: Text(context.l10n.endOfSong)),
                   );
                 },
               ),
@@ -1711,17 +1743,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
                 title: Text(
                   sheetContext.l10n.cancelSleepTimer,
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 14),
                 ),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.sleepTimerCancelled),
-                    ),
+                    SnackBar(content: Text(context.l10n.sleepTimerCancelled)),
                   );
                 },
               ),
@@ -1800,8 +1827,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.white70,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           fontSize: 13.5,
                         ),
                       ),
@@ -1840,12 +1868,37 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _detailRow('标题', item.title),
-            _detailRow('艺术家', item.artist ?? '未知'),
-            _detailRow('专辑', item.album ?? '未知'),
+            _detailRow(dialogContext.l10n.trackInfoTitle, item.title),
+            _songDetailRow(
+              dialogContext.l10n.trackInfoArtist,
+              item.artist ?? dialogContext.l10n.unknownArtist,
+              item.artistId != null && item.artistId!.isNotEmpty
+                  ? () {
+                      Navigator.of(dialogContext).pop();
+                      context.go(
+                        '/artists/${Uri.encodeComponent(item.artistId!)}',
+                      );
+                    }
+                  : null,
+            ),
+            _songDetailRow(
+              dialogContext.l10n.trackInfoAlbum,
+              item.album ?? dialogContext.l10n.noContentYet,
+              item.albumId != null && item.albumId!.isNotEmpty
+                  ? () {
+                      Navigator.of(dialogContext).pop();
+                      context.go(
+                        '/albums/${Uri.encodeComponent(item.albumId!)}',
+                      );
+                    }
+                  : null,
+            ),
             if (item.duration != null)
-              _detailRow('时长', _formatDuration(item.duration!)),
-            _detailRow('音轨 ID', item.id),
+              _detailRow(
+                dialogContext.l10n.trackInfoDuration,
+                _formatDuration(item.duration!),
+              ),
+            _detailRow(dialogContext.l10n.trackInfoId, item.id),
           ],
         ),
         actions: <Widget>[
@@ -1972,4 +2025,37 @@ String _loopModeLabel(BuildContext context, AppLoopMode mode) {
     AppLoopMode.all => context.l10n.loopAll,
     AppLoopMode.one => context.l10n.loopOne,
   };
+}
+
+/// A song-info dialog row. When [onTap] is provided the value is rendered as a
+/// tappable link that navigates to the matching artist/album page.
+Widget _songDetailRow(String label, String value, VoidCallback? onTap) {
+  final content = Text(
+    value,
+    style: TextStyle(
+      color: onTap != null ? const Color(0xFF1E7BF6) : Colors.white,
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+    ),
+  );
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          width: 70,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white38, fontSize: 13),
+          ),
+        ),
+        Expanded(
+          child: onTap != null
+              ? InkWell(onTap: onTap, child: content)
+              : content,
+        ),
+      ],
+    ),
+  );
 }

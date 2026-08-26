@@ -18,25 +18,27 @@ class JustAudioPlayerService implements AudioPlayerService {
     AudioPlayer? player,
     bool disableEqualizerPipeline = true,
   }) : this._withEqualizer(
-          player,
-          (player == null && !disableEqualizerPipeline && Platform.isAndroid)
-              ? AndroidEqualizer()
-              : null,
-        );
+         player,
+         (player == null && !disableEqualizerPipeline && Platform.isAndroid)
+             ? AndroidEqualizer()
+             : null,
+       );
 
   JustAudioPlayerService._withEqualizer(
     AudioPlayer? player,
     AndroidEqualizer? realEqualizer,
-  )   : _player = player ??
-            AudioPlayer(
-              audioPipeline: realEqualizer == null
-                  ? null
-                  : AudioPipeline(
-                      androidAudioEffects: <AndroidAudioEffect>[realEqualizer],
-                    ),
-            ),
-        _equalizer =
-            realEqualizer == null ? null : AndroidEqualizerController(realEqualizer) {
+  ) : _player =
+          player ??
+          AudioPlayer(
+            audioPipeline: realEqualizer == null
+                ? null
+                : AudioPipeline(
+                    androidAudioEffects: <AndroidAudioEffect>[realEqualizer],
+                  ),
+          ),
+      _equalizer = realEqualizer == null
+          ? null
+          : AndroidEqualizerController(realEqualizer) {
     _init();
   }
 
@@ -47,8 +49,8 @@ class JustAudioPlayerService implements AudioPlayerService {
   JustAudioPlayerService.withController(
     EqualizerController? equalizer, {
     AudioPlayer? player,
-  })  : _player = player ?? AudioPlayer(),
-        _equalizer = equalizer {
+  }) : _player = player ?? AudioPlayer(),
+       _equalizer = equalizer {
     _init();
   }
 
@@ -62,11 +64,7 @@ class JustAudioPlayerService implements AudioPlayerService {
     );
     addSubscription(_subscriptions, _player.durationStream, (_) => _emit());
     addSubscription(_subscriptions, _player.currentIndexStream, (_) => _emit());
-    addSubscription(
-      _subscriptions,
-      _player.playerStateStream,
-      _onPlayerState,
-    );
+    addSubscription(_subscriptions, _player.playerStateStream, _onPlayerState);
     unawaited(_initSessionLogging());
   }
 
@@ -268,10 +266,7 @@ class JustAudioPlayerService implements AudioPlayerService {
   Future<void> insertNext(PlayableItem item) async {
     final index = (_player.currentIndex ?? -1) + 1;
     final insertIndex = index.clamp(0, _queue.length);
-    await _player.insertAudioSource(
-      insertIndex,
-      _createAudioSource(item),
-    );
+    await _player.insertAudioSource(insertIndex, _createAudioSource(item));
     final updated = <PlayableItem>[..._queue]..insert(insertIndex, item);
     _queue = List<PlayableItem>.unmodifiable(updated);
     _emit();

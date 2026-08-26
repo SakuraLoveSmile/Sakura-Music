@@ -404,6 +404,12 @@ abstract class AppLocalizations {
   /// **'保存失败：{error}'**
   String saveFailed(Object error);
 
+  /// No description provided for @loadError.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载失败'**
+  String get loadError;
+
   /// No description provided for @testConnection.
   ///
   /// In zh, this message translates to:
@@ -445,6 +451,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'返回'**
   String get back;
+
+  /// No description provided for @exitConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出应用？'**
+  String get exitConfirmTitle;
+
+  /// No description provided for @exitConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定要退出 音流 吗？'**
+  String get exitConfirmMessage;
+
+  /// No description provided for @exitApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出'**
+  String get exitApp;
 
   /// No description provided for @switchLibrary.
   ///
@@ -583,12 +607,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'音乐漫游'**
   String get musicRoaming;
-
-  /// No description provided for @audiobooksPodcasts.
-  ///
-  /// In zh, this message translates to:
-  /// **'有声书/播客'**
-  String get audiobooksPodcasts;
 
   /// No description provided for @streamingQuality.
   ///
@@ -2243,7 +2261,7 @@ abstract class AppLocalizations {
   /// No description provided for @coverView.
   ///
   /// In zh, this message translates to:
-  /// **'封面模式'**
+  /// **'封面'**
   String get coverView;
 
   /// No description provided for @lyricsView.
@@ -2251,6 +2269,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'歌词模式'**
   String get lyricsView;
+
+  /// No description provided for @oledLyricsView.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯黑歌词'**
+  String get oledLyricsView;
 
   /// No description provided for @songInfo.
   ///
@@ -2263,6 +2287,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'曲目详情'**
   String get trackDetails;
+
+  /// No description provided for @trackInfoTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'标题'**
+  String get trackInfoTitle;
+
+  /// No description provided for @trackInfoArtist.
+  ///
+  /// In zh, this message translates to:
+  /// **'艺术家'**
+  String get trackInfoArtist;
+
+  /// No description provided for @trackInfoAlbum.
+  ///
+  /// In zh, this message translates to:
+  /// **'专辑'**
+  String get trackInfoAlbum;
+
+  /// No description provided for @trackInfoDuration.
+  ///
+  /// In zh, this message translates to:
+  /// **'时长'**
+  String get trackInfoDuration;
+
+  /// No description provided for @trackInfoId.
+  ///
+  /// In zh, this message translates to:
+  /// **'音轨 ID'**
+  String get trackInfoId;
 
   /// No description provided for @audioQuality.
   ///

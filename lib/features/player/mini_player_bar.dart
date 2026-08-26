@@ -686,7 +686,9 @@ class MiniPlayerBar extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            item.artist ?? item.album ?? context.l10n.nowPlaying,
+                            item.artist ??
+                                item.album ??
+                                context.l10n.nowPlaying,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -798,9 +800,7 @@ class MiniPlayerBar extends ConsumerWidget {
       ),
       onTap: () {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.sleepTimerSetLabel(label))),
         );
       },

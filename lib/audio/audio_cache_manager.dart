@@ -25,10 +25,7 @@ class AudioCacheManager {
   /// example the files backing the currently queued tracks), so a trim never
   /// removes audio mid-playback. Excluded files still count toward the total
   /// usage; the trim deletes older, unqueued files instead.
-  static Future<void> trim(
-    Directory directory, {
-    Set<String>? exclude,
-  }) async {
+  static Future<void> trim(Directory directory, {Set<String>? exclude}) async {
     final excludeSet = exclude ?? const <String>{};
     final files = await directory
         .list()

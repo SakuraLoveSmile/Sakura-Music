@@ -113,9 +113,8 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed: () => ref.invalidate(
-                    artistDetailsProvider(widget.artistId),
-                  ),
+                  onPressed: () =>
+                      ref.invalidate(artistDetailsProvider(widget.artistId)),
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: Text(context.l10n.refresh),
                 ),
@@ -135,16 +134,16 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
 
           final sortedAlbums = _sortAlbums(artist.albums);
 
-          final imageUrl = details?.coverArt != null &&
-                  details!.coverArt!.isNotEmpty
+          final imageUrl =
+              details?.coverArt != null && details!.coverArt!.isNotEmpty
               ? client.coverArtUrl(details.coverArt!, size: 640)
               : (resolveArtistImageUrl(
                       artist: artist,
                       client: client,
                       size: 640,
                     ) ??
-                  details?.largeImageUrl ??
-                  details?.mediumImageUrl);
+                    details?.largeImageUrl ??
+                    details?.mediumImageUrl);
 
           final palette = imageUrl == null
               ? null
@@ -223,12 +222,12 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
                   onShuffleAll: allSongs.isEmpty
                       ? null
                       : () => _playArtistSongs(
-                            context,
-                            ref,
-                            allSongs,
-                            0,
-                            shuffle: true,
-                          ),
+                          context,
+                          ref,
+                          allSongs,
+                          0,
+                          shuffle: true,
+                        ),
                 ),
               ),
 
@@ -289,8 +288,9 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
                                   () => _isBioExpanded = !_isBioExpanded,
                                 ),
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
                                   child: Text(
                                     _isBioExpanded
                                         ? context.l10n.showLess
@@ -354,18 +354,13 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
                     itemCount: displaySongs.length,
                     itemBuilder: (context, index) {
                       final song = displaySongs[index];
-                      final isSongStarred =
-                          starredIds.songs.contains(song.id);
+                      final isSongStarred = starredIds.songs.contains(song.id);
                       return SongListTile(
                         index: index + 1,
                         song: song,
                         client: client,
-                        onTap: () => _playArtistSongs(
-                          context,
-                          ref,
-                          displaySongs,
-                          index,
-                        ),
+                        onTap: () =>
+                            _playArtistSongs(context, ref, displaySongs, index),
                         isFavorite: isSongStarred,
                         onFavorite: () async {
                           try {
@@ -419,11 +414,14 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E7BF6).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFF1E7BF6,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color:
-                                const Color(0xFF1E7BF6).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF1E7BF6,
+                            ).withValues(alpha: 0.3),
                             width: 0.8,
                           ),
                         ),
@@ -451,41 +449,43 @@ class _ArtistDetailsScreenState extends ConsumerState<ArtistDetailsScreen> {
                         initialValue: _albumSort,
                         onSelected: (option) =>
                             setState(() => _albumSort = option),
-                        itemBuilder: (context) => <PopupMenuEntry<ArtistAlbumSort>>[
-                          PopupMenuItem(
-                            value: ArtistAlbumSort.yearDesc,
-                            child: Text(
-                              context.l10n.sortYearDesc,
-                              style: TextStyle(
-                                color: _albumSort == ArtistAlbumSort.yearDesc
-                                    ? const Color(0xFF5BA4FF)
-                                    : Colors.white,
+                        itemBuilder: (context) =>
+                            <PopupMenuEntry<ArtistAlbumSort>>[
+                              PopupMenuItem(
+                                value: ArtistAlbumSort.yearDesc,
+                                child: Text(
+                                  context.l10n.sortYearDesc,
+                                  style: TextStyle(
+                                    color:
+                                        _albumSort == ArtistAlbumSort.yearDesc
+                                        ? const Color(0xFF5BA4FF)
+                                        : Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: ArtistAlbumSort.yearAsc,
-                            child: Text(
-                              context.l10n.sortYearAsc,
-                              style: TextStyle(
-                                color: _albumSort == ArtistAlbumSort.yearAsc
-                                    ? const Color(0xFF5BA4FF)
-                                    : Colors.white,
+                              PopupMenuItem(
+                                value: ArtistAlbumSort.yearAsc,
+                                child: Text(
+                                  context.l10n.sortYearAsc,
+                                  style: TextStyle(
+                                    color: _albumSort == ArtistAlbumSort.yearAsc
+                                        ? const Color(0xFF5BA4FF)
+                                        : Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: ArtistAlbumSort.nameAsc,
-                            child: Text(
-                              context.l10n.sortNameAsc,
-                              style: TextStyle(
-                                color: _albumSort == ArtistAlbumSort.nameAsc
-                                    ? const Color(0xFF5BA4FF)
-                                    : Colors.white,
+                              PopupMenuItem(
+                                value: ArtistAlbumSort.nameAsc,
+                                child: Text(
+                                  context.l10n.sortNameAsc,
+                                  style: TextStyle(
+                                    color: _albumSort == ArtistAlbumSort.nameAsc
+                                        ? const Color(0xFF5BA4FF)
+                                        : Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
+                            ],
                       ),
                     ],
                   ),
@@ -796,8 +796,9 @@ class _ActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment:
-          isWide ? MainAxisAlignment.start : MainAxisAlignment.center,
+      mainAxisAlignment: isWide
+          ? MainAxisAlignment.start
+          : MainAxisAlignment.center,
       children: <Widget>[
         Expanded(
           flex: isWide ? 0 : 1,
@@ -815,7 +816,10 @@ class _ActionButtons extends StatelessWidget {
             icon: const Icon(Icons.play_arrow_rounded, size: 20),
             label: Text(
               context.l10n.playAll,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13.5,
+              ),
             ),
           ),
         ),
@@ -885,11 +889,8 @@ Future<void> _playArtistSongs(
   } catch (error) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.playbackFailed(error.toString())),
-        ),
+        SnackBar(content: Text(context.l10n.playbackFailed(error.toString()))),
       );
     }
   }
 }
-

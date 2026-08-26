@@ -25,11 +25,7 @@ String formatSongDuration(int? seconds) {
 }
 
 class AudioQualityBadge extends StatelessWidget {
-  const AudioQualityBadge({
-    this.suffix,
-    this.bitRate,
-    super.key,
-  });
+  const AudioQualityBadge({this.suffix, this.bitRate, super.key});
 
   final String? suffix;
   final int? bitRate;
@@ -52,7 +48,13 @@ class AudioQualityBadge extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final isLossless = ext == 'flac' || ext == 'wav' || ext == 'dsd' || ext == 'alac' || ext == 'ape' || (bitRate != null && bitRate! >= 1000);
+    final isLossless =
+        ext == 'flac' ||
+        ext == 'wav' ||
+        ext == 'dsd' ||
+        ext == 'alac' ||
+        ext == 'ape' ||
+        (bitRate != null && bitRate! >= 1000);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1.0),
@@ -117,9 +119,7 @@ class _StarButtonState extends State<StarButton> {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.starFailed(error.toString())),
-            ),
+            SnackBar(content: Text(context.l10n.starFailed(error.toString()))),
           );
       }
     } finally {
@@ -140,14 +140,19 @@ class _StarButtonState extends State<StarButton> {
             child: const CircularProgressIndicator(strokeWidth: 2),
           )
         : Icon(
-            widget.isStarred ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            widget.isStarred
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
             size: widget.size,
             color: widget.isStarred ? const Color(0xFFFF453A) : Colors.white70,
           );
     return IconButton(
       tooltip: _busy ? context.l10n.updatingFavorite : label,
       padding: EdgeInsets.zero,
-      constraints: BoxConstraints.tightFor(width: widget.size + 14, height: widget.size + 14),
+      constraints: BoxConstraints.tightFor(
+        width: widget.size + 14,
+        height: widget.size + 14,
+      ),
       onPressed: _busy ? null : _toggle,
       style: widget.filled
           ? IconButton.styleFrom(
@@ -212,9 +217,8 @@ class AlbumCard extends StatelessWidget {
                             fit: BoxFit.cover,
                             fadeInDuration: Duration.zero,
                             fadeOutDuration: Duration.zero,
-                            placeholder: (context, url) => Container(
-                              color: const Color(0xFF22242D),
-                            ),
+                            placeholder: (context, url) =>
+                                Container(color: const Color(0xFF22242D)),
                             errorWidget: (context, url, error) => Container(
                               color: const Color(0xFF22242D),
                               child: const Icon(
@@ -457,8 +461,10 @@ class SongGridTile extends StatelessWidget {
                   IconButton(
                     tooltip: context.l10n.more,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 28, height: 28),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 28,
+                      height: 28,
+                    ),
                     icon: Icon(
                       Icons.more_horiz_rounded,
                       size: 18,
@@ -471,8 +477,10 @@ class SongGridTile extends StatelessWidget {
                   IconButton(
                     tooltip: context.l10n.more,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 28, height: 28),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 28,
+                      height: 28,
+                    ),
                     icon: Icon(
                       Icons.more_horiz_rounded,
                       size: 18,
@@ -562,8 +570,9 @@ class SongListTile extends StatelessWidget {
                       color: isPlaying
                           ? const Color(0xFF34C759)
                           : Colors.white.withValues(alpha: 0.35),
-                      fontWeight:
-                          isPlaying ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isPlaying
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -675,8 +684,10 @@ class SongListTile extends StatelessWidget {
                   IconButton(
                     tooltip: context.l10n.download,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
                     onPressed: onDownload,
                     icon: Icon(
                       Icons.download_outlined,
@@ -694,8 +705,10 @@ class SongListTile extends StatelessWidget {
                   IconButton(
                     tooltip: context.l10n.more,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
                     icon: Icon(
                       Icons.more_horiz_rounded,
                       size: 18,
@@ -708,8 +721,10 @@ class SongListTile extends StatelessWidget {
                   IconButton(
                     tooltip: context.l10n.more,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
                     icon: Icon(
                       Icons.more_horiz_rounded,
                       size: 19,
@@ -727,8 +742,10 @@ class SongListTile extends StatelessWidget {
                   IconButton(
                     tooltip: context.l10n.download,
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints.tightFor(width: 32, height: 32),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
                     onPressed: onDownload,
                     icon: Icon(
                       Icons.download_outlined,
@@ -805,13 +822,13 @@ void showSongActionBottomSheet({
                                   fit: BoxFit.cover,
                                   errorWidget: (context, url, error) =>
                                       Container(
-                                    color: const Color(0xFF2B2D38),
-                                    child: const Icon(
-                                      Icons.music_note_rounded,
-                                      color: Colors.white30,
-                                      size: 24,
-                                    ),
-                                  ),
+                                        color: const Color(0xFF2B2D38),
+                                        child: const Icon(
+                                          Icons.music_note_rounded,
+                                          color: Colors.white30,
+                                          size: 24,
+                                        ),
+                                      ),
                                 ),
                         ),
                       ),
@@ -897,9 +914,7 @@ void showSongActionBottomSheet({
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
                     try {
-                      await ref
-                          .read(starredProvider.notifier)
-                          .toggleSong(song);
+                      await ref.read(starredProvider.notifier).toggleSong(song);
                     } catch (error) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -992,8 +1007,9 @@ String? resolveArtistImageUrl({
     }
     // 2. Navidrome / OpenSubsonic canonical artist cover ID: 'ar-<artist_id>'
     if (artist.id.isNotEmpty) {
-      final coverId =
-          artist.id.startsWith('ar-') ? artist.id : 'ar-${artist.id}';
+      final coverId = artist.id.startsWith('ar-')
+          ? artist.id
+          : 'ar-${artist.id}';
       return client.coverArtUrl(coverId, size: size);
     }
   }
@@ -1065,7 +1081,8 @@ class ArtistAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveImageUrl = imageUrl ??
+    final effectiveImageUrl =
+        imageUrl ??
         resolveArtistImageUrl(
           artist: artist,
           client: client,
@@ -1125,9 +1142,7 @@ class ArtistAvatar extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipOval(
-        child: imageContent,
-      ),
+      child: ClipOval(child: imageContent),
     );
   }
 }
@@ -1166,8 +1181,10 @@ class ArtistCard extends StatelessWidget {
             children: <Widget>[
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final avatarSize =
-                      (constraints.maxWidth * 0.74).clamp(56.0, 140.0);
+                  final avatarSize = (constraints.maxWidth * 0.74).clamp(
+                    56.0,
+                    140.0,
+                  );
                   return Stack(
                     alignment: Alignment.center,
                     children: <Widget>[
@@ -1183,8 +1200,9 @@ class ArtistCard extends StatelessWidget {
                           bottom: 0,
                           child: Container(
                             decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFF1E2028).withValues(alpha: 0.9),
+                              color: const Color(
+                                0xFF1E2028,
+                              ).withValues(alpha: 0.9),
                               shape: BoxShape.circle,
                               boxShadow: <BoxShadow>[
                                 BoxShadow(
@@ -1350,7 +1368,11 @@ class NoServerView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.cloud_off, size: 64, color: Colors.white.withValues(alpha: 0.4)),
+            Icon(
+              Icons.cloud_off,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 14),
             Text(
               context.l10n.noServerMessage,
@@ -1363,7 +1385,10 @@ class NoServerView extends StatelessWidget {
               label: Text(context.l10n.goToServerPicker),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1E7BF6),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1375,4 +1400,3 @@ class NoServerView extends StatelessWidget {
     );
   }
 }
-

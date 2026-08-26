@@ -18,6 +18,7 @@ class ServerRepository {
     required String baseUrl,
     required String username,
     required String password,
+    String? type,
   }) {
     return database.insertServer(
       ServersCompanion.insert(
@@ -25,6 +26,7 @@ class ServerRepository {
         baseUrl: baseUrl,
         username: username,
         password: password,
+        type: Value(type),
       ),
     );
   }
@@ -35,6 +37,7 @@ class ServerRepository {
     required String baseUrl,
     required String username,
     required String password,
+    String? type,
   }) {
     return database.updateServer(
       id,
@@ -43,6 +46,7 @@ class ServerRepository {
         baseUrl: Value(baseUrl),
         username: Value(username),
         password: Value(password),
+        type: Value(type),
       ),
     );
   }

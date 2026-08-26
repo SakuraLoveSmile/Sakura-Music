@@ -20,7 +20,8 @@ import 'status_bar_lyrics_channel.dart';
 /// Lyricon's default position-read interval, so high-frequency position
 /// updates stay off the platform channel.
 class StatusBarLyricsController extends Notifier<bool> {
-  StatusBarLyricsChannel get _channel => ref.read(statusBarLyricsChannelProvider);
+  StatusBarLyricsChannel get _channel =>
+      ref.read(statusBarLyricsChannelProvider);
 
   StreamSubscription<PlayerSnapshot>? _snapshotSub;
   String? _songId;
@@ -97,9 +98,7 @@ class StatusBarLyricsController extends Notifier<bool> {
     // Sync play state, deduplicated so unchanged snapshots stay off the channel.
     if (snapshot.playing != _lastPlaying) {
       _lastPlaying = snapshot.playing;
-      _channel
-          .setPlaybackState(snapshot.playing)
-          .catchError((Object _) {});
+      _channel.setPlaybackState(snapshot.playing).catchError((Object _) {});
     }
 
     // Sync position, deduplicated the same way.
@@ -128,8 +127,7 @@ class StatusBarLyricsController extends Notifier<bool> {
     if (lines != null) {
       for (var i = 0; i < lines.length; i++) {
         final beginMs = lines[i].timeMs;
-        final endMs =
-            (i + 1 < lines.length) ? lines[i + 1].timeMs : durationMs;
+        final endMs = (i + 1 < lines.length) ? lines[i + 1].timeMs : durationMs;
         lyricLines.add(
           StatusBarLyricLine(
             beginMs: beginMs,

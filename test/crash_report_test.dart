@@ -21,9 +21,6 @@ void main() {
       () => logCrash('boom', StackTrace.current, context: 'test'),
       returnsNormally,
     );
-    expect(
-      () => logCrash('no stack', null),
-      returnsNormally,
-    );
+    expect(() => logCrash('no stack', null), returnsNormally);
   });
 }

@@ -12,10 +12,11 @@ class AudioServiceHandler extends BaseAudioHandler
   AudioServiceHandler({
     JustAudioPlayerService? delegate,
     bool disableEqualizerPipeline = true,
-  }) : _delegate = delegate ??
-            JustAudioPlayerService(
-              disableEqualizerPipeline: disableEqualizerPipeline,
-            ) {
+  }) : _delegate =
+           delegate ??
+           JustAudioPlayerService(
+             disableEqualizerPipeline: disableEqualizerPipeline,
+           ) {
     _subscription = _delegate.snapshot.listen(_publishSnapshot);
   }
 

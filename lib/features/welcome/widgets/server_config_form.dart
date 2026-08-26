@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
+import '../../../data/webdav/webdav_client.dart';
+
 import '../../../data/db/app_database.dart';
 import '../../../data/server_repository.dart';
 import '../../../l10n/l10n.dart';
@@ -51,9 +53,10 @@ const List<ServerProtocolItem> serverProtocols = <ServerProtocolItem>[
     defaultPort: '5000',
   ),
   ServerProtocolItem(
-    id: 'audiobookshelf',
-    name: 'Audiobookshelf',
-    defaultPort: '13378',
+    id: 'webdav',
+    name: 'WebDAV',
+    defaultPort: '80',
+    supported: true,
   ),
 ];
 
@@ -106,7 +109,8 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
     _hostController = TextEditingController(
       text: widget.prefillHost ?? parts?.host ?? '',
     );
-    final defaultPort = widget.fixedProtocol?.defaultPort ??
+    final defaultPort =
+        widget.fixedProtocol?.defaultPort ??
         widget.protocols.firstOrNull?.defaultPort ??
         '';
     _portController = TextEditingController(
@@ -115,6 +119,14 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
     _usernameController = TextEditingController(text: edit?.username ?? '');
     _passwordController = TextEditingController(text: edit?.password ?? '');
     _scheme = parts?.scheme ?? 'https';
+    if (edit?.type != null) {
+      final index = widget.protocols.indexWhere(
+        (protocol) => protocol.id == edit!.type,
+      );
+      if (index >= 0) {
+        _selectedProtocolIndex = index;
+      }
+    }
   }
 
   @override
@@ -127,15 +139,26 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
     super.dispose();
   }
 
+  /// The protocol chosen by the fixed page or by the free-mode chips.
+  ServerProtocolItem get _selectedProtocol =>
+      widget.fixedProtocol ??
+      widget.protocols[_selectedProtocolIndex.clamp(
+        0,
+        widget.protocols.length - 1,
+      )];
+
+  bool get _isWebDav => _selectedProtocol.id == 'webdav';
+
   String get _composedBaseUrl => composeBaseUrl(
-        scheme: _scheme,
-        host: _hostController.text,
-        port: _portController.text,
-      );
+    scheme: _scheme,
+    host: _hostController.text,
+    port: _portController.text,
+  );
 
   void _selectProtocol(int index) {
     setState(() {
-      final previousDefault = widget.protocols[_selectedProtocolIndex].defaultPort;
+      final previousDefault =
+          widget.protocols[_selectedProtocolIndex].defaultPort;
       final currentPort = _portController.text.trim();
       final nextDefault = widget.protocols[index].defaultPort;
       if (nextDefault.isNotEmpty &&
@@ -174,12 +197,24 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
       _statusMessage = null;
     });
     try {
-      final client = SubsonicClient(
-        baseUrl: _composedBaseUrl,
-        username: _usernameController.text.trim(),
-        password: _passwordController.text,
-      );
-      await client.ping();
+      if (_isWebDav) {
+        final client = WebDavClient(
+          baseUrl: _composedBaseUrl,
+          username: _usernameController.text.trim(),
+          password: _passwordController.text,
+        );
+        final reachable = await client.testConnection();
+        if (!reachable) {
+          throw Exception('WebDAV PROPFIND failed');
+        }
+      } else {
+        final client = SubsonicClient(
+          baseUrl: _composedBaseUrl,
+          username: _usernameController.text.trim(),
+          password: _passwordController.text,
+        );
+        await client.ping();
+      }
       if (mounted) {
         if (!silentSuccess) {
           setState(() {
@@ -229,6 +264,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
           baseUrl: _composedBaseUrl,
           username: _usernameController.text.trim(),
           password: _passwordController.text,
+          type: _isWebDav ? 'webdav' : null,
         );
         if (mounted) {
           ref.read(selectedServerIdProvider.notifier).state = id;
@@ -241,6 +277,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
           baseUrl: _composedBaseUrl,
           username: _usernameController.text.trim(),
           password: _passwordController.text,
+          type: _isWebDav ? 'webdav' : null,
         );
         if (!updated) {
           throw StateError('服务器不存在或已被删除');
@@ -527,7 +564,9 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
                       : () => _testConnection(),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -624,8 +663,10 @@ class _InputField extends StatelessWidget {
             : Icon(prefixIcon, color: Colors.white60, size: 20),
         filled: true,
         fillColor: const Color(0xFF262933),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),

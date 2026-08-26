@@ -4,15 +4,17 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:sakuramusic/audio/audio_player_provider.dart';
 import 'package:sakuramusic/audio/audio_player_service.dart';
 import 'package:sakuramusic/audio/equalizer_models.dart';
 import 'package:sakuramusic/core/providers.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
+import 'package:sakuramusic/features/player/lyrics/lyrics_view.dart';
+import 'package:sakuramusic/features/player/lyrics/oled_lyrics_stage.dart';
 import 'package:sakuramusic/features/player/mini_player_bar.dart';
 import 'package:sakuramusic/features/player/player_screen.dart';
+import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
 class _TestAudioPlayerService implements AudioPlayerService {
@@ -163,9 +165,9 @@ void main() {
               starredProvider.overrideWith(() => _FakeStarredNotifier()),
             ],
             child: MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: const Locale('zh'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('zh'),
               home: Scaffold(body: MiniPlayerBar(service: service)),
             ),
           ),
@@ -213,9 +215,9 @@ void main() {
             starredProvider.overrideWith(() => _FakeStarredNotifier()),
           ],
           child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
             home: const Scaffold(body: PlayerScreen()),
           ),
         ),
@@ -273,9 +275,9 @@ void main() {
               starredProvider.overrideWith(() => _FakeStarredNotifier()),
             ],
             child: MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: const Locale('zh'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('zh'),
               home: const PlayerScreen(),
             ),
           ),
@@ -327,11 +329,12 @@ void main() {
             ),
             starredProvider.overrideWith(() => _FakeStarredNotifier()),
           ],
-          child: const MaterialApp(
+          child: MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.android),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            locale: Locale('zh'),
-            home: Scaffold(body: PlayerScreen()),
+            locale: const Locale('zh'),
+            home: const Scaffold(body: PlayerScreen()),
           ),
         ),
       );
@@ -349,12 +352,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Check default cover view
-      expect(find.text('封面模式'), findsOneWidget);
-      expect(find.text('歌词模式'), findsOneWidget);
+      // Check default cover view switcher entries
+      expect(find.text('封面'), findsOneWidget);
+      expect(find.text('歌词'), findsOneWidget);
+      expect(find.byType(OledLyricsStage), findsNothing);
 
       // Tap Lyrics Mode
-      await tester.tap(find.text('歌词模式'));
+      await tester.tap(find.text('歌词'));
       await tester.pumpAndSettle();
 
       // Tap speed selector in mobile bottom bar
@@ -366,6 +370,342 @@ void main() {
       expect(find.text('播放速度'), findsOneWidget);
       expect(find.text('1.0x (标准)'), findsOneWidget);
       expect(find.text('1.25x'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Mobile (Android) narrow player defaults to cover and exposes the three mode entries',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioPlayerProvider.overrideWithValue(service),
+            databaseProvider.overrideWithValue(database),
+            serversProvider.overrideWithValue(
+              const AsyncValue.data(<Server>[]),
+            ),
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.android),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: const Scaffold(body: PlayerScreen()),
+          ),
+        ),
+      );
+
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: true,
+          currentItem: sampleItem,
+          position: Duration(minutes: 1),
+          duration: Duration(minutes: 3, seconds: 45),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Default is cover mode: no OLED stage, no lyrics view.
+      expect(find.text('封面'), findsOneWidget);
+      expect(find.text('歌词'), findsOneWidget);
+      expect(find.text('纯黑歌词'), findsOneWidget);
+      expect(find.byType(OledLyricsStage), findsNothing);
+      expect(find.byType(LyricsView), findsNothing);
+    },
+  );
+
+  testWidgets('Tapping lyrics mode shows only the ordinary lyrics stage', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final service = _TestAudioPlayerService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          audioPlayerProvider.overrideWithValue(service),
+          databaseProvider.overrideWithValue(database),
+          serversProvider.overrideWithValue(const AsyncValue.data(<Server>[])),
+          starredProvider.overrideWith(() => _FakeStarredNotifier()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.android),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: const Scaffold(body: PlayerScreen()),
+        ),
+      ),
+    );
+
+    service.emit(
+      const PlayerSnapshot(
+        status: PlayerStatus.ready,
+        playing: true,
+        currentItem: sampleItem,
+        position: Duration(minutes: 1),
+        duration: Duration(minutes: 3, seconds: 45),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('歌词'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LyricsView), findsOneWidget);
+    expect(find.byType(OledLyricsStage), findsNothing);
+  });
+
+  testWidgets(
+    'Tapping OLED lyrics shows the OLED stage with a pure black root and no bottom dock',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioPlayerProvider.overrideWithValue(service),
+            databaseProvider.overrideWithValue(database),
+            serversProvider.overrideWithValue(
+              const AsyncValue.data(<Server>[]),
+            ),
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.android),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: const Scaffold(body: PlayerScreen()),
+          ),
+        ),
+      );
+
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: true,
+          currentItem: sampleItem,
+          position: Duration(minutes: 1),
+          duration: Duration(minutes: 3, seconds: 45),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.text('纯黑歌词'));
+      await tester.pumpAndSettle();
+
+      // OLED stage is present.
+      expect(find.byType(OledLyricsStage), findsOneWidget);
+
+      // Root background is strictly black.
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Container && widget.color == Colors.black,
+        ),
+        findsWidgets,
+      );
+
+      // The ordinary bottom dock (shuffle / queue) is not drawn.
+      expect(find.byIcon(Icons.shuffle_rounded), findsNothing);
+      expect(find.byIcon(Icons.queue_music_rounded), findsNothing);
+      expect(find.byIcon(Icons.repeat_rounded), findsNothing);
+    },
+  );
+
+  testWidgets('OLED exit button returns the player to cover mode', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final service = _TestAudioPlayerService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          audioPlayerProvider.overrideWithValue(service),
+          databaseProvider.overrideWithValue(database),
+          serversProvider.overrideWithValue(const AsyncValue.data(<Server>[])),
+          starredProvider.overrideWith(() => _FakeStarredNotifier()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.android),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: const Scaffold(body: PlayerScreen()),
+        ),
+      ),
+    );
+
+    service.emit(
+      const PlayerSnapshot(
+        status: PlayerStatus.ready,
+        playing: true,
+        currentItem: sampleItem,
+        position: Duration(minutes: 1),
+        duration: Duration(minutes: 3, seconds: 45),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.text('纯黑歌词'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OledLyricsStage), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OledLyricsStage), findsNothing);
+    expect(find.byType(LyricsView), findsNothing);
+    // The switcher is available again in cover mode.
+    expect(find.text('封面'), findsOneWidget);
+  });
+
+  testWidgets('Wide player screen does not expose the OLED mode entry', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    final service = _TestAudioPlayerService();
+    addTearDown(service.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          audioPlayerProvider.overrideWithValue(service),
+          databaseProvider.overrideWithValue(database),
+          serversProvider.overrideWithValue(const AsyncValue.data(<Server>[])),
+          starredProvider.overrideWith(() => _FakeStarredNotifier()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.android),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: const Scaffold(body: PlayerScreen()),
+        ),
+      ),
+    );
+
+    service.emit(
+      const PlayerSnapshot(
+        status: PlayerStatus.ready,
+        playing: true,
+        currentItem: sampleItem,
+        position: Duration(minutes: 1),
+        duration: Duration(minutes: 3, seconds: 45),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('纯黑歌词'), findsNothing);
+    expect(find.byType(OledLyricsStage), findsNothing);
+  });
+
+  testWidgets(
+    'Desktop platform does not expose the OLED mode entry even on narrow widths',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioPlayerProvider.overrideWithValue(service),
+            databaseProvider.overrideWithValue(database),
+            serversProvider.overrideWithValue(
+              const AsyncValue.data(<Server>[]),
+            ),
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.macOS),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: const Scaffold(body: PlayerScreen()),
+          ),
+        ),
+      );
+
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: true,
+          currentItem: sampleItem,
+          position: Duration(minutes: 1),
+          duration: Duration(minutes: 3, seconds: 45),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('纯黑歌词'), findsNothing);
+      expect(find.text('封面'), findsNothing);
+      expect(find.byType(OledLyricsStage), findsNothing);
     },
   );
 }

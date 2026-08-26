@@ -13,9 +13,12 @@ class PlayableItem {
     required this.streamUrl,
     this.artist,
     this.album,
+    this.albumId,
+    this.artistId,
     this.artworkUrl,
     this.artworkCacheKey,
     this.duration,
+    this.headers,
   });
 
   final String id;
@@ -23,9 +26,12 @@ class PlayableItem {
   final String streamUrl;
   final String? artist;
   final String? album;
+  final String? albumId;
+  final String? artistId;
   final String? artworkUrl;
   final String? artworkCacheKey;
   final Duration? duration;
+  final Map<String, String>? headers;
 
   Map<String, Object?> toJson() => <String, Object?>{
     'id': id,
@@ -33,13 +39,24 @@ class PlayableItem {
     'streamUrl': streamUrl,
     'artist': artist,
     'album': album,
+    'albumId': albumId,
+    'artistId': artistId,
     'artworkUrl': artworkUrl,
     'artworkCacheKey': artworkCacheKey,
     'durationMs': duration?.inMilliseconds,
+    'headers': headers,
   };
 
   factory PlayableItem.fromJson(Map<String, dynamic> json) {
     final durationMs = json['durationMs'];
+    final rawHeaders = json['headers'];
+    final Map<String, String>? headers = rawHeaders is Map
+        ? Map<String, String>.from(
+            rawHeaders.map(
+              (key, value) => MapEntry(key.toString(), value.toString()),
+            ),
+          )
+        : null;
     return PlayableItem(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
@@ -51,6 +68,7 @@ class PlayableItem {
       duration: durationMs is num
           ? Duration(milliseconds: durationMs.toInt())
           : null,
+      headers: headers,
     );
   }
 }

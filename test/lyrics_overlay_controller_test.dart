@@ -202,10 +202,9 @@ void main() {
     expect(channel.calls.last.current, '♪ Test Song - Tester');
 
     // Lyrics arrive for the same song and the current line takes over.
-    controller.debugSetLyrics(
-      'song-1',
-      <ParsedLyricsLine>[const ParsedLyricsLine(timeMs: 5000, text: 'hello')],
-    );
+    controller.debugSetLyrics('song-1', <ParsedLyricsLine>[
+      const ParsedLyricsLine(timeMs: 5000, text: 'hello'),
+    ]);
     controller.handleSnapshot(_snapshot(positionMs: 10000, playing: true));
     expect(channel.calls, hasLength(2));
     expect(channel.calls.last.current, 'hello');

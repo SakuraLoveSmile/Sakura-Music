@@ -44,12 +44,7 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
       width: 240,
       decoration: const BoxDecoration(
         color: Color(0xFF141519),
-        border: Border(
-          right: BorderSide(
-            color: Color(0xFF22242B),
-            width: 1,
-          ),
-        ),
+        border: Border(right: BorderSide(color: Color(0xFF22242B), width: 1)),
       ),
       child: SafeArea(
         right: false,
@@ -211,16 +206,16 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                       final filtered = _searchQuery.isEmpty
                           ? servers
                           : servers
-                              .where(
-                                (s) =>
-                                    s.name.toLowerCase().contains(
-                                      _searchQuery.toLowerCase(),
-                                    ) ||
-                                    s.baseUrl.toLowerCase().contains(
-                                      _searchQuery.toLowerCase(),
-                                    ),
-                              )
-                              .toList(growable: false);
+                                .where(
+                                  (s) =>
+                                      s.name.toLowerCase().contains(
+                                        _searchQuery.toLowerCase(),
+                                      ) ||
+                                      s.baseUrl.toLowerCase().contains(
+                                        _searchQuery.toLowerCase(),
+                                      ),
+                                )
+                                .toList(growable: false);
 
                       if (filtered.isEmpty) {
                         return Padding(
@@ -241,31 +236,36 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                       }
 
                       return Column(
-                        children: filtered.map((server) {
-                          final isServerActive =
-                              !widget.isWelcomeSelected &&
-                              activeServer?.id == server.id;
+                        children: filtered
+                            .map((server) {
+                              final isServerActive =
+                                  !widget.isWelcomeSelected &&
+                                  activeServer?.id == server.id;
 
-                          return _ServerSidebarTile(
-                            server: server,
-                            isSelected: isServerActive,
-                            onTap: () {
-                              ref
+                              return _ServerSidebarTile(
+                                server: server,
+                                isSelected: isServerActive,
+                                onTap: () {
+                                  ref
                                       .read(selectedServerIdProvider.notifier)
-                                      .state =
-                                  server.id;
-                              context.go('/home');
-                            },
-                            onEdit: () {
-                              AddServerDialog.show(
-                                context,
-                                serverToEdit: server,
+                                      .state = server
+                                      .id;
+                                  context.go('/home');
+                                },
+                                onEdit: () {
+                                  AddServerDialog.show(
+                                    context,
+                                    serverToEdit: server,
+                                  );
+                                },
+                                onDelete: () => confirmAndDeleteServer(
+                                  context,
+                                  ref,
+                                  server,
+                                ),
                               );
-                            },
-                            onDelete: () =>
-                                confirmAndDeleteServer(context, ref, server),
-                          );
-                        }).toList(growable: false),
+                            })
+                            .toList(growable: false),
                       );
                     },
                   ),
@@ -281,9 +281,7 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: const Color(0xFF1E2028),
-                  side: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -316,10 +314,7 @@ class _TrafficLightDot extends StatelessWidget {
     return Container(
       width: 12,
       height: 12,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -366,8 +361,9 @@ class _SidebarItem extends StatelessWidget {
                     title,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected
                           ? Colors.white
                           : Colors.white.withValues(alpha: 0.85),
@@ -436,8 +432,9 @@ class _ServerSidebarTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           color: isSelected ? Colors.white : Colors.white70,
                         ),
                       ),
@@ -474,9 +471,19 @@ class _ServerSidebarTile extends StatelessWidget {
                       value: 'edit',
                       child: Row(
                         children: <Widget>[
-                          const Icon(Icons.edit_outlined, size: 16, color: Colors.white70),
+                          const Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: Colors.white70,
+                          ),
                           const SizedBox(width: 8),
-                          Text(context.l10n.edit, style: const TextStyle(color: Colors.white, fontSize: 13)),
+                          Text(
+                            context.l10n.edit,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -484,9 +491,19 @@ class _ServerSidebarTile extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: <Widget>[
-                          const Icon(Icons.delete_outline, size: 16, color: Color(0xFFFF453A)),
+                          const Icon(
+                            Icons.delete_outline,
+                            size: 16,
+                            color: Color(0xFFFF453A),
+                          ),
                           const SizedBox(width: 8),
-                          Text(context.l10n.delete, style: const TextStyle(color: Color(0xFFFF453A), fontSize: 13)),
+                          Text(
+                            context.l10n.delete,
+                            style: const TextStyle(
+                              color: Color(0xFFFF453A),
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),

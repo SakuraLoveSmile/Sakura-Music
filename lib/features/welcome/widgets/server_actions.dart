@@ -17,7 +17,10 @@ Future<bool> confirmAndDeleteServer(
     builder: (dialogContext) => AlertDialog(
       backgroundColor: const Color(0xFF22252E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(dialogContext.l10n.deleteServerTitle, style: const TextStyle(color: Colors.white)),
+      title: Text(
+        dialogContext.l10n.deleteServerTitle,
+        style: const TextStyle(color: Colors.white),
+      ),
       content: Text(
         dialogContext.l10n.deleteServerConfirm(server.name),
         style: const TextStyle(color: Colors.white70),
@@ -25,7 +28,10 @@ Future<bool> confirmAndDeleteServer(
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: Text(dialogContext.l10n.cancel, style: const TextStyle(color: Colors.white70)),
+          child: Text(
+            dialogContext.l10n.cancel,
+            style: const TextStyle(color: Colors.white70),
+          ),
         ),
         FilledButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
