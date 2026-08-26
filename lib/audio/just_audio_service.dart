@@ -161,7 +161,7 @@ class JustAudioPlayerService implements AudioPlayerService {
 
   static AudioSource _createAudioSource(PlayableItem item) {
     final uri = Uri.parse(item.streamUrl);
-    return AudioSource.uri(uri, tag: item);
+    return AudioSource.uri(uri, headers: item.headers, tag: item);
   }
 
   @override

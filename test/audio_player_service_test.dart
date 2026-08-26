@@ -172,10 +172,31 @@ void main() {
     expect(service.equalizerRetryPendingForTest, isFalse);
     expect(fake.parametersCalls, 3);
   });
+
+  test('setQueue passes custom headers to AudioSource', () async {
+    final player = _RecordingAudioPlayer();
+    final service = JustAudioPlayerService(player: player);
+    addTearDown(service.dispose);
+
+    const itemWithHeaders = PlayableItem(
+      id: 'webdav-1',
+      title: 'WebDAV Song',
+      streamUrl: 'https://webdav.example.com/song.flac',
+      headers: <String, String>{'Authorization': 'Basic dXNlcjpwYXNz'},
+    );
+
+    await service.setQueue(<PlayableItem>[itemWithHeaders]);
+
+    expect(player.lastAudioSources, isNotNull);
+    expect(player.lastAudioSources, hasLength(1));
+    final source = player.lastAudioSources!.first as UriAudioSource;
+    expect(source.headers, equals({'Authorization': 'Basic dXNlcjpwYXNz'}));
+  });
 }
 
 class _RecordingAudioPlayer extends AudioPlayer {
   final events = <String>[];
+  List<AudioSource>? lastAudioSources;
 
   final StreamController<PlayerState> _playerStateController =
       StreamController<PlayerState>.broadcast();
@@ -200,6 +221,7 @@ class _RecordingAudioPlayer extends AudioPlayer {
     Duration? initialPosition,
     ShuffleOrder? shuffleOrder,
   }) async {
+    lastAudioSources = audioSources;
     return null;
   }
 

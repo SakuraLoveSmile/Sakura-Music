@@ -668,8 +668,9 @@ class _OledLandscapeLyricsViewState
     final rawText = line.text;
     final lines = rawText.split('\n');
     final mainText = lines[0];
-    final translationText =
-        lines.length > 1 ? lines.sublist(1).join('\n') : null;
+    final translationText = lines.length > 1
+        ? lines.sublist(1).join('\n')
+        : null;
 
     return Center(
       key: key,
@@ -698,10 +699,7 @@ class _OledLandscapeLyricsViewState
                   height: 1.35,
                   letterSpacing: isActive ? 0.2 : 0.0,
                 ),
-                child: Text(
-                  mainText,
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(mainText, textAlign: TextAlign.center),
               ),
               if (translationText != null && translationText.isNotEmpty) ...[
                 const SizedBox(height: 3),
@@ -714,10 +712,7 @@ class _OledLandscapeLyricsViewState
                     fontWeight: FontWeight.w500,
                     height: 1.3,
                   ),
-                  child: Text(
-                    translationText,
-                    textAlign: TextAlign.center,
-                  ),
+                  child: Text(translationText, textAlign: TextAlign.center),
                 ),
               ],
             ],
