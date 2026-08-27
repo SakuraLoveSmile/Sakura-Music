@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appName => '音流';
+  String get appName => 'SakuraMusic';
 
   @override
   String get viewSwitch => '视图切换';
@@ -199,7 +199,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exitConfirmTitle => '退出应用？';
 
   @override
-  String get exitConfirmMessage => '确定要退出 音流 吗？';
+  String get exitConfirmMessage => '确定要退出 SakuraMusic 吗？';
 
   @override
   String get exitApp => '退出';
@@ -811,7 +811,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get previousTrack => '上一首';
 
   @override
-  String get privacyBody1 => '1. 本应用（音流）为开源独立音乐客户端。';
+  String get privacyBody1 => '1. 本应用（SakuraMusic）为开源独立音乐客户端。';
 
   @override
   String get privacyBody2 =>

@@ -92,7 +92,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify WelcomeScreen branding and cards
-      expect(find.text('音流'), findsWidgets);
+      expect(find.text('SakuraMusic'), findsWidgets);
       expect(find.text('连接你的音乐'), findsOneWidget);
       expect(find.text('多源支持'), findsOneWidget);
       expect(find.text('无损播放'), findsOneWidget);

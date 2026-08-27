@@ -89,7 +89,7 @@ public struct SettingsView: View {
                 }
 
                 // About Section
-                Section("关于音流 原生版") {
+                Section("关于 SakuraMusic") {
                     HStack {
                         Text("架构")
                         Spacer()
