@@ -510,6 +510,13 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                     album: play.album,
                     albumId: play.albumId,
                     artistId: play.artistId,
+                    coverArt:
+                        (play.albumId != null &&
+                            play.albumId!.trim().isNotEmpty)
+                        ? play.albumId!.trim()
+                        : (play.songId.trim().isNotEmpty
+                              ? play.songId.trim()
+                              : null),
                   ),
                 )
                 .toList();
@@ -661,7 +668,12 @@ class _TwoColumnSongsSection extends ConsumerWidget {
                     onFavorite: () =>
                         ref.read(starredProvider.notifier).toggleSong(song),
                     onMore: () {
-                      _showSongMoreSheet(context, ref, song, client);
+                      showSongActionBottomSheet(
+                        context: context,
+                        ref: ref,
+                        song: song,
+                        client: client,
+                      );
                     },
                     onTap: () async {
                       final items = await playableItemsForSongsWithLocalFiles(
@@ -684,93 +696,6 @@ class _TwoColumnSongsSection extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  void _showSongMoreSheet(
-    BuildContext context,
-    WidgetRef ref,
-    Song song,
-    SubsonicClient client,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF1E2028),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
-                  song.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const Divider(color: Colors.white12),
-              ListTile(
-                leading: const Icon(
-                  Icons.playlist_play_rounded,
-                  color: Colors.white70,
-                ),
-                title: Text(
-                  context.l10n.playNext,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                onTap: () async {
-                  Navigator.of(sheetContext).pop();
-                  final item = await playableItemForSongWithLocalFile(
-                    client,
-                    ref.read(downloadManagerProvider),
-                    song,
-                  );
-                  await ref.read(audioPlayerProvider).insertNext(item);
-                },
-              ),
-              if (song.albumId != null)
-                ListTile(
-                  leading: const Icon(
-                    Icons.album_outlined,
-                    color: Colors.white70,
-                  ),
-                  title: Text(
-                    context.l10n.viewAlbum,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.go('/albums/${song.albumId}');
-                  },
-                ),
-              if (song.artistId != null)
-                ListTile(
-                  leading: const Icon(
-                    Icons.person_outline_rounded,
-                    color: Colors.white70,
-                  ),
-                  title: Text(
-                    context.l10n.viewArtist,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.go('/artists/${song.artistId}');
-                  },
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

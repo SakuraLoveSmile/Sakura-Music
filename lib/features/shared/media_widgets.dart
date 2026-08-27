@@ -288,6 +288,37 @@ class AlbumCard extends StatelessWidget {
   }
 }
 
+/// Helper to resolve the best cover-art ID for a song, prioritizing explicit
+/// [Song.coverArt], and falling back to [Song.albumId] and [Song.id].
+String? resolveSongCoverArtId(Song song) {
+  if (song.coverArt != null && song.coverArt!.trim().isNotEmpty) {
+    return song.coverArt!.trim();
+  }
+  if (song.albumId != null && song.albumId!.trim().isNotEmpty) {
+    return song.albumId!.trim();
+  }
+  if (song.id.trim().isNotEmpty) {
+    return song.id.trim();
+  }
+  return null;
+}
+
+/// Helper to resolve the best image URL for a song from SubsonicClient
+String? resolveSongCoverUrl({
+  required Song song,
+  SubsonicClient? client,
+  int size = 120,
+}) {
+  if (client == null) {
+    return null;
+  }
+  final coverId = resolveSongCoverArtId(song);
+  if (coverId == null) {
+    return null;
+  }
+  return client.coverArtUrl(coverId, size: size);
+}
+
 class SongGridTile extends StatelessWidget {
   const SongGridTile({
     required this.song,
@@ -311,9 +342,10 @@ class SongGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= 600;
-    final imageUrl = client == null || song.coverArt == null
+    final coverId = resolveSongCoverArtId(song);
+    final imageUrl = client == null || coverId == null
         ? null
-        : client!.coverArtUrl(song.coverArt!, size: 120);
+        : client!.coverArtUrl(coverId, size: 120);
 
     final metadataParts = <String>[
       if (song.artist != null && song.artist!.trim().isNotEmpty) song.artist!,
@@ -354,7 +386,9 @@ class SongGridTile extends StatelessWidget {
                         )
                       : CachedNetworkImage(
                           imageUrl: imageUrl,
-                          cacheKey: 'cover_${song.coverArt}_120',
+                          cacheKey: coverId == null
+                              ? null
+                              : 'cover_${coverId}_120',
                           fit: BoxFit.cover,
                           fadeInDuration: Duration.zero,
                           fadeOutDuration: Duration.zero,
@@ -530,9 +564,10 @@ class SongListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= 600;
-    final imageUrl = client == null || song.coverArt == null
+    final coverId = resolveSongCoverArtId(song);
+    final imageUrl = client == null || coverId == null
         ? null
-        : client!.coverArtUrl(song.coverArt!, size: 96);
+        : client!.coverArtUrl(coverId, size: 96);
 
     final metadataParts = <String>[
       if (song.artist != null && song.artist!.trim().isNotEmpty) song.artist!,
@@ -591,7 +626,9 @@ class SongListTile extends StatelessWidget {
                         )
                       : CachedNetworkImage(
                           imageUrl: imageUrl,
-                          cacheKey: 'cover_${song.coverArt}_96',
+                          cacheKey: coverId == null
+                              ? null
+                              : 'cover_${coverId}_96',
                           fit: BoxFit.cover,
                           fadeInDuration: Duration.zero,
                           fadeOutDuration: Duration.zero,
@@ -768,9 +805,10 @@ void showSongActionBottomSheet({
   required Song song,
   required SubsonicClient client,
 }) {
-  final coverUrl = song.coverArt == null
+  final coverId = resolveSongCoverArtId(song);
+  final coverUrl = coverId == null
       ? null
-      : client.coverArtUrl(song.coverArt!, size: 160);
+      : client.coverArtUrl(coverId, size: 160);
 
   showModalBottomSheet<void>(
     context: context,
@@ -818,7 +856,9 @@ void showSongActionBottomSheet({
                                 )
                               : CachedNetworkImage(
                                   imageUrl: coverUrl,
-                                  cacheKey: 'cover_${song.coverArt}_160',
+                                  cacheKey: coverId == null
+                                      ? null
+                                      : 'cover_${coverId}_160',
                                   fit: BoxFit.cover,
                                   errorWidget: (context, url, error) =>
                                       Container(

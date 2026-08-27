@@ -9,7 +9,12 @@ PlayableItem playableItemForSong(
   String? fallbackAlbum,
   String? fallbackCoverArt,
 }) {
-  final coverArt = song.coverArt ?? fallbackCoverArt;
+  final coverArt =
+      song.coverArt ??
+      fallbackCoverArt ??
+      (song.albumId != null && song.albumId!.trim().isNotEmpty
+          ? song.albumId!.trim()
+          : (song.id.trim().isNotEmpty ? song.id.trim() : null));
   return PlayableItem(
     id: song.id,
     title: song.title,
