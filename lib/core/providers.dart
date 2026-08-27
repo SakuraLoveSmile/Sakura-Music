@@ -306,6 +306,13 @@ final frequentSongsProvider = StreamProvider<List<Song>>((ref) {
           album: latest[entry.key]!.album,
           albumId: latest[entry.key]!.albumId,
           artistId: latest[entry.key]!.artistId,
+          coverArt:
+              (latest[entry.key]!.albumId != null &&
+                  latest[entry.key]!.albumId!.trim().isNotEmpty)
+              ? latest[entry.key]!.albumId!.trim()
+              : (latest[entry.key]!.songId.trim().isNotEmpty
+                    ? latest[entry.key]!.songId.trim()
+                    : null),
         ),
     ];
   });

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sakuramusic/audio/audio_player_provider.dart';
 import 'package:sakuramusic/audio/audio_player_service.dart';
 import 'package:sakuramusic/audio/equalizer_models.dart';
+import 'package:sakuramusic/audio/playable_item_builder.dart';
 import 'package:sakuramusic/core/providers.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
@@ -16,6 +18,7 @@ import 'package:sakuramusic/features/player/lyrics/lyrics_view.dart';
 import 'package:sakuramusic/features/player/lyrics/oled_lyrics_stage.dart';
 import 'package:sakuramusic/features/player/mini_player_bar.dart';
 import 'package:sakuramusic/features/player/player_screen.dart';
+import 'package:sakuramusic/features/shared/media_widgets.dart';
 import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
@@ -969,6 +972,113 @@ void main() {
       expect(exitCalled, isTrue);
     },
   );
+
+  group('Song cover art resolution and widgets', () {
+    final client = SubsonicClient(
+      baseUrl: 'https://music.example.com',
+      username: 'user',
+      password: 'pwd',
+    );
+
+    test(
+      'resolveSongCoverArtId prioritizes explicit coverArt, then albumId, then song.id',
+      () {
+        const songWithAll = Song(
+          id: 's-1',
+          title: 'Song 1',
+          coverArt: 'cover-100',
+          albumId: 'alb-200',
+        );
+        expect(resolveSongCoverArtId(songWithAll), 'cover-100');
+
+        const songWithAlbumId = Song(
+          id: 's-1',
+          title: 'Song 1',
+          albumId: 'alb-200',
+        );
+        expect(resolveSongCoverArtId(songWithAlbumId), 'alb-200');
+
+        const songWithIdOnly = Song(id: 's-1', title: 'Song 1');
+        expect(resolveSongCoverArtId(songWithIdOnly), 's-1');
+
+        const emptySong = Song(id: '', title: '');
+        expect(resolveSongCoverArtId(emptySong), isNull);
+      },
+    );
+
+    test('resolveSongCoverUrl returns full URL with coverId', () {
+      const song = Song(id: 's-1', title: 'Song 1', albumId: 'alb-200');
+      final url = resolveSongCoverUrl(song: song, client: client, size: 120);
+      expect(url, isNotNull);
+      expect(url, contains('getCoverArt'));
+      expect(url, contains('id=alb-200'));
+      expect(url, contains('size=120'));
+    });
+
+    test(
+      'playableItemForSong falls back to albumId and songId for artwork',
+      () {
+        const song = Song(id: 's-99', title: 'Track', albumId: 'alb-99');
+        final item = playableItemForSong(client, song);
+        expect(item.artworkUrl, contains('id=alb-99'));
+        expect(item.artworkCacheKey, 'cover_alb-99_600');
+      },
+    );
+
+    testWidgets('SongGridTile displays cover from albumId fallback', (
+      tester,
+    ) async {
+      const song = Song(
+        id: 's-1',
+        title: 'Recent Song',
+        artist: 'Artist',
+        album: 'Album',
+        albumId: 'alb-1',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: Scaffold(
+            body: SongGridTile(song: song, client: client, onTap: () {}),
+          ),
+        ),
+      );
+
+      final imageFinder = find.byType(CachedNetworkImage);
+      expect(imageFinder, findsOneWidget);
+      final cachedImage = tester.widget<CachedNetworkImage>(imageFinder);
+      expect(cachedImage.imageUrl, contains('id=alb-1'));
+      expect(cachedImage.cacheKey, 'cover_alb-1_120');
+      expect(find.text('Recent Song'), findsOneWidget);
+    });
+
+    testWidgets('SongListTile displays cover from song.id fallback', (
+      tester,
+    ) async {
+      const song = Song(id: 's-42', title: 'Top Song', artist: 'Artist');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: Scaffold(
+            body: SongListTile(song: song, client: client, onTap: () {}),
+          ),
+        ),
+      );
+
+      final imageFinder = find.byType(CachedNetworkImage);
+      expect(imageFinder, findsOneWidget);
+      final cachedImage = tester.widget<CachedNetworkImage>(imageFinder);
+      expect(cachedImage.imageUrl, contains('id=s-42'));
+      expect(cachedImage.cacheKey, 'cover_s-42_96');
+      expect(find.text('Top Song'), findsOneWidget);
+    });
+  });
 }
 
 class _FakeStarredNotifier extends StarredNotifier {
