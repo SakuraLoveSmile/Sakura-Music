@@ -70,7 +70,7 @@ struct SakuraMusicAppleApp: App {
             }
 
             CommandGroup(replacing: .appInfo) {
-                Button("关于 音流 原生版") {
+                Button("关于 SakuraMusic") {
                     // About
                 }
             }

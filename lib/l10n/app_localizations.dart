@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In zh, this message translates to:
-  /// **'音流'**
+  /// **'SakuraMusic'**
   String get appName;
 
   /// No description provided for @viewSwitch.
@@ -461,7 +461,7 @@ abstract class AppLocalizations {
   /// No description provided for @exitConfirmMessage.
   ///
   /// In zh, this message translates to:
-  /// **'确定要退出 音流 吗？'**
+  /// **'确定要退出 SakuraMusic 吗？'**
   String get exitConfirmMessage;
 
   /// No description provided for @exitApp.
@@ -1613,7 +1613,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyBody1.
   ///
   /// In zh, this message translates to:
-  /// **'1. 本应用（音流）为开源独立音乐客户端。'**
+  /// **'1. 本应用（SakuraMusic）为开源独立音乐客户端。'**
   String get privacyBody1;
 
   /// No description provided for @privacyBody2.

@@ -22,7 +22,7 @@
         android:maxSdkVersion="32" />
 
     <application
-        android:label="sakuramusic"
+        android:label="SakuraMusic"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
