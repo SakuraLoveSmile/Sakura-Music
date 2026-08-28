@@ -1459,4 +1459,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sleepFadeOut => 'Sleep Timer Fade-Out';
+
+  @override
+  String get vinylView => 'Vinyl Record';
+
+  @override
+  String get trackRadio => 'Track Radio';
+
+  @override
+  String get startRadio => 'Start Similar Radio';
+
+  @override
+  String radioStarted(int count) {
+    return 'Track Radio started, added $count similar songs';
+  }
+
+  @override
+  String get discovery => 'Discovery & Similar';
+
+  @override
+  String get moreByArtist => 'More by this artist';
+
+  @override
+  String get fromAlbum => 'Tracks from this album';
+
+  @override
+  String get similarSongs => 'Similar Tracks';
+
+  @override
+  String get noRecommendations => 'No more recommendations';
 }

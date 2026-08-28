@@ -84,6 +84,20 @@ class SubsonicClient {
     return _songsFrom(asMap(response['randomSongs']));
   }
 
+  Future<List<Song>> getSimilarSongs2(String id, {int count = 20}) async {
+    _validateCount(count, 'count');
+    try {
+      final response = await _request('getSimilarSongs2', <String, Object?>{
+        'id': id,
+        'count': count,
+      });
+      final container = asMap(response['similarSongs2'] ?? response['similarSongs']);
+      return _songsFrom(container);
+    } catch (_) {
+      return const <Song>[];
+    }
+  }
+
   Future<List<Genre>> getGenres() async {
     final response = await _request('getGenres');
     final container = asMap(response['genres']);

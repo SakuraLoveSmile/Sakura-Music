@@ -1385,4 +1385,33 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sleepFadeOut => '定时关闭平滑淡出';
+
+  @override
+  String get vinylView => '黑胶唱片';
+
+  @override
+  String get trackRadio => '歌曲漫游电台';
+
+  @override
+  String get startRadio => '开启相似漫游';
+
+  @override
+  String radioStarted(int count) {
+    return '已开启漫游电台，已追加 $count 首相似歌曲';
+  }
+
+  @override
+  String get discovery => '发现与相似';
+
+  @override
+  String get moreByArtist => '该艺术家的其他作品';
+
+  @override
+  String get fromAlbum => '所属专辑曲目';
+
+  @override
+  String get similarSongs => '相似单曲推荐';
+
+  @override
+  String get noRecommendations => '暂无更多推荐曲目';
 }
