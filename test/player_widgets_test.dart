@@ -12,6 +12,7 @@ import 'package:sakuramusic/audio/playable_item_builder.dart';
 import 'package:sakuramusic/core/providers.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
+import 'package:sakuramusic/features/player/audio_stream_inspector_sheet.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_parser.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_service.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_view.dart';
@@ -1077,6 +1078,78 @@ void main() {
       expect(cachedImage.imageUrl, contains('id=s-42'));
       expect(cachedImage.cacheKey, 'cover_s-42_96');
       expect(find.text('Top Song'), findsOneWidget);
+    });
+
+    test('AudioQualityInfo calculates correct tiers and specs', () {
+      // 1. Hi-Res FLAC
+      const itemHiRes = PlayableItem(
+        id: 's-1',
+        title: 'Song 1',
+        streamUrl: 'http://example.com/stream/s-1.flac',
+      );
+      const songHiRes = Song(id: 's-1', title: 'Song 1', suffix: 'FLAC', bitRate: 1107);
+      final infoHiRes = AudioQualityInfo.fromItem(itemHiRes, song: songHiRes);
+      expect(infoHiRes.tier, AudioQualityTier.hiRes);
+      expect(infoHiRes.codec, 'FLAC');
+      expect(infoHiRes.badgeLabel, contains('Hi-Res'));
+      expect(infoHiRes.badgeLabel, contains('FLAC'));
+      expect(infoHiRes.badgeLabel, contains('1107k'));
+
+      // 2. Standard Lossless (16bit / 44.1k)
+      const songLossless = Song(id: 's-2', title: 'Song 2', suffix: 'ALAC', bitRate: 750);
+      final infoLossless = AudioQualityInfo.fromItem(itemHiRes, song: songLossless);
+      expect(infoLossless.tier, AudioQualityTier.lossless);
+      expect(infoLossless.codec, 'ALAC');
+
+      // 3. Lossy Standard
+      const songMp3 = Song(id: 's-3', title: 'Song 3', suffix: 'MP3', bitRate: 192);
+      final infoMp3 = AudioQualityInfo.fromItem(itemHiRes, song: songMp3);
+      expect(infoMp3.tier, AudioQualityTier.standard);
+      expect(infoMp3.codec, 'MP3');
+    });
+
+    testWidgets('AudioStreamQualityBadge renders and opens inspector modal', (
+      tester,
+    ) async {
+      const item = PlayableItem(
+        id: 's-hires',
+        title: 'Hi-Res Symphony',
+        artist: 'Master Artist',
+        streamUrl: 'http://example.com/stream/hires.flac',
+      );
+      const song = Song(
+        id: 's-hires',
+        title: 'Hi-Res Symphony',
+        artist: 'Master Artist',
+        suffix: 'FLAC',
+        bitRate: 1411,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: const Scaffold(
+            body: Center(
+              child: AudioStreamQualityBadge(item: item, song: song),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.textContaining('Hi-Res'), findsOneWidget);
+      expect(find.textContaining('FLAC'), findsOneWidget);
+
+      // Tap badge to open Audio Stream Inspector
+      await tester.tap(find.byType(AudioStreamQualityBadge));
+      await tester.pumpAndSettle();
+
+      expect(find.text('音频流参数'), findsOneWidget);
+      expect(find.text('Hi-Res Symphony'), findsOneWidget);
+      expect(find.text('编码格式'), findsOneWidget);
+      expect(find.text('FLAC'), findsOneWidget);
+      expect(find.text('1411 kbps'), findsOneWidget);
     });
   });
 }

@@ -1329,4 +1329,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sleepTimerCancelled => 'Sleep timer cancelled';
+
+  @override
+  String get audioStreamInspector => 'Audio Stream Inspector';
+
+  @override
+  String get audioSpecs => 'Audio Specs';
+
+  @override
+  String get audioCodec => 'Codec';
+
+  @override
+  String get audioBitrate => 'Bitrate';
+
+  @override
+  String get audioSampleRate => 'Sample Rate';
+
+  @override
+  String get audioBitDepth => 'Bit Depth';
+
+  @override
+  String get audioChannels => 'Channels';
+
+  @override
+  String get audioStereo => 'Stereo (2.0)';
+
+  @override
+  String get audioSourceType => 'Source Stream';
+
+  @override
+  String get audioDirectStream => 'Direct Stream';
+
+  @override
+  String get audioLocalCached => 'Local Cached / Offline';
+
+  @override
+  String get audioFileSize => 'File Size';
+
+  @override
+  String get audioHiResLossless => 'Hi-Res Lossless';
+
+  @override
+  String get audioLossless => 'Lossless';
+
+  @override
+  String get audioStandard => 'Standard';
+
+  @override
+  String get swipeToSwitch => 'Swipe horizontally on artwork to switch tracks';
+
+  @override
+  String get forward10s => 'Forward 10s';
+
+  @override
+  String get rewind10s => 'Rewind 10s';
 }

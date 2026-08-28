@@ -2443,6 +2443,114 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'已取消定时关闭'**
   String get sleepTimerCancelled;
+
+  /// No description provided for @audioStreamInspector.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频流参数'**
+  String get audioStreamInspector;
+
+  /// No description provided for @audioSpecs.
+  ///
+  /// In zh, this message translates to:
+  /// **'音频规格'**
+  String get audioSpecs;
+
+  /// No description provided for @audioCodec.
+  ///
+  /// In zh, this message translates to:
+  /// **'编码格式'**
+  String get audioCodec;
+
+  /// No description provided for @audioBitrate.
+  ///
+  /// In zh, this message translates to:
+  /// **'实时码率'**
+  String get audioBitrate;
+
+  /// No description provided for @audioSampleRate.
+  ///
+  /// In zh, this message translates to:
+  /// **'采样率'**
+  String get audioSampleRate;
+
+  /// No description provided for @audioBitDepth.
+  ///
+  /// In zh, this message translates to:
+  /// **'量化位深'**
+  String get audioBitDepth;
+
+  /// No description provided for @audioChannels.
+  ///
+  /// In zh, this message translates to:
+  /// **'声道通道'**
+  String get audioChannels;
+
+  /// No description provided for @audioStereo.
+  ///
+  /// In zh, this message translates to:
+  /// **'立体声 (2.0)'**
+  String get audioStereo;
+
+  /// No description provided for @audioSourceType.
+  ///
+  /// In zh, this message translates to:
+  /// **'音源传输'**
+  String get audioSourceType;
+
+  /// No description provided for @audioDirectStream.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器原始流直通'**
+  String get audioDirectStream;
+
+  /// No description provided for @audioLocalCached.
+  ///
+  /// In zh, this message translates to:
+  /// **'本地无损缓存 / 离线'**
+  String get audioLocalCached;
+
+  /// No description provided for @audioFileSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件大小'**
+  String get audioFileSize;
+
+  /// No description provided for @audioHiResLossless.
+  ///
+  /// In zh, this message translates to:
+  /// **'Hi-Res 无损'**
+  String get audioHiResLossless;
+
+  /// No description provided for @audioLossless.
+  ///
+  /// In zh, this message translates to:
+  /// **'无损音质'**
+  String get audioLossless;
+
+  /// No description provided for @audioStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准音质'**
+  String get audioStandard;
+
+  /// No description provided for @swipeToSwitch.
+  ///
+  /// In zh, this message translates to:
+  /// **'左右滑动封面切换歌曲'**
+  String get swipeToSwitch;
+
+  /// No description provided for @forward10s.
+  ///
+  /// In zh, this message translates to:
+  /// **'快进 10 秒'**
+  String get forward10s;
+
+  /// No description provided for @rewind10s.
+  ///
+  /// In zh, this message translates to:
+  /// **'快退 10 秒'**
+  String get rewind10s;
 }
 
 class _AppLocalizationsDelegate
