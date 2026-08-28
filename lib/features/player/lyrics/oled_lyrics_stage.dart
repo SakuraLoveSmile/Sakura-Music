@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../audio/audio_player_service.dart';
 import '../../../l10n/l10n.dart';
@@ -45,9 +46,20 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
   bool _showControls = false;
   Timer? _hideControlsTimer;
 
+  // OLED Display Customization Settings
+  bool _keepScreenAwake = true;
+  double _fontScale = 1.0;
+  TextAlign _textAlign = TextAlign.center;
+  bool _showTranslation = true;
+  bool _showClock = true;
+
   @override
   void initState() {
     super.initState();
+    // Keep the screen awake to prevent sleeping during OLED playback
+    if (_keepScreenAwake) {
+      WakelockPlus.enable();
+    }
     // Force landscape orientation on mobile
     SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
       DeviceOrientation.landscapeLeft,
@@ -60,6 +72,8 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
   @override
   void dispose() {
     _hideControlsTimer?.cancel();
+    // Restore normal screen sleep timeout
+    WakelockPlus.disable();
     // Restore default portrait & landscape orientations
     SystemChrome.setPreferredOrientations(const <DeviceOrientation>[
       DeviceOrientation.portraitUp,
@@ -148,6 +162,9 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                           position: position,
                           onSeek: widget.service.seek,
                           onUserInteraction: _onUserInteraction,
+                          fontScale: _fontScale,
+                          textAlign: _textAlign,
+                          showTranslation: _showTranslation,
                         ),
                       ),
 
@@ -186,6 +203,210 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
         ),
       ),
     );
+  }
+
+  void _showOledSettingsModal(BuildContext context) {
+    _hideControlsTimer?.cancel();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1B1C22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: <Widget>[
+                        const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.oledSettings,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 1. Keep screen awake toggle
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        context.l10n.keepScreenAwake,
+                        style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                      ),
+                      value: _keepScreenAwake,
+                      activeTrackColor: const Color(0xFF1E7BF6),
+                      onChanged: (val) {
+                        setState(() {
+                          _keepScreenAwake = val;
+                          if (val) {
+                            WakelockPlus.enable();
+                          } else {
+                            WakelockPlus.disable();
+                          }
+                        });
+                        setModalState(() {});
+                      },
+                    ),
+
+                    // 2. Lyrics Font Size
+                    const SizedBox(height: 6),
+                    Text(
+                      context.l10n.lyricsFontSize,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13.5),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: <double>[0.8, 1.0, 1.2, 1.4].map((scale) {
+                        final isSelected = (_fontScale - scale).abs() < 0.05;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () {
+                                setState(() => _fontScale = scale);
+                                setModalState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF1E7BF6)
+                                      : const Color(0xFF262832),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${(scale * 100).toInt()}%',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    // 3. Lyrics Alignment
+                    const SizedBox(height: 14),
+                    Text(
+                      context.l10n.lyricsAlignment,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13.5),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: <(TextAlign, String, IconData)>[
+                        (TextAlign.center, context.l10n.alignCenter, Icons.format_align_center_rounded),
+                        (TextAlign.left, context.l10n.alignLeft, Icons.format_align_left_rounded),
+                      ].map((alignOption) {
+                        final isSelected = _textAlign == alignOption.$1;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () {
+                                setState(() => _textAlign = alignOption.$1);
+                                setModalState(() {});
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF1E7BF6)
+                                      : const Color(0xFF262832),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    Icon(alignOption.$3, size: 16, color: Colors.white),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      alignOption.$2,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    // 4. Show Translation & Clock
+                    const SizedBox(height: 6),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        context.l10n.showTranslation,
+                        style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                      ),
+                      value: _showTranslation,
+                      activeTrackColor: const Color(0xFF1E7BF6),
+                      onChanged: (val) {
+                        setState(() => _showTranslation = val);
+                        setModalState(() {});
+                      },
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        context.l10n.showClock,
+                        style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                      ),
+                      value: _showClock,
+                      activeTrackColor: const Color(0xFF1E7BF6),
+                      onChanged: (val) {
+                        setState(() => _showClock = val);
+                        setModalState(() {});
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      if (mounted && _showControls) {
+        _startHideTimer();
+      }
+    });
   }
 
   Widget _buildTopBar(BuildContext context) {
@@ -242,31 +463,51 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const Icon(
-                  Icons.access_time_rounded,
-                  size: 13,
-                  color: Colors.white70,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  timeFormatted,
-                  style: const TextStyle(
+          if (_showClock) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Icon(
+                    Icons.access_time_rounded,
+                    size: 13,
                     color: Colors.white70,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
                   ),
+                  const SizedBox(width: 4),
+                  Text(
+                    timeFormatted,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          // Settings button
+          Material(
+            color: Colors.white.withValues(alpha: 0.12),
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => _showOledSettingsModal(context),
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: Colors.white,
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -435,12 +676,18 @@ class _OledLandscapeLyricsView extends ConsumerStatefulWidget {
     required this.position,
     required this.onSeek,
     required this.onUserInteraction,
+    required this.fontScale,
+    required this.textAlign,
+    required this.showTranslation,
   });
 
   final PlayableItem item;
   final Duration position;
   final ValueChanged<Duration> onSeek;
   final VoidCallback onUserInteraction;
+  final double fontScale;
+  final TextAlign textAlign;
+  final bool showTranslation;
 
   @override
   ConsumerState<_OledLandscapeLyricsView> createState() =>
@@ -636,29 +883,29 @@ class _OledLandscapeLyricsViewState
     final double verticalPadding;
 
     if (isActive) {
-      mainFontSize = 28;
-      translationFontSize = 17;
+      mainFontSize = 28 * widget.fontScale;
+      translationFontSize = 17 * widget.fontScale;
       fontWeight = FontWeight.w800;
       mainColor = Colors.white;
       transColor = Colors.white.withValues(alpha: 0.75);
       verticalPadding = 12;
     } else if (distance == 1) {
-      mainFontSize = 20;
-      translationFontSize = 14.5;
+      mainFontSize = 20 * widget.fontScale;
+      translationFontSize = 14.5 * widget.fontScale;
       fontWeight = FontWeight.w600;
       mainColor = Colors.white.withValues(alpha: 0.35);
       transColor = Colors.white.withValues(alpha: 0.28);
       verticalPadding = 9;
     } else if (distance == 2) {
-      mainFontSize = 17;
-      translationFontSize = 13;
+      mainFontSize = 17 * widget.fontScale;
+      translationFontSize = 13 * widget.fontScale;
       fontWeight = FontWeight.w500;
       mainColor = Colors.white.withValues(alpha: 0.18);
       transColor = Colors.white.withValues(alpha: 0.14);
       verticalPadding = 7;
     } else {
-      mainFontSize = 15;
-      translationFontSize = 12;
+      mainFontSize = 15 * widget.fontScale;
+      translationFontSize = 12 * widget.fontScale;
       fontWeight = FontWeight.w400;
       mainColor = Colors.white.withValues(alpha: 0.08);
       transColor = Colors.white.withValues(alpha: 0.06);
@@ -672,8 +919,11 @@ class _OledLandscapeLyricsViewState
         ? lines.sublist(1).join('\n')
         : null;
 
-    return Center(
+    return Container(
       key: key,
+      alignment: widget.textAlign == TextAlign.left
+          ? Alignment.centerLeft
+          : Alignment.center,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
@@ -687,7 +937,9 @@ class _OledLandscapeLyricsViewState
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: widget.textAlign == TextAlign.left
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: <Widget>[
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 260),
@@ -699,9 +951,11 @@ class _OledLandscapeLyricsViewState
                   height: 1.35,
                   letterSpacing: isActive ? 0.2 : 0.0,
                 ),
-                child: Text(mainText, textAlign: TextAlign.center),
+                child: Text(mainText, textAlign: widget.textAlign),
               ),
-              if (translationText != null && translationText.isNotEmpty) ...[
+              if (widget.showTranslation &&
+                  translationText != null &&
+                  translationText.isNotEmpty) ...[
                 const SizedBox(height: 3),
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 260),
@@ -712,7 +966,7 @@ class _OledLandscapeLyricsViewState
                     fontWeight: FontWeight.w500,
                     height: 1.3,
                   ),
-                  child: Text(translationText, textAlign: TextAlign.center),
+                  child: Text(translationText, textAlign: widget.textAlign),
                 ),
               ],
             ],

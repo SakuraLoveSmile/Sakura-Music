@@ -165,16 +165,17 @@ class AppShell extends ConsumerWidget {
                 bottom: false,
                 child: Column(
                   children: <Widget>[
-                    // Top Global Action Header
-                    _TopActionBar(
-                      isWide: isWide,
-                      activeServer: activeServer,
-                      serversAsync: serversAsync,
-                      onSwitchServer: (server) {
-                        ref.read(selectedServerIdProvider.notifier).state =
-                            server.id;
-                      },
-                    ),
+                    // Top Global Action Header (only on non-home tabs on mobile, or on wide screens)
+                    if (isWide || currentIndex != 0)
+                      _TopActionBar(
+                        isWide: isWide,
+                        activeServer: activeServer,
+                        serversAsync: serversAsync,
+                        onSwitchServer: (server) {
+                          ref.read(selectedServerIdProvider.notifier).state =
+                              server.id;
+                        },
+                      ),
                     Expanded(child: navigationShell),
                   ],
                 ),

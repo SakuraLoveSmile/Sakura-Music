@@ -833,6 +833,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preparingInstall => 'Preparing to install…';
 
   @override
+  String get oledSettings => 'OLED lyrics settings';
+
+  @override
+  String get keepScreenAwake => 'Keep screen awake';
+
+  @override
+  String get lyricsFontSize => 'Lyrics font size';
+
+  @override
+  String get lyricsAlignment => 'Lyrics alignment';
+
+  @override
+  String get alignCenter => 'Center';
+
+  @override
+  String get alignLeft => 'Left';
+
+  @override
+  String get showTranslation => 'Show translation';
+
+  @override
+  String get showClock => 'Show clock';
+
+  @override
   String get presetClassical => 'Classical';
 
   @override
@@ -890,10 +914,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get randomAlbums => 'Random albums';
 
   @override
+  String get randomSongs => 'Random songs';
+
+  @override
   String get recentlyAdded => 'Recently added';
 
   @override
+  String get recentlyAddedSongs => 'Recently added songs';
+
+  @override
   String get recentlyPlayed => 'Recently played';
+
+  @override
+  String get recentlyPlayedSongs => 'Recently played songs';
+
+  @override
+  String get recentlyUpdatedPlaylists => 'Recently updated playlists';
+
+  @override
+  String get foldersCount => 'Folders';
+
+  @override
+  String get totalSize => 'Total size';
+
+  @override
+  String get totalDuration => 'Total duration';
+
+  @override
+  String get resolution => 'Resolution';
+
+  @override
+  String get customize => 'Customize';
+
+  @override
+  String get myFavorites => 'Favorites';
 
   @override
   String get refresh => 'Refresh';

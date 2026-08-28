@@ -1568,6 +1568,54 @@ abstract class AppLocalizations {
   /// **'正在准备安装，请稍候…'**
   String get preparingInstall;
 
+  /// No description provided for @oledSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'全黑歌词设置'**
+  String get oledSettings;
+
+  /// No description provided for @keepScreenAwake.
+  ///
+  /// In zh, this message translates to:
+  /// **'屏幕常亮（不休眠）'**
+  String get keepScreenAwake;
+
+  /// No description provided for @lyricsFontSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词字号'**
+  String get lyricsFontSize;
+
+  /// No description provided for @lyricsAlignment.
+  ///
+  /// In zh, this message translates to:
+  /// **'对齐方式'**
+  String get lyricsAlignment;
+
+  /// No description provided for @alignCenter.
+  ///
+  /// In zh, this message translates to:
+  /// **'居中对齐'**
+  String get alignCenter;
+
+  /// No description provided for @alignLeft.
+  ///
+  /// In zh, this message translates to:
+  /// **'居左对齐'**
+  String get alignLeft;
+
+  /// No description provided for @showTranslation.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示翻译'**
+  String get showTranslation;
+
+  /// No description provided for @showClock.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示时钟'**
+  String get showClock;
+
   /// No description provided for @presetClassical.
   ///
   /// In zh, this message translates to:
@@ -1658,17 +1706,77 @@ abstract class AppLocalizations {
   /// **'随机专辑'**
   String get randomAlbums;
 
+  /// No description provided for @randomSongs.
+  ///
+  /// In zh, this message translates to:
+  /// **'随机歌曲'**
+  String get randomSongs;
+
   /// No description provided for @recentlyAdded.
   ///
   /// In zh, this message translates to:
   /// **'最近新增'**
   String get recentlyAdded;
 
+  /// No description provided for @recentlyAddedSongs.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近添加的歌曲'**
+  String get recentlyAddedSongs;
+
   /// No description provided for @recentlyPlayed.
   ///
   /// In zh, this message translates to:
   /// **'最近播放'**
   String get recentlyPlayed;
+
+  /// No description provided for @recentlyPlayedSongs.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近播放的歌曲'**
+  String get recentlyPlayedSongs;
+
+  /// No description provided for @recentlyUpdatedPlaylists.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近更新的歌单'**
+  String get recentlyUpdatedPlaylists;
+
+  /// No description provided for @foldersCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件夹'**
+  String get foldersCount;
+
+  /// No description provided for @totalSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'总大小'**
+  String get totalSize;
+
+  /// No description provided for @totalDuration.
+  ///
+  /// In zh, this message translates to:
+  /// **'总时长'**
+  String get totalDuration;
+
+  /// No description provided for @resolution.
+  ///
+  /// In zh, this message translates to:
+  /// **'分辨率'**
+  String get resolution;
+
+  /// No description provided for @customize.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get customize;
+
+  /// No description provided for @myFavorites.
+  ///
+  /// In zh, this message translates to:
+  /// **'喜爱'**
+  String get myFavorites;
 
   /// No description provided for @refresh.
   ///
