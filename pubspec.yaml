@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Keep the +N build number strictly increasing across releases: Android
 # split-per-abi APKs encode versionCode as ABI*1000 + N (e.g. arm64 = 2000 + N),
 # so resetting N downgrades the app and fails installation.
-version: 0.3.0-alpha.6+21
+version: 0.3.0-alpha.7+22
 
 environment:
   sdk: ^3.11.1
@@ -67,6 +67,7 @@ dependencies:
   device_info_plus: ^13.2.0
   archive: ^4.2.0
   nsd: ^5.0.1
+  wakelock_plus: ^1.7.0
 
 dev_dependencies:
   flutter_test:

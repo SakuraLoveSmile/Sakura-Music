@@ -790,6 +790,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get preparingInstall => '正在准备安装，请稍候…';
 
   @override
+  String get oledSettings => '全黑歌词设置';
+
+  @override
+  String get keepScreenAwake => '屏幕常亮（不休眠）';
+
+  @override
+  String get lyricsFontSize => '歌词字号';
+
+  @override
+  String get lyricsAlignment => '对齐方式';
+
+  @override
+  String get alignCenter => '居中对齐';
+
+  @override
+  String get alignLeft => '居左对齐';
+
+  @override
+  String get showTranslation => '显示翻译';
+
+  @override
+  String get showClock => '显示时钟';
+
+  @override
   String get presetClassical => '古典';
 
   @override
@@ -839,10 +863,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get randomAlbums => '随机专辑';
 
   @override
+  String get randomSongs => '随机歌曲';
+
+  @override
   String get recentlyAdded => '最近新增';
 
   @override
+  String get recentlyAddedSongs => '最近添加的歌曲';
+
+  @override
   String get recentlyPlayed => '最近播放';
+
+  @override
+  String get recentlyPlayedSongs => '最近播放的歌曲';
+
+  @override
+  String get recentlyUpdatedPlaylists => '最近更新的歌单';
+
+  @override
+  String get foldersCount => '文件夹';
+
+  @override
+  String get totalSize => '总大小';
+
+  @override
+  String get totalDuration => '总时长';
+
+  @override
+  String get resolution => '分辨率';
+
+  @override
+  String get customize => '自定义';
+
+  @override
+  String get myFavorites => '喜爱';
 
   @override
   String get refresh => '刷新';
