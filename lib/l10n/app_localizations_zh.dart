@@ -1310,4 +1310,79 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rewind10s => '快退 10 秒';
+
+  @override
+  String get dragToSeek => '拖动定位';
+
+  @override
+  String get playFromHere => '从此播放';
+
+  @override
+  String get shareLyrics => '分享歌词';
+
+  @override
+  String get lyricsCard => '歌词海报';
+
+  @override
+  String get copyLyricsText => '复制歌词';
+
+  @override
+  String get lyricsCopied => '歌词已复制到剪贴板';
+
+  @override
+  String get saveImage => '保存海报';
+
+  @override
+  String get imageSaved => '海报已保存';
+
+  @override
+  String get cardTheme => '卡片风格';
+
+  @override
+  String get themeGradient => '深色流光';
+
+  @override
+  String get themeFrosted => '磨砂玻璃';
+
+  @override
+  String get themeOled => '纯黑极简';
+
+  @override
+  String get maxSelectedLines => '最多选择 5 行歌词';
+
+  @override
+  String get addToPlaylist => '加入歌单';
+
+  @override
+  String get selectPlaylist => '选择歌单';
+
+  @override
+  String get createAndAdd => '新建歌单并添加';
+
+  @override
+  String get newPlaylistName => '歌单名称';
+
+  @override
+  String get addedToPlaylist => '已成功加入歌单';
+
+  @override
+  String get createPlaylistFailed => '创建歌单失败';
+
+  @override
+  String get locatePlaying => '定位当前播放';
+
+  @override
+  String get clearQueue => '清空播放队列';
+
+  @override
+  String get clearQueueConfirm => '确定要清空当前播放队列吗？';
+
+  @override
+  String get crossfade => '切歌淡入淡出';
+
+  @override
+  String get crossfadeDuration => '渐变时长';
+
+  @override
+  String get sleepFadeOut => '定时关闭平滑淡出';
 }

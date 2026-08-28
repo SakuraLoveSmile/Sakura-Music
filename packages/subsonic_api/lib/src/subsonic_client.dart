@@ -185,6 +185,48 @@ class SubsonicClient {
     return Playlist.fromJson(playlist);
   }
 
+  Future<Playlist> createPlaylist({
+    String? playlistId,
+    required String name,
+    List<String>? songIds,
+  }) async {
+    final params = <String, Object?>{
+      'name': name,
+      'playlistId': ?playlistId,
+      if (songIds != null && songIds.isNotEmpty) 'songId': songIds,
+    };
+    final response = await _request('createPlaylist', params);
+    final playlist = asMap(response['playlist']);
+    if (playlist != null) {
+      return Playlist.fromJson(playlist);
+    }
+    return Playlist(id: playlistId ?? '', name: name, songCount: songIds?.length ?? 0);
+  }
+
+  Future<void> updatePlaylist({
+    required String playlistId,
+    String? name,
+    String? comment,
+    bool? isPublic,
+    List<String>? songIdsToAdd,
+    List<int>? songIndexesToRemove,
+  }) async {
+    final params = <String, Object?>{
+      'playlistId': playlistId,
+      'name': ?name,
+      'comment': ?comment,
+      'public': ?isPublic,
+      if (songIdsToAdd != null && songIdsToAdd.isNotEmpty) 'songIdToAdd': songIdsToAdd,
+      if (songIndexesToRemove != null && songIndexesToRemove.isNotEmpty)
+        'songIndexToRemove': songIndexesToRemove,
+    };
+    await _request('updatePlaylist', params);
+  }
+
+  Future<void> deletePlaylist(String id) async {
+    await _request('deletePlaylist', <String, Object?>{'id': id});
+  }
+
   Future<void> star({String? id, String? albumId, String? artistId}) async {
     await _request(
       'star',
@@ -300,7 +342,7 @@ class SubsonicClient {
   }
 
   Uri _restUri(String endpoint, Map<String, Object?> parameters) {
-    final query = <String, String>{
+    final query = <String, dynamic>{
       ...auth.parameters(
         username: username,
         password: password,
@@ -309,7 +351,10 @@ class SubsonicClient {
             : null,
       ),
       for (final entry in parameters.entries)
-        if (entry.value != null) entry.key: entry.value.toString(),
+        if (entry.value != null)
+          entry.key: entry.value is Iterable
+              ? (entry.value as Iterable).map((e) => e.toString()).toList()
+              : entry.value.toString(),
     };
     return baseUri.replace(
       path: '${baseUri.path}/rest/$endpoint',

@@ -1383,4 +1383,80 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rewind10s => 'Rewind 10s';
+
+  @override
+  String get dragToSeek => 'Drag to seek';
+
+  @override
+  String get playFromHere => 'Play from here';
+
+  @override
+  String get shareLyrics => 'Share Lyrics';
+
+  @override
+  String get lyricsCard => 'Lyrics Poster';
+
+  @override
+  String get copyLyricsText => 'Copy Lyrics';
+
+  @override
+  String get lyricsCopied => 'Lyrics copied to clipboard';
+
+  @override
+  String get saveImage => 'Save Poster';
+
+  @override
+  String get imageSaved => 'Poster saved';
+
+  @override
+  String get cardTheme => 'Card Style';
+
+  @override
+  String get themeGradient => 'Dark Gradient';
+
+  @override
+  String get themeFrosted => 'Frosted Glass';
+
+  @override
+  String get themeOled => 'Minimal OLED';
+
+  @override
+  String get maxSelectedLines => 'Select up to 5 lines';
+
+  @override
+  String get addToPlaylist => 'Add to Playlist';
+
+  @override
+  String get selectPlaylist => 'Select Playlist';
+
+  @override
+  String get createAndAdd => 'Create Playlist & Add';
+
+  @override
+  String get newPlaylistName => 'Playlist Name';
+
+  @override
+  String get addedToPlaylist => 'Added to playlist successfully';
+
+  @override
+  String get createPlaylistFailed => 'Failed to create playlist';
+
+  @override
+  String get locatePlaying => 'Locate Current Song';
+
+  @override
+  String get clearQueue => 'Clear Queue';
+
+  @override
+  String get clearQueueConfirm =>
+      'Are you sure you want to clear the playback queue?';
+
+  @override
+  String get crossfade => 'Audio Crossfade';
+
+  @override
+  String get crossfadeDuration => 'Crossfade Duration';
+
+  @override
+  String get sleepFadeOut => 'Sleep Timer Fade-Out';
 }
