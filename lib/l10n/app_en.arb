@@ -616,5 +616,19 @@
   "clearQueueConfirm": "Are you sure you want to clear the playback queue?",
   "crossfade": "Audio Crossfade",
   "crossfadeDuration": "Crossfade Duration",
-  "sleepFadeOut": "Sleep Timer Fade-Out"
+  "sleepFadeOut": "Sleep Timer Fade-Out",
+  "vinylView": "Vinyl Record",
+  "trackRadio": "Track Radio",
+  "startRadio": "Start Similar Radio",
+  "radioStarted": "Track Radio started, added {count} similar songs",
+  "@radioStarted": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "discovery": "Discovery & Similar",
+  "moreByArtist": "More by this artist",
+  "fromAlbum": "Tracks from this album",
+  "similarSongs": "Similar Tracks",
+  "noRecommendations": "No more recommendations"
 }

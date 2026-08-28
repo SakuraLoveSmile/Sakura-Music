@@ -2701,6 +2701,60 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'定时关闭平滑淡出'**
   String get sleepFadeOut;
+
+  /// No description provided for @vinylView.
+  ///
+  /// In zh, this message translates to:
+  /// **'黑胶唱片'**
+  String get vinylView;
+
+  /// No description provided for @trackRadio.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌曲漫游电台'**
+  String get trackRadio;
+
+  /// No description provided for @startRadio.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启相似漫游'**
+  String get startRadio;
+
+  /// No description provided for @radioStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已开启漫游电台，已追加 {count} 首相似歌曲'**
+  String radioStarted(int count);
+
+  /// No description provided for @discovery.
+  ///
+  /// In zh, this message translates to:
+  /// **'发现与相似'**
+  String get discovery;
+
+  /// No description provided for @moreByArtist.
+  ///
+  /// In zh, this message translates to:
+  /// **'该艺术家的其他作品'**
+  String get moreByArtist;
+
+  /// No description provided for @fromAlbum.
+  ///
+  /// In zh, this message translates to:
+  /// **'所属专辑曲目'**
+  String get fromAlbum;
+
+  /// No description provided for @similarSongs.
+  ///
+  /// In zh, this message translates to:
+  /// **'相似单曲推荐'**
+  String get similarSongs;
+
+  /// No description provided for @noRecommendations.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无更多推荐曲目'**
+  String get noRecommendations;
 }
 
 class _AppLocalizationsDelegate

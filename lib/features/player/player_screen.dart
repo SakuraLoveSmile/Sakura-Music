@@ -16,12 +16,14 @@ import '../../core/providers.dart';
 import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'audio_stream_inspector_sheet.dart';
+import 'discovery/track_discovery_sheet.dart';
 import 'equalizer_panel.dart';
 import 'lyrics/lyrics_view.dart';
 import 'lyrics/oled_lyrics_stage.dart';
 import 'queue_panel.dart';
 import 'quick_add_to_playlist_sheet.dart';
 import 'smooth_position_builder.dart';
+import 'vinyl/vinyl_turntable_stage.dart';
 
 typedef _PlayerControlsState = ({
   PlayableItem? item,
@@ -35,7 +37,7 @@ typedef _PlayerControlsState = ({
   int? currentIndex,
 });
 
-enum _MobileStageMode { cover, lyrics, oled }
+enum _MobileStageMode { cover, vinyl, lyrics, oled }
 
 class _PlaybackLyrics extends StatelessWidget {
   const _PlaybackLyrics({
@@ -62,84 +64,155 @@ class _PlaybackLyrics extends StatelessWidget {
   }
 }
 
-class _AmbientPlayerBackground extends StatelessWidget {
-  const _AmbientPlayerBackground({required this.item, required this.palette});
+class _AmbientPlayerBackground extends StatefulWidget {
+  const _AmbientPlayerBackground({
+    required this.item,
+    required this.palette,
+    this.playing = false,
+  });
 
   final PlayableItem item;
   final ArtworkPalette? palette;
+  final bool playing;
+
+  @override
+  State<_AmbientPlayerBackground> createState() => _AmbientPlayerBackgroundState();
+}
+
+class _AmbientPlayerBackgroundState extends State<_AmbientPlayerBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _flowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _flowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    );
+    if (widget.playing) {
+      _flowController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _AmbientPlayerBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.playing != oldWidget.playing) {
+      if (widget.playing) {
+        _flowController.repeat();
+      } else {
+        _flowController.stop(canceled: false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _flowController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final vibrant = palette?.vibrant ?? const Color(0xFF1E7BF6);
-    final muted = palette?.muted ?? const Color(0xFF1B1D28);
+    final vibrant = widget.palette?.vibrant ?? const Color(0xFF1E7BF6);
+    final muted = widget.palette?.muted ?? const Color(0xFF1B1D28);
 
-    return Stack(
-      children: <Widget>[
-        // Base dark backdrop
-        Positioned.fill(child: Container(color: const Color(0xFF0E0F13))),
+    return AnimatedBuilder(
+      animation: _flowController,
+      builder: (context, child) {
+        final t = _flowController.value * 2 * math.pi;
+        final dx = math.sin(t) * 0.25;
+        final dy = math.cos(t) * 0.18 - 0.35;
 
-        // Blurred Artwork Image
-        if (item.artworkUrl != null)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: ClipRect(
-                child: Transform.scale(
-                  scale: 1.25,
-                  child: ImageFiltered(
-                    imageFilter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
-                    child: CachedNetworkImage(
-                      imageUrl: item.artworkUrl!,
-                      fit: BoxFit.cover,
-                      color: Colors.black.withValues(alpha: 0.75),
-                      colorBlendMode: BlendMode.darken,
+        return Stack(
+          children: <Widget>[
+            // Base dark backdrop
+            Positioned.fill(child: Container(color: const Color(0xFF0E0F13))),
+
+            // Blurred Artwork Image
+            if (widget.item.artworkUrl != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ClipRect(
+                    child: Transform.scale(
+                      scale: 1.25,
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.item.artworkUrl!,
+                          fit: BoxFit.cover,
+                          color: Colors.black.withValues(alpha: 0.75),
+                          colorBlendMode: BlendMode.darken,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            // Dynamic fluid multi-stop radial glow from palette
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(dx, dy),
+                      radius: 1.15 + (math.sin(t * 2) * 0.1),
+                      colors: <Color>[
+                        vibrant.withValues(alpha: 0.34),
+                        muted.withValues(alpha: 0.24),
+                        const Color(0xFF0E0F13).withValues(alpha: 0.96),
+                      ],
+                      stops: const <double>[0.0, 0.55, 1.0],
                     ),
                   ),
                 ),
               ),
             ),
-          ),
 
-        // Dynamic multi-stop radial glow from palette
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.0, -0.4),
-                  radius: 1.1,
-                  colors: <Color>[
-                    vibrant.withValues(alpha: 0.32),
-                    muted.withValues(alpha: 0.22),
-                    const Color(0xFF0E0F13).withValues(alpha: 0.96),
-                  ],
-                  stops: const <double>[0.0, 0.55, 1.0],
+            // Secondary complementary floating aurora orb
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(-dx * 1.2, -dy * 0.8),
+                      radius: 0.9,
+                      colors: <Color>[
+                        muted.withValues(alpha: 0.18),
+                        Colors.transparent,
+                      ],
+                      stops: const <double>[0.0, 1.0],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
 
-        // Linear vertical gradient for crisp readability
-        Positioned.fill(
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: <Color>[
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.65),
-                    const Color(0xFF0E0F13).withValues(alpha: 0.98),
-                  ],
-                  stops: const <double>[0.0, 0.3, 0.75, 1.0],
+            // Linear vertical gradient for crisp readability
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: <Color>[
+                        Colors.black.withValues(alpha: 0.3),
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.65),
+                        const Color(0xFF0E0F13).withValues(alpha: 0.98),
+                      ],
+                      stops: const <double>[0.0, 0.3, 0.75, 1.0],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
@@ -253,7 +326,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             children: <Widget>[
               Positioned.fill(
                 child: RepaintBoundary(
-                  child: _AmbientPlayerBackground(item: item, palette: palette),
+                  child: _AmbientPlayerBackground(
+                    item: item,
+                    palette: palette,
+                    playing: state.playing,
+                  ),
                 ),
               ),
 
@@ -380,6 +457,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     },
                   ),
                   _buildSegmentButton(
+                    title: context.l10n.vinylView,
+                    icon: Icons.radio_rounded,
+                    isSelected: _mobileMode == _MobileStageMode.vinyl,
+                    onTap: () {
+                      if (_mobileMode != _MobileStageMode.vinyl) {
+                        setState(() => _mobileMode = _MobileStageMode.vinyl);
+                      }
+                    },
+                  ),
+                  _buildSegmentButton(
                     title: context.l10n.lyrics,
                     icon: Icons.lyrics_rounded,
                     isSelected: _mobileMode == _MobileStageMode.lyrics,
@@ -436,6 +523,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ),
             onSelected: (value) {
               switch (value) {
+                case 'discovery':
+                  showTrackDiscoverySheet(context, item: item, service: service);
                 case 'playlist':
                   showQuickAddToPlaylistSheet(context, item: item);
                 case 'inspector':
@@ -465,6 +554,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'discovery',
+                child: Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.explore_rounded,
+                      size: 18,
+                      color: Color(0xFF5BA4FF),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.l10n.discovery,
+                      style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF5BA4FF)),
+                    ),
+                  ],
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'playlist',
                 child: Row(
@@ -600,34 +706,42 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1E7BF6) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              icon,
-              size: 13,
-              color: isSelected ? Colors.white : Colors.white60,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.white70,
+    return Tooltip(
+      message: title,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            horizontal: isSelected ? 9 : 7,
+            vertical: 4,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF1E7BF6) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : Colors.white60,
               ),
-            ),
-          ],
+              if (isSelected) ...[
+                const SizedBox(width: 4),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -868,6 +982,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ),
           ),
         ],
+      );
+    }
+
+    // Vinyl Turntable Mode
+    if (_mobileMode == _MobileStageMode.vinyl) {
+      return VinylTurntableStage(
+        item: item,
+        service: service,
+        playing: playing,
+        palette: palette,
+        isStarred: isStarred,
+        onTap: () => setState(() => _mobileMode = _MobileStageMode.lyrics),
       );
     }
 
@@ -1519,6 +1645,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ),
 
+              // Discovery & Similar
+              IconButton(
+                tooltip: context.l10n.discovery,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 30,
+                  height: 30,
+                ),
+                onPressed: () => showTrackDiscoverySheet(context, item: item, service: service),
+                icon: const Icon(
+                  Icons.explore_outlined,
+                  size: 19,
+                  color: Colors.white60,
+                ),
+              ),
+
               // Sleep timer
               IconButton(
                 tooltip: context.l10n.sleepTimer,
@@ -1766,9 +1908,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
               const SizedBox(height: 6),
 
-              // Secondary Quick Action Row: Shuffle, Speed, Sleep Timer
+              // Secondary Quick Action Row: Shuffle, Speed, Add to Playlist, Discovery, Sleep Timer
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
                   IconButton(
                     tooltip: state.shuffle
@@ -1788,14 +1930,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           : Colors.white60,
                     ),
                   ),
-                  const SizedBox(width: 24),
                   InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () =>
                         _showPlaybackSpeedModal(context, service, state.speed),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 8,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
@@ -1807,14 +1948,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         children: <Widget>[
                           const Icon(
                             Icons.speed_rounded,
-                            size: 15,
+                            size: 14,
                             color: Colors.white70,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 3),
                           Text(
                             '${state.speed}x',
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
@@ -1823,7 +1964,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 20),
                   IconButton(
                     tooltip: context.l10n.addToPlaylist,
                     padding: EdgeInsets.zero,
@@ -1834,11 +1974,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     onPressed: () => showQuickAddToPlaylistSheet(context, item: item),
                     icon: const Icon(
                       Icons.playlist_add_rounded,
-                      size: 21,
+                      size: 20,
                       color: Colors.white60,
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  IconButton(
+                    tooltip: context.l10n.discovery,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 32,
+                    ),
+                    onPressed: () => showTrackDiscoverySheet(context, item: item, service: service),
+                    icon: const Icon(
+                      Icons.explore_outlined,
+                      size: 20,
+                      color: Colors.white60,
+                    ),
+                  ),
                   IconButton(
                     tooltip: context.l10n.sleepTimer,
                     padding: EdgeInsets.zero,

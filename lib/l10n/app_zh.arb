@@ -638,5 +638,19 @@
   "clearQueueConfirm": "确定要清空当前播放队列吗？",
   "crossfade": "切歌淡入淡出",
   "crossfadeDuration": "渐变时长",
-  "sleepFadeOut": "定时关闭平滑淡出"
+  "sleepFadeOut": "定时关闭平滑淡出",
+  "vinylView": "黑胶唱片",
+  "trackRadio": "歌曲漫游电台",
+  "startRadio": "开启相似漫游",
+  "radioStarted": "已开启漫游电台，已追加 {count} 首相似歌曲",
+  "@radioStarted": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "discovery": "发现与相似",
+  "moreByArtist": "该艺术家的其他作品",
+  "fromAlbum": "所属专辑曲目",
+  "similarSongs": "相似单曲推荐",
+  "noRecommendations": "暂无更多推荐曲目"
 }

@@ -13,6 +13,7 @@ import 'package:sakuramusic/core/providers.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
 import 'package:sakuramusic/features/player/audio_stream_inspector_sheet.dart';
+import 'package:sakuramusic/features/player/discovery/track_discovery_sheet.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_parser.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_service.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_share_dialog.dart';
@@ -21,6 +22,7 @@ import 'package:sakuramusic/features/player/lyrics/oled_lyrics_stage.dart';
 import 'package:sakuramusic/features/player/mini_player_bar.dart';
 import 'package:sakuramusic/features/player/player_screen.dart';
 import 'package:sakuramusic/features/player/quick_add_to_playlist_sheet.dart';
+import 'package:sakuramusic/features/player/vinyl/vinyl_turntable_stage.dart';
 import 'package:sakuramusic/features/shared/media_widgets.dart';
 import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:subsonic_api/subsonic_api.dart';
@@ -378,17 +380,19 @@ void main() {
 
       // Check default cover view switcher entries
       expect(find.text('封面'), findsOneWidget);
-      expect(find.text('歌词'), findsOneWidget);
+      expect(find.byIcon(Icons.lyrics_rounded), findsOneWidget);
       expect(find.byType(OledLyricsStage), findsNothing);
 
-      // Tap Lyrics Mode
-      await tester.tap(find.text('歌词'));
-      await tester.pumpAndSettle();
+      // Tap Lyrics Mode Icon
+      await tester.tap(find.byIcon(Icons.lyrics_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap speed selector in mobile bottom bar
       expect(find.text('1.0x'), findsOneWidget);
       await tester.tap(find.text('1.0x'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Expect speed modal
       expect(find.text('播放速度'), findsOneWidget);
@@ -398,7 +402,7 @@ void main() {
   );
 
   testWidgets(
-    'Mobile (Android) narrow player defaults to cover and exposes the three mode entries',
+    'Mobile (Android) narrow player defaults to cover and exposes the stage mode entries',
     (WidgetTester tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -446,8 +450,9 @@ void main() {
 
       // Default is cover mode: no OLED stage, no lyrics view.
       expect(find.text('封面'), findsOneWidget);
-      expect(find.text('歌词'), findsOneWidget);
-      expect(find.text('纯黑歌词'), findsOneWidget);
+      expect(find.byIcon(Icons.radio_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.lyrics_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.dark_mode_rounded), findsOneWidget);
       expect(find.byType(OledLyricsStage), findsNothing);
       expect(find.byType(LyricsView), findsNothing);
     },
@@ -498,8 +503,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.text('歌词'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.lyrics_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(LyricsView), findsOneWidget);
     expect(find.byType(OledLyricsStage), findsNothing);
@@ -552,8 +558,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('纯黑歌词'));
-      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.dark_mode_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // OLED stage is present.
       expect(find.byType(OledLyricsStage), findsOneWidget);
@@ -618,15 +625,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.text('纯黑歌词'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.dark_mode_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(OledLyricsStage), findsOneWidget);
 
     // Tap screen to reveal HUD overlay, then tap back button
     await tester.tap(find.byType(OledLyricsStage));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.byIcon(Icons.arrow_back_rounded));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(OledLyricsStage), findsNothing);
     expect(find.byType(LyricsView), findsNothing);
@@ -1236,6 +1245,82 @@ void main() {
       expect(find.text('新建歌单并添加'), findsOneWidget);
       expect(find.text('My Favorites'), findsOneWidget);
       expect(find.text('Anime OST'), findsOneWidget);
+    });
+
+    testWidgets('VinylTurntableStage renders turntable disc, arm, and metadata', (
+      tester,
+    ) async {
+      final service = _TestAudioPlayerService();
+      const item = PlayableItem(
+        id: 's-vinyl',
+        title: 'Retro Symphony',
+        artist: 'Vinyl Maestro',
+        album: 'Analog Memories',
+        streamUrl: 'http://example.com/stream/vinyl.flac',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: Scaffold(
+              body: VinylTurntableStage(
+                item: item,
+                service: service,
+                playing: true,
+                palette: null,
+                isStarred: false,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Retro Symphony'), findsOneWidget);
+      expect(find.textContaining('Vinyl Maestro'), findsOneWidget);
+      expect(find.byType(AudioStreamQualityBadge), findsOneWidget);
+      expect(find.byType(VinylTurntableStage), findsOneWidget);
+    });
+
+    testWidgets('TrackDiscoverySheet renders instant radio banner and tabs', (
+      tester,
+    ) async {
+      final service = _TestAudioPlayerService();
+      const item = PlayableItem(
+        id: 's-disc',
+        title: 'Discovery Song',
+        artist: 'Explorer',
+        streamUrl: 'http://example.com/stream/disc.mp3',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: Scaffold(
+              body: TrackDiscoverySheet(
+                item: item,
+                service: service,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('发现与相似'), findsOneWidget);
+      expect(find.text('歌曲漫游电台'), findsOneWidget);
+      expect(find.text('开启相似漫游'), findsOneWidget);
+      expect(find.text('相似单曲推荐'), findsOneWidget);
+      expect(find.text('该艺术家的其他作品'), findsOneWidget);
     });
   });
 }
