@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:subsonic_api/subsonic_api.dart';
@@ -13,6 +15,7 @@ import '../../core/artwork_palette.dart';
 import '../../core/providers.dart';
 import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
+import 'audio_stream_inspector_sheet.dart';
 import 'equalizer_panel.dart';
 import 'lyrics/lyrics_view.dart';
 import 'lyrics/oled_lyrics_stage.dart';
@@ -149,10 +152,29 @@ class PlayerScreen extends ConsumerStatefulWidget {
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   _MobileStageMode _mobileMode = _MobileStageMode.cover;
+  double _swipeDragDx = 0.0;
+  String? _seekFeedbackToast;
+  Timer? _seekFeedbackTimer;
 
   bool get _isMobilePlatform {
     final platform = Theme.of(context).platform;
     return platform == TargetPlatform.android || platform == TargetPlatform.iOS;
+  }
+
+  @override
+  void dispose() {
+    _seekFeedbackTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showSeekFeedback(String text) {
+    _seekFeedbackTimer?.cancel();
+    setState(() => _seekFeedbackToast = text);
+    _seekFeedbackTimer = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) {
+        setState(() => _seekFeedbackToast = null);
+      }
+    });
   }
 
   @override
@@ -262,6 +284,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                 item: item,
                                 palette: palette,
                                 isStarred: isStarred,
+                                playing: state.playing,
                               )
                             : _buildMobileStage(
                                 context: context,
@@ -269,6 +292,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                 item: item,
                                 palette: palette,
                                 isStarred: isStarred,
+                                playing: state.playing,
                               ),
                       ),
                     ),
@@ -411,6 +435,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ),
             onSelected: (value) {
               switch (value) {
+                case 'inspector':
+                  showAudioStreamInspectorSheet(context, item: item);
                 case 'details':
                   _showSongDetailsDialog(context, item);
                 case 'speed':
@@ -436,6 +462,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'inspector',
+                child: Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.graphic_eq_rounded,
+                      size: 18,
+                      color: Color(0xFF5BA4FF),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.l10n.audioStreamInspector,
+                      style: const TextStyle(color: Color(0xFF5BA4FF), fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'details',
                 child: Row(
@@ -576,9 +619,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required PlayableItem item,
     required ArtworkPalette? palette,
     required bool isStarred,
+    required bool playing,
   }) {
     final glowColor = (palette?.vibrant ?? const Color(0xFF1E7BF6)).withValues(
-      alpha: 0.35,
+      alpha: playing ? 0.38 : 0.12,
     );
 
     return Row(
@@ -590,56 +634,62 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              // Big Album Artwork with glowing shadow
-              Container(
-                constraints: const BoxConstraints(
-                  maxWidth: 360,
-                  maxHeight: 360,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: glowColor,
-                      blurRadius: 28,
-                      spreadRadius: -4,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 18,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: AspectRatio(
-                  aspectRatio: 1.0,
-                  child: ClipRRect(
+              // Big Album Artwork with breathing scale and glowing shadow
+              AnimatedScale(
+                scale: playing ? 1.0 : 0.91,
+                duration: const Duration(milliseconds: 340),
+                curve: Curves.easeOutBack,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 340),
+                  constraints: const BoxConstraints(
+                    maxWidth: 360,
+                    maxHeight: 360,
+                  ),
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    child: item.artworkUrl == null
-                        ? Container(
-                            color: const Color(0xFF22242D),
-                            child: const Icon(
-                              Icons.album_rounded,
-                              size: 100,
-                              color: Colors.white24,
-                            ),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: item.artworkUrl!,
-                            cacheKey: item.artworkCacheKey,
-                            fit: BoxFit.cover,
-                            memCacheWidth: 600,
-                            memCacheHeight: 600,
-                            errorWidget: (context, url, error) => Container(
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: glowColor,
+                        blurRadius: playing ? 32 : 12,
+                        spreadRadius: playing ? -2 : -6,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: playing ? 0.55 : 0.3),
+                        blurRadius: playing ? 20 : 10,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: AspectRatio(
+                    aspectRatio: 1.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: item.artworkUrl == null
+                          ? Container(
                               color: const Color(0xFF22242D),
                               child: const Icon(
                                 Icons.album_rounded,
                                 size: 100,
                                 color: Colors.white24,
                               ),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: item.artworkUrl!,
+                              cacheKey: item.artworkCacheKey,
+                              fit: BoxFit.cover,
+                              memCacheWidth: 600,
+                              memCacheHeight: 600,
+                              errorWidget: (context, url, error) => Container(
+                                color: const Color(0xFF22242D),
+                                child: const Icon(
+                                  Icons.album_rounded,
+                                  size: 100,
+                                  color: Colors.white24,
+                                ),
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                 ),
               ),
@@ -679,6 +729,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              // Audio Quality Capsule Badge
+              AudioStreamQualityBadge(item: item),
             ],
           ),
         ),
@@ -707,6 +762,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required PlayableItem item,
     required ArtworkPalette? palette,
     required bool isStarred,
+    required bool playing,
   }) {
     if (_mobileMode == _MobileStageMode.lyrics) {
       return Column(
@@ -803,61 +859,168 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             : 520.0;
         final coverDimension = math.min(
           320.0,
-          math.max(140.0, availableHeight * 0.46),
+          math.max(140.0, availableHeight * 0.44),
         );
         final glowColor = (palette?.vibrant ?? const Color(0xFF1E7BF6))
-            .withValues(alpha: 0.32);
+            .withValues(alpha: playing ? 0.36 : 0.08);
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Album Artwork with tap to switch to lyrics
-            InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: () =>
-                  setState(() => _mobileMode = _MobileStageMode.lyrics),
-              child: Container(
-                width: coverDimension,
-                height: coverDimension,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: glowColor,
-                      blurRadius: 24,
-                      spreadRadius: -2,
-                      offset: const Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 14,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: item.artworkUrl == null
-                      ? Container(
-                          color: const Color(0xFF22242D),
-                          child: const Icon(
-                            Icons.album_rounded,
-                            size: 80,
-                            color: Colors.white24,
+            // Album Artwork with Horizontal Swipe, Double-Tap Seek, and Tap to Lyrics
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _mobileMode = _MobileStageMode.lyrics),
+              onDoubleTapDown: (details) async {
+                final localX = details.localPosition.dx;
+                final pos = service.currentSnapshot?.position ?? Duration.zero;
+                final dur = service.currentSnapshot?.duration ?? item.duration ?? Duration.zero;
+
+                if (localX < coverDimension / 2) {
+                  // Rewind 10s
+                  final target = pos - const Duration(seconds: 10);
+                  await service.seek(target < Duration.zero ? Duration.zero : target);
+                  HapticFeedback.lightImpact();
+                  _showSeekFeedback('-10s');
+                } else {
+                  // Forward 10s
+                  final target = pos + const Duration(seconds: 10);
+                  await service.seek(target > dur ? dur : target);
+                  HapticFeedback.lightImpact();
+                  _showSeekFeedback('+10s');
+                }
+              },
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _swipeDragDx += details.primaryDelta ?? 0;
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (_swipeDragDx < -45 || velocity < -250) {
+                  HapticFeedback.mediumImpact();
+                  service.next();
+                } else if (_swipeDragDx > 45 || velocity > 250) {
+                  HapticFeedback.mediumImpact();
+                  service.previous();
+                }
+                setState(() => _swipeDragDx = 0.0);
+              },
+              onHorizontalDragCancel: () {
+                setState(() => _swipeDragDx = 0.0);
+              },
+              child: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  Transform.translate(
+                    offset: Offset(_swipeDragDx * 0.4, 0),
+                    child: Transform.rotate(
+                      angle: _swipeDragDx * 0.00025,
+                      child: AnimatedScale(
+                        scale: playing ? 1.0 : 0.91,
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeOutBack,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 320),
+                          curve: Curves.easeOutCubic,
+                          width: coverDimension,
+                          height: coverDimension,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: glowColor,
+                                blurRadius: playing ? 28 : 10,
+                                spreadRadius: playing ? -2 : -6,
+                                offset: const Offset(0, 6),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: playing ? 0.45 : 0.25,
+                                ),
+                                blurRadius: playing ? 16 : 8,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: item.artworkUrl!,
-                          cacheKey: item.artworkCacheKey,
-                          fit: BoxFit.cover,
-                          memCacheWidth: 400,
-                          memCacheHeight: 400,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: item.artworkUrl == null
+                                ? Container(
+                                    color: const Color(0xFF22242D),
+                                    child: const Icon(
+                                      Icons.album_rounded,
+                                      size: 80,
+                                      color: Colors.white24,
+                                    ),
+                                  )
+                                : CachedNetworkImage(
+                                    imageUrl: item.artworkUrl!,
+                                    cacheKey: item.artworkCacheKey,
+                                    fit: BoxFit.cover,
+                                    memCacheWidth: 400,
+                                    memCacheHeight: 400,
+                                  ),
+                          ),
                         ),
-                ),
+                      ),
+                    ),
+                  ),
+
+                  // Floating Seek Feedback Toast Pill
+                  if (_seekFeedbackToast != null)
+                    AnimatedOpacity(
+                      opacity: _seekFeedbackToast != null ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          boxShadow: const <BoxShadow>[
+                            BoxShadow(
+                              color: Colors.black54,
+                              blurRadius: 10,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(
+                              _seekFeedbackToast == '-10s'
+                                  ? Icons.replay_10_rounded
+                                  : Icons.forward_10_rounded,
+                              size: 20,
+                              color: const Color(0xFF5BA4FF),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _seekFeedbackToast == '-10s'
+                                  ? context.l10n.rewind10s
+                                  : context.l10n.forward10s,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
             // Track Title & Star Row
             Padding(
@@ -898,6 +1061,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
+                        const SizedBox(height: 6),
+                        // Audio Quality Badge
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: AudioStreamQualityBadge(item: item),
+                        ),
                       ],
                     ),
                   ),
@@ -933,7 +1102,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               ),
             ),
 
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // Compact Lyrics Preview Card
             Expanded(

@@ -1256,4 +1256,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sleepTimerCancelled => '已取消定时关闭';
+
+  @override
+  String get audioStreamInspector => '音频流参数';
+
+  @override
+  String get audioSpecs => '音频规格';
+
+  @override
+  String get audioCodec => '编码格式';
+
+  @override
+  String get audioBitrate => '实时码率';
+
+  @override
+  String get audioSampleRate => '采样率';
+
+  @override
+  String get audioBitDepth => '量化位深';
+
+  @override
+  String get audioChannels => '声道通道';
+
+  @override
+  String get audioStereo => '立体声 (2.0)';
+
+  @override
+  String get audioSourceType => '音源传输';
+
+  @override
+  String get audioDirectStream => '服务器原始流直通';
+
+  @override
+  String get audioLocalCached => '本地无损缓存 / 离线';
+
+  @override
+  String get audioFileSize => '文件大小';
+
+  @override
+  String get audioHiResLossless => 'Hi-Res 无损';
+
+  @override
+  String get audioLossless => '无损音质';
+
+  @override
+  String get audioStandard => '标准音质';
+
+  @override
+  String get swipeToSwitch => '左右滑动封面切换歌曲';
+
+  @override
+  String get forward10s => '快进 10 秒';
+
+  @override
+  String get rewind10s => '快退 10 秒';
 }
