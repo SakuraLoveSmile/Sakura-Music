@@ -15,10 +15,12 @@ import 'package:sakuramusic/data/server_repository.dart';
 import 'package:sakuramusic/features/player/audio_stream_inspector_sheet.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_parser.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_service.dart';
+import 'package:sakuramusic/features/player/lyrics/lyrics_share_dialog.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_view.dart';
 import 'package:sakuramusic/features/player/lyrics/oled_lyrics_stage.dart';
 import 'package:sakuramusic/features/player/mini_player_bar.dart';
 import 'package:sakuramusic/features/player/player_screen.dart';
+import 'package:sakuramusic/features/player/quick_add_to_playlist_sheet.dart';
 import 'package:sakuramusic/features/shared/media_widgets.dart';
 import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:subsonic_api/subsonic_api.dart';
@@ -1150,6 +1152,90 @@ void main() {
       expect(find.text('编码格式'), findsOneWidget);
       expect(find.text('FLAC'), findsOneWidget);
       expect(find.text('1411 kbps'), findsOneWidget);
+    });
+
+    testWidgets('LyricsShareDialog renders preview and switches card themes', (
+      tester,
+    ) async {
+      const item = PlayableItem(
+        id: 's-song',
+        title: 'Sakura Song',
+        artist: 'Sakura Artist',
+        streamUrl: 'http://example.com/s.mp3',
+      );
+      final lines = <ParsedLyricsLine>[
+        const ParsedLyricsLine(timeMs: 1000, text: 'First line of poem'),
+        const ParsedLyricsLine(timeMs: 5000, text: 'Second line with emotion'),
+        const ParsedLyricsLine(timeMs: 9000, text: 'Third line reaches chorus'),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          home: Scaffold(
+            body: LyricsShareDialog(
+              item: item,
+              lines: lines,
+              initialIndex: 0,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('歌词海报'), findsOneWidget);
+      expect(find.text('Sakura Song'), findsOneWidget);
+      expect(find.text('First line of poem'), findsOneWidget);
+      expect(find.text('复制歌词'), findsOneWidget);
+      expect(find.text('保存海报'), findsOneWidget);
+
+      // Switch theme to Frosted Glass
+      await tester.tap(find.text('磨砂玻璃'));
+      await tester.pumpAndSettle();
+      expect(find.text('磨砂玻璃'), findsOneWidget);
+
+      // Toggle line 2
+      await tester.tap(find.text('L2'));
+      await tester.pumpAndSettle();
+      expect(find.text('Second line with emotion'), findsOneWidget);
+    });
+
+    testWidgets('QuickAddToPlaylistSheet renders playlist options', (
+      tester,
+    ) async {
+      const item = PlayableItem(
+        id: 's-track',
+        title: 'Dream Track',
+        artist: 'Dreamer',
+        streamUrl: 'http://example.com/stream/track.mp3',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            playlistsProvider.overrideWith((ref) async => const <Playlist>[
+                  Playlist(id: 'pl-1', name: 'My Favorites', songCount: 12),
+                  Playlist(id: 'pl-2', name: 'Anime OST', songCount: 45),
+                ]),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: const Scaffold(
+              body: QuickAddToPlaylistSheet(item: item),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('选择歌单'), findsOneWidget);
+      expect(find.text('新建歌单并添加'), findsOneWidget);
+      expect(find.text('My Favorites'), findsOneWidget);
+      expect(find.text('Anime OST'), findsOneWidget);
     });
   });
 }

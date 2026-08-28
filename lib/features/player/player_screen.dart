@@ -20,6 +20,7 @@ import 'equalizer_panel.dart';
 import 'lyrics/lyrics_view.dart';
 import 'lyrics/oled_lyrics_stage.dart';
 import 'queue_panel.dart';
+import 'quick_add_to_playlist_sheet.dart';
 import 'smooth_position_builder.dart';
 
 typedef _PlayerControlsState = ({
@@ -435,6 +436,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ),
             onSelected: (value) {
               switch (value) {
+                case 'playlist':
+                  showQuickAddToPlaylistSheet(context, item: item);
                 case 'inspector':
                   showAudioStreamInspectorSheet(context, item: item);
                 case 'details':
@@ -462,6 +465,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               }
             },
             itemBuilder: (context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'playlist',
+                child: Row(
+                  children: <Widget>[
+                    const Icon(
+                      Icons.playlist_add_rounded,
+                      size: 18,
+                      color: Color(0xFF5BA4FF),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.l10n.addToPlaylist,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
               PopupMenuItem<String>(
                 value: 'inspector',
                 child: Row(
@@ -1483,6 +1503,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ),
 
+              // Add to playlist
+              IconButton(
+                tooltip: context.l10n.addToPlaylist,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 30,
+                  height: 30,
+                ),
+                onPressed: () => showQuickAddToPlaylistSheet(context, item: item),
+                icon: const Icon(
+                  Icons.playlist_add_rounded,
+                  size: 19,
+                  color: Colors.white60,
+                ),
+              ),
+
               // Sleep timer
               IconButton(
                 tooltip: context.l10n.sleepTimer,
@@ -1787,7 +1823,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
+                  IconButton(
+                    tooltip: context.l10n.addToPlaylist,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 36,
+                      height: 32,
+                    ),
+                    onPressed: () => showQuickAddToPlaylistSheet(context, item: item),
+                    icon: const Icon(
+                      Icons.playlist_add_rounded,
+                      size: 21,
+                      color: Colors.white60,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
                   IconButton(
                     tooltip: context.l10n.sleepTimer,
                     padding: EdgeInsets.zero,
@@ -1809,6 +1860,48 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         );
       },
     );
+  }
+
+  static Timer? _activeSleepTimer;
+  static Timer? _sleepFadeTimer;
+  static int? _activeSleepMinutes;
+
+  void _setSleepTimer(BuildContext context, AudioPlayerService service, int minutes) {
+    _activeSleepTimer?.cancel();
+    _sleepFadeTimer?.cancel();
+    _activeSleepMinutes = minutes;
+
+    final totalDuration = Duration(minutes: minutes);
+    final fadeStartDelay = totalDuration > const Duration(seconds: 25)
+        ? totalDuration - const Duration(seconds: 20)
+        : Duration.zero;
+
+    _sleepFadeTimer = Timer(fadeStartDelay, () async {
+      final initialVol = service.currentSnapshot?.volume ?? 1.0;
+      const fadeSteps = 8;
+      for (int i = 1; i <= fadeSteps; i++) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (_activeSleepTimer == null) break;
+        final vol = initialVol * (1.0 - (i / fadeSteps));
+        await service.setVolume(vol.clamp(0.0, 1.0));
+      }
+    });
+
+    _activeSleepTimer = Timer(totalDuration, () async {
+      await service.pause();
+      await service.setVolume(1.0);
+      _activeSleepTimer = null;
+      _sleepFadeTimer = null;
+      _activeSleepMinutes = null;
+    });
+  }
+
+  void _cancelSleepTimer() {
+    _activeSleepTimer?.cancel();
+    _sleepFadeTimer?.cancel();
+    _activeSleepTimer = null;
+    _sleepFadeTimer = null;
+    _activeSleepMinutes = null;
   }
 
   void _showSleepTimerModal(BuildContext context, AudioPlayerService service) {
@@ -1841,6 +1934,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       color: Colors.white,
                     ),
                   ),
+                  const Spacer(),
+                  if (_activeSleepMinutes != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E7BF6).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${_activeSleepMinutes}m',
+                        style: const TextStyle(
+                          color: Color(0xFF5BA4FF),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -1848,9 +1958,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 spacing: 10,
                 runSpacing: 10,
                 children: <int>[15, 30, 45, 60, 90].map((minutes) {
+                  final isActive = _activeSleepMinutes == minutes;
                   return InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
+                      _setSleepTimer(context, service, minutes);
                       Navigator.of(sheetContext).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -1864,17 +1976,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF242733),
+                        color: isActive
+                            ? const Color(0xFF1E7BF6)
+                            : const Color(0xFF242733),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: isActive
+                              ? const Color(0xFF1E7BF6)
+                              : Colors.white.withValues(alpha: 0.08),
                         ),
                       ),
                       child: Text(
                         sheetContext.l10n.minutesLabel(minutes),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
                           fontSize: 13.5,
                         ),
                       ),
@@ -1912,6 +2028,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   style: const TextStyle(color: Colors.redAccent, fontSize: 14),
                 ),
                 onTap: () {
+                  _cancelSleepTimer();
                   Navigator.of(sheetContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(context.l10n.sleepTimerCancelled)),

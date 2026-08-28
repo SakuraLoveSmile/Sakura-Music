@@ -2551,6 +2551,156 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'快退 10 秒'**
   String get rewind10s;
+
+  /// No description provided for @dragToSeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动定位'**
+  String get dragToSeek;
+
+  /// No description provided for @playFromHere.
+  ///
+  /// In zh, this message translates to:
+  /// **'从此播放'**
+  String get playFromHere;
+
+  /// No description provided for @shareLyrics.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享歌词'**
+  String get shareLyrics;
+
+  /// No description provided for @lyricsCard.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词海报'**
+  String get lyricsCard;
+
+  /// No description provided for @copyLyricsText.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制歌词'**
+  String get copyLyricsText;
+
+  /// No description provided for @lyricsCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词已复制到剪贴板'**
+  String get lyricsCopied;
+
+  /// No description provided for @saveImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存海报'**
+  String get saveImage;
+
+  /// No description provided for @imageSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'海报已保存'**
+  String get imageSaved;
+
+  /// No description provided for @cardTheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'卡片风格'**
+  String get cardTheme;
+
+  /// No description provided for @themeGradient.
+  ///
+  /// In zh, this message translates to:
+  /// **'深色流光'**
+  String get themeGradient;
+
+  /// No description provided for @themeFrosted.
+  ///
+  /// In zh, this message translates to:
+  /// **'磨砂玻璃'**
+  String get themeFrosted;
+
+  /// No description provided for @themeOled.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯黑极简'**
+  String get themeOled;
+
+  /// No description provided for @maxSelectedLines.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多选择 5 行歌词'**
+  String get maxSelectedLines;
+
+  /// No description provided for @addToPlaylist.
+  ///
+  /// In zh, this message translates to:
+  /// **'加入歌单'**
+  String get addToPlaylist;
+
+  /// No description provided for @selectPlaylist.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择歌单'**
+  String get selectPlaylist;
+
+  /// No description provided for @createAndAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建歌单并添加'**
+  String get createAndAdd;
+
+  /// No description provided for @newPlaylistName.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌单名称'**
+  String get newPlaylistName;
+
+  /// No description provided for @addedToPlaylist.
+  ///
+  /// In zh, this message translates to:
+  /// **'已成功加入歌单'**
+  String get addedToPlaylist;
+
+  /// No description provided for @createPlaylistFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'创建歌单失败'**
+  String get createPlaylistFailed;
+
+  /// No description provided for @locatePlaying.
+  ///
+  /// In zh, this message translates to:
+  /// **'定位当前播放'**
+  String get locatePlaying;
+
+  /// No description provided for @clearQueue.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空播放队列'**
+  String get clearQueue;
+
+  /// No description provided for @clearQueueConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定要清空当前播放队列吗？'**
+  String get clearQueueConfirm;
+
+  /// No description provided for @crossfade.
+  ///
+  /// In zh, this message translates to:
+  /// **'切歌淡入淡出'**
+  String get crossfade;
+
+  /// No description provided for @crossfadeDuration.
+  ///
+  /// In zh, this message translates to:
+  /// **'渐变时长'**
+  String get crossfadeDuration;
+
+  /// No description provided for @sleepFadeOut.
+  ///
+  /// In zh, this message translates to:
+  /// **'定时关闭平滑淡出'**
+  String get sleepFadeOut;
 }
 
 class _AppLocalizationsDelegate
