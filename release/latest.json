@@ -1,62 +1,62 @@
 {
-  "tag_name": "v0.3.0-alpha.7",
-  "html_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.0-alpha.7",
+  "tag_name": "v0.3.0-alpha.8",
+  "html_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.0-alpha.8",
   "body": "",
-  "published_at": "2026-08-28T10:29:15Z",
+  "published_at": "2026-08-28T11:48:26Z",
   "assets": [
     {
       "name": "SakuraMusic-android-arm64-v8a.apk",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-android-arm64-v8a.apk",
-      "size": 31930086,
-      "digest": "sha256:026cce6083ddd732d7e7d3fc0fe9aec5dc1ae0d161a5a431500fe633f0b480db"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-android-arm64-v8a.apk",
+      "size": 32063382,
+      "digest": "sha256:7f19327a31a3cc7baa011c672397a11064b12b95e8f0a7eff676e1c4027f733d"
     },
     {
       "name": "SakuraMusic-android-armeabi-v7a.apk",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-android-armeabi-v7a.apk",
-      "size": 29012058,
-      "digest": "sha256:a87bd38280a3add2b112d18e06604df876446a17bb65df2368aa6bf399354092"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-android-armeabi-v7a.apk",
+      "size": 29161734,
+      "digest": "sha256:78bb6a7465692c635e2df65ae6e2f9047d4e69aaef4f905f9a7723c7dbf8588d"
     },
     {
       "name": "SakuraMusic-android-universal.apk",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-android-universal.apk",
-      "size": 91035176,
-      "digest": "sha256:05e9c87c84d8684a2eb4c629a3f300f59a963de96ea57a129c30a5540834f65f"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-android-universal.apk",
+      "size": 91446996,
+      "digest": "sha256:70030b7a34001dfe815ddfaa4297c290883423f6cd021fac369383cfc8016600"
     },
     {
       "name": "SakuraMusic-android-x86_64.apk",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-android-x86_64.apk",
-      "size": 34247332,
-      "digest": "sha256:8303235e24afd2e7854ba494b75ba1db48c9777dac0d67ca46d38ddb5a24e22b"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-android-x86_64.apk",
+      "size": 34380628,
+      "digest": "sha256:8ba0cb020a97dc5bae4c9c0abab961d31a7764a71c26aa9e7e1bb4718c25b17d"
     },
     {
       "name": "SakuraMusic-ios-Runner.app.zip",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-ios-Runner.app.zip",
-      "size": 12943294,
-      "digest": "sha256:e0e5ac6819e9f19f608bd369f8eeb050302feb958a36f07242dd986e8dc1572c"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-ios-Runner.app.zip",
+      "size": 13014352,
+      "digest": "sha256:1aa90ac5adf5e47d36fd7131c80c23992bf87d1892f0114baccf0f6a4b64e7a0"
     },
     {
       "name": "SakuraMusic-ios-unsigned.ipa",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-ios-unsigned.ipa",
-      "size": 12930848,
-      "digest": "sha256:48bebb226c59c50964ff27a86eac69786369f2a678c3b853b3b98f84fae6469c"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-ios-unsigned.ipa",
+      "size": 13001173,
+      "digest": "sha256:2d087ce660c54580cacd1bd133f31dd5d10e05237e87c72925d5749b81ede74c"
     },
     {
       "name": "SakuraMusic-macos.dmg",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-macos.dmg",
-      "size": 37304775,
-      "digest": "sha256:0f4f61d845f9f5aef159bf8b0bb6d64cd4a78e74533253c27a09f2bc94aff18d"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-macos.dmg",
+      "size": 37667665,
+      "digest": "sha256:8dad08b3bb0b58508bbfbc2d3440a18fc168357f2614315fa958396a8c7f9eeb"
     },
     {
       "name": "SakuraMusic-macos.zip",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-macos.zip",
-      "size": 32675448,
-      "digest": "sha256:4396145486de09f09190957a48a80520779f423e0bdf774319aa9b45fb1f0db3"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-macos.zip",
+      "size": 32802991,
+      "digest": "sha256:f3c647385407a89eaf03e13dcfd3f2f451abdbb117b5ccdba3a3b2700bf34d9a"
     },
     {
       "name": "SakuraMusic-windows-x64.zip",
-      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.7/SakuraMusic-windows-x64.zip",
-      "size": 23272848,
-      "digest": "sha256:bc20da4c39ea5198b38b05d23d6c6291bdbe46d13ccb385b90a4fe21f7332d27"
+      "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.8/SakuraMusic-windows-x64.zip",
+      "size": 23341200,
+      "digest": "sha256:e8538da1d90d17df533e52c50677eff2c42fdd82e309a31f661fde10178d761d"
     }
   ]
 }
