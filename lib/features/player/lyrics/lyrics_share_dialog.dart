@@ -9,11 +9,7 @@ import '../../../audio/audio_player_service.dart';
 import '../../../l10n/l10n.dart';
 import 'lyrics_parser.dart';
 
-enum LyricsCardTheme {
-  gradient,
-  frosted,
-  oled,
-}
+enum LyricsCardTheme { gradient, frosted, oled }
 
 Future<void> showLyricsShareDialog(
   BuildContext context, {
@@ -28,11 +24,8 @@ Future<void> showLyricsShareDialog(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (ctx) => LyricsShareDialog(
-      item: item,
-      lines: lines,
-      initialIndex: initialIndex,
-    ),
+    builder: (ctx) =>
+        LyricsShareDialog(item: item, lines: lines, initialIndex: initialIndex),
   );
 }
 
@@ -60,7 +53,9 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedIndices = <int>{widget.initialIndex.clamp(0, widget.lines.length - 1)};
+    _selectedIndices = <int>{
+      widget.initialIndex.clamp(0, widget.lines.length - 1),
+    };
   }
 
   void _toggleLine(int index) {
@@ -87,7 +82,9 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
   String _formatSelectedLyrics() {
     final sorted = _selectedIndices.toList()..sort();
     final buffer = StringBuffer();
-    buffer.writeln('🎵 ${widget.item.title} - ${widget.item.artist ?? context.l10n.unknownArtist}');
+    buffer.writeln(
+      '🎵 ${widget.item.title} - ${widget.item.artist ?? context.l10n.unknownArtist}',
+    );
     buffer.writeln('━━━━━━━━━━━━━━━');
     for (final i in sorted) {
       buffer.writeln(widget.lines[i].text);
@@ -114,7 +111,8 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
 
   Future<void> _saveOrShareImage() async {
     try {
-      final boundary = _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -162,7 +160,11 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
 
             Row(
               children: <Widget>[
-                const Icon(Icons.palette_outlined, color: Color(0xFF5BA4FF), size: 20),
+                const Icon(
+                  Icons.palette_outlined,
+                  color: Color(0xFF5BA4FF),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.lyricsCard,
@@ -174,9 +176,16 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white60,
+                    size: 20,
+                  ),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -237,7 +246,9 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                       'L${index + 1}',
                       style: TextStyle(
                         fontSize: 11.5,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: isSelected ? Colors.white : Colors.white60,
                       ),
                     ),
@@ -263,7 +274,9 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                     label: Text(context.l10n.copyLyricsText),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -331,7 +344,11 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: <Color>[Color(0xFF1E2A4A), Color(0xFF151926), Color(0xFF221626)],
+            colors: <Color>[
+              Color(0xFF1E2A4A),
+              Color(0xFF151926),
+              Color(0xFF221626),
+            ],
           ),
           border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
           boxShadow: const <BoxShadow>[
@@ -388,7 +405,11 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                   child: widget.item.artworkUrl == null
                       ? Container(
                           color: const Color(0xFF2E3240),
-                          child: const Icon(Icons.album_rounded, size: 24, color: Colors.white30),
+                          child: const Icon(
+                            Icons.album_rounded,
+                            size: 24,
+                            color: Colors.white30,
+                          ),
                         )
                       : CachedNetworkImage(
                           imageUrl: widget.item.artworkUrl!,

@@ -92,7 +92,10 @@ class _QueuePanelState extends State<QueuePanel> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF222530),
-        title: Text(ctx.l10n.clearQueue, style: const TextStyle(color: Colors.white)),
+        title: Text(
+          ctx.l10n.clearQueue,
+          style: const TextStyle(color: Colors.white),
+        ),
         content: Text(
           ctx.l10n.clearQueueConfirm,
           style: const TextStyle(color: Colors.white70),
@@ -100,7 +103,10 @@ class _QueuePanelState extends State<QueuePanel> {
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(ctx.l10n.cancel, style: const TextStyle(color: Colors.white60)),
+            child: Text(
+              ctx.l10n.cancel,
+              style: const TextStyle(color: Colors.white60),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -139,7 +145,11 @@ class _QueuePanelState extends State<QueuePanel> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Icon(Icons.queue_music_rounded, size: 48, color: Colors.white24),
+                const Icon(
+                  Icons.queue_music_rounded,
+                  size: 48,
+                  color: Colors.white24,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   context.l10n.emptyQueue,
@@ -177,21 +187,32 @@ class _QueuePanelState extends State<QueuePanel> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${state.queue.length}',
-                      style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   if (state.index != null)
                     IconButton(
                       tooltip: context.l10n.locatePlaying,
-                      icon: const Icon(Icons.my_location_rounded, size: 20, color: Color(0xFF5BA4FF)),
+                      icon: const Icon(
+                        Icons.my_location_rounded,
+                        size: 20,
+                        color: Color(0xFF5BA4FF),
+                      ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         _scrollToCurrent(state.index!);
@@ -199,7 +220,11 @@ class _QueuePanelState extends State<QueuePanel> {
                     ),
                   IconButton(
                     tooltip: context.l10n.clearQueue,
-                    icon: const Icon(Icons.delete_sweep_outlined, size: 22, color: Colors.white54),
+                    icon: const Icon(
+                      Icons.delete_sweep_outlined,
+                      size: 22,
+                      color: Colors.white54,
+                    ),
                     onPressed: () => _confirmClearQueue(context),
                   ),
                 ],
@@ -228,33 +253,50 @@ class _QueuePanelState extends State<QueuePanel> {
                     key: ValueKey('${item.id}-$index'),
                     direction: DismissDirection.endToStart,
                     background: const _DeleteBackground(),
-                    onDismissed: (_) => unawaited(widget.service.removeAt(index)),
+                    onDismissed: (_) =>
+                        unawaited(widget.service.removeAt(index)),
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: isCurrent
                             ? const Color(0xFF1E7BF6).withValues(alpha: 0.15)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         border: isCurrent
-                            ? Border.all(color: const Color(0xFF1E7BF6).withValues(alpha: 0.4), width: 0.8)
+                            ? Border.all(
+                                color: const Color(
+                                  0xFF1E7BF6,
+                                ).withValues(alpha: 0.4),
+                                width: 0.8,
+                              )
                             : null,
                       ),
                       child: ListTile(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         leading: Container(
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
                             color: isCurrent
-                                ? const Color(0xFF1E7BF6).withValues(alpha: 0.25)
+                                ? const Color(
+                                    0xFF1E7BF6,
+                                  ).withValues(alpha: 0.25)
                                 : Colors.white.withValues(alpha: 0.04),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
-                            isCurrent ? Icons.graphic_eq_rounded : Icons.drag_handle_rounded,
+                            isCurrent
+                                ? Icons.graphic_eq_rounded
+                                : Icons.drag_handle_rounded,
                             size: 18,
-                            color: isCurrent ? const Color(0xFF5BA4FF) : Colors.white38,
+                            color: isCurrent
+                                ? const Color(0xFF5BA4FF)
+                                : Colors.white38,
                           ),
                         ),
                         title: Text(
@@ -263,8 +305,12 @@ class _QueuePanelState extends State<QueuePanel> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                            color: isCurrent ? const Color(0xFF5BA4FF) : Colors.white,
+                            fontWeight: isCurrent
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isCurrent
+                                ? const Color(0xFF5BA4FF)
+                                : Colors.white,
                           ),
                         ),
                         subtitle: Text(

@@ -161,7 +161,8 @@ class _VinylTurntableStageState extends State<VinylTurntableStage>
                                           )
                                         : CachedNetworkImage(
                                             imageUrl: widget.item.artworkUrl!,
-                                            cacheKey: widget.item.artworkCacheKey,
+                                            cacheKey:
+                                                widget.item.artworkCacheKey,
                                             fit: BoxFit.cover,
                                             memCacheWidth: 250,
                                             memCacheHeight: 250,
@@ -200,7 +201,10 @@ class _VinylTurntableStageState extends State<VinylTurntableStage>
                         duration: const Duration(milliseconds: 450),
                         curve: Curves.easeInOutCubic,
                         child: CustomPaint(
-                          size: Size(discDimension * 0.38, discDimension * 0.65),
+                          size: Size(
+                            discDimension * 0.38,
+                            discDimension * 0.65,
+                          ),
                           painter: _TonearmPainter(),
                         ),
                       ),
@@ -266,7 +270,9 @@ class _VinylTurntableStageState extends State<VinylTurntableStage>
                       size: 22,
                       onPressed: () async {
                         try {
-                          await ref.read(starredProvider.notifier).toggleSong(
+                          await ref
+                              .read(starredProvider.notifier)
+                              .toggleSong(
                                 Song(
                                   id: widget.item.id,
                                   title: widget.item.title,
@@ -278,7 +284,9 @@ class _VinylTurntableStageState extends State<VinylTurntableStage>
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(context.l10n.starFailed(err.toString())),
+                                content: Text(
+                                  context.l10n.starFailed(err.toString()),
+                                ),
                               ),
                             );
                           }
@@ -383,7 +391,10 @@ class _TonearmPainter extends CustomPainter {
     final headCenter = Offset(size.width * 0.25, size.height * 0.90);
     final headRect = Rect.fromCenter(center: headCenter, width: 10, height: 16);
     final headPaint = Paint()..color = const Color(0xFF1E7BF6);
-    canvas.drawRRect(RRect.fromRectAndRadius(headRect, const Radius.circular(2)), headPaint);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(headRect, const Radius.circular(2)),
+      headPaint,
+    );
   }
 
   @override
