@@ -48,8 +48,9 @@ final appVersionProvider = FutureProvider<PackageInfo>(
 );
 
 final updateServiceProvider = Provider<UpdateService>((ref) {
+  // No Dio override: UpdateService's own default client carries the request
+  // timeouts. Injecting a bare Dio() silently removed them.
   return UpdateService(
-    dio: Dio(),
     packageInfoLoader: () => ref.read(appVersionProvider.future),
   );
 });

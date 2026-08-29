@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -53,6 +54,11 @@ class UpdateService {
     'https://cdn.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/latest.json',
     'https://fastly.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/latest.json',
   ];
+
+  /// The request client. Visible for tests so the default timeout
+  /// configuration can be asserted (providers must not inject a bare Dio).
+  @visibleForTesting
+  Dio get dio => _dio;
 
   final Dio _dio;
   final PackageInfoLoader _packageInfoLoader;
