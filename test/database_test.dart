@@ -166,4 +166,24 @@ void main() {
       expect(serverEight.single.payload, 'other-server');
     },
   );
+
+  test('safeAudioMode keeps its true default during partial updates', () async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+
+    // First partial update with no settings row: the column default (true)
+    // must survive, not flip to false.
+    await database.saveSettings(themeMode: 'dark');
+    expect((await database.getSettings())!.safeAudioMode, isTrue);
+
+    // Later partial updates leave the flag untouched.
+    await database.saveSettings(localeCode: 'en');
+    expect((await database.getSettings())!.safeAudioMode, isTrue);
+
+    // An explicit value still wins.
+    await database.saveSettings(safeAudioMode: false);
+    expect((await database.getSettings())!.safeAudioMode, isFalse);
+    await database.saveSettings(themeMode: 'light');
+    expect((await database.getSettings())!.safeAudioMode, isFalse);
+  });
 }
