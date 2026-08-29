@@ -11,9 +11,13 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
 import 'audio/audio_player_provider.dart';
+import 'audio/audio_player_service.dart';
 import 'audio/audio_service_handler.dart';
+import 'audio/unavailable_audio_player_service.dart';
 import 'core/crash_report.dart';
 import 'core/desktop_runtime_status.dart';
+import 'core/security/credential_migration.dart';
+import 'core/security/credential_store.dart';
 import 'data/db/app_database.dart';
 
 Future<void> main() async {
@@ -44,6 +48,18 @@ Future<void> _bootstrap() async {
   // Replace the default blank/grey build-failure screen with a readable dark
   // panel so a late build error is never an invisible white screen.
   ErrorWidget.builder = _buildErrorWidget;
+
+  // Move credentials from the plain database into the platform secure storage
+  // before any provider can build a client. Idempotent: safe on every start.
+  try {
+    final database = AppDatabase();
+    final store = SecureCredentialStore();
+    await CredentialMigrator(database: database, store: store).migrate();
+    await store.warmUp((await database.getAllServers()).map((s) => s.id));
+    await database.close();
+  } catch (error, stack) {
+    logCrash(error, stack, context: 'credentialMigration');
+  }
 
   if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     try {
@@ -81,16 +97,25 @@ Future<void> _bootstrap() async {
     } catch (error, stack) {
       logCrash(error, stack, context: 'readSafeAudioMode');
     }
-    final audioHandler = await AudioService.init<AudioServiceHandler>(
-      builder: () =>
-          AudioServiceHandler(disableEqualizerPipeline: safeAudioMode),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.sakuramusic.app.audio',
-        androidNotificationChannelName: 'SakuraMusic 播放',
-        androidStopForegroundOnPause: false,
-      ),
-    );
-    _runApp(audioHandler: audioHandler);
+    // A failing AudioService.init must not blank the app: the UI starts with
+    // a predictable "unavailable" player instead.
+    AudioServiceHandler? handler;
+    AudioPlayerService? audioOverride;
+    try {
+      handler = await AudioService.init<AudioServiceHandler>(
+        builder: () =>
+            AudioServiceHandler(disableEqualizerPipeline: safeAudioMode),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'com.sakuramusic.app.audio',
+          androidNotificationChannelName: 'SakuraMusic 播放',
+          androidStopForegroundOnPause: false,
+        ),
+      );
+    } catch (error, stack) {
+      logCrash(error, stack, context: 'AudioService.init');
+      audioOverride = UnavailableAudioPlayerService();
+    }
+    _runApp(audioOverride: handler ?? audioOverride);
     return;
   }
 
@@ -116,12 +141,12 @@ Future<void> _bootstrap() async {
   _runApp();
 }
 
-void _runApp({AudioServiceHandler? audioHandler}) {
+void _runApp({AudioPlayerService? audioOverride}) {
   runApp(
     ProviderScope(
       observers: const [CrashReportingObserver()],
-      overrides: audioHandler != null
-          ? [audioPlayerProvider.overrideWithValue(audioHandler)]
+      overrides: audioOverride != null
+          ? [audioPlayerProvider.overrideWithValue(audioOverride)]
           : const [],
       child: const SakuraMusicApp(),
     ),
