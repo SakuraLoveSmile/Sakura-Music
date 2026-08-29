@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/security/sensitive_data_redactor.dart';
+
 /// A single timestamped line in the playback debug ring buffer.
 class PlaybackLogEntry {
   PlaybackLogEntry(this.message) : timestamp = DateTime.now();
@@ -42,7 +44,9 @@ class PlaybackDebugLog {
   int get length => _entries.length;
 
   void add(String message) {
-    final entry = PlaybackLogEntry(message);
+    // Redact at the single sink so every consumer (ring buffer, debugPrint,
+    // clipboard export) sees the sanitized text and no call site can forget.
+    final entry = PlaybackLogEntry(redactSensitiveText(message));
     _entries.add(entry);
     if (_entries.length > _maxEntries) {
       _entries.removeAt(0);

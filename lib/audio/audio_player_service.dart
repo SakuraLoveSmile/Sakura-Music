@@ -15,6 +15,7 @@ class PlayableItem {
     this.album,
     this.albumId,
     this.artistId,
+    this.artworkId,
     this.artworkUrl,
     this.artworkCacheKey,
     this.duration,
@@ -28,6 +29,11 @@ class PlayableItem {
   final String? album;
   final String? albumId;
   final String? artistId;
+
+  /// Server-side cover-art identifier (Subsonic `coverArt` value). Kept in
+  /// metadata so [artworkUrl] can be regenerated without persisting the
+  /// signed URL itself.
+  final String? artworkId;
   final String? artworkUrl;
   final String? artworkCacheKey;
   final Duration? duration;
@@ -41,6 +47,7 @@ class PlayableItem {
     'album': album,
     'albumId': albumId,
     'artistId': artistId,
+    'artworkId': artworkId,
     'artworkUrl': artworkUrl,
     'artworkCacheKey': artworkCacheKey,
     'durationMs': duration?.inMilliseconds,
@@ -63,6 +70,9 @@ class PlayableItem {
       streamUrl: json['streamUrl']?.toString() ?? '',
       artist: json['artist']?.toString(),
       album: json['album']?.toString(),
+      albumId: json['albumId']?.toString(),
+      artistId: json['artistId']?.toString(),
+      artworkId: json['artworkId']?.toString(),
       artworkUrl: json['artworkUrl']?.toString(),
       artworkCacheKey: json['artworkCacheKey']?.toString(),
       duration: durationMs is num

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'crash_report_windows.dart';
+import 'security/sensitive_data_redactor.dart';
 
 const String _appName = 'SakuraMusic';
 
@@ -83,8 +84,12 @@ void logCrash(Object error, StackTrace? stack, {String? context}) {
         '[${DateTime.now().toIso8601String()}] CRASH'
         "${context != null ? ' ($context)' : ''}",
       )
-      ..writeln(error.toString())
-      ..writeln(stack?.toString() ?? '<no stack>')
+      // Error messages and stacks can embed request URLs with Subsonic
+      // credentials or WebDAV auth headers; redact before persisting.
+      ..writeln(redactSensitiveText(error.toString()))
+      ..writeln(
+        stack == null ? '<no stack>' : redactSensitiveText(stack.toString()),
+      )
       ..writeln('${'-' * 50}\n');
     getCrashLogFile().writeAsStringSync(
       buffer.toString(),
@@ -105,7 +110,7 @@ void reportFatalStartupError(Object error, StackTrace stack) {
   final message = <String>[
     'SakuraMusic 启动失败 / failed to start.',
     '',
-    error.toString(),
+    redactSensitiveText(error.toString()),
     '',
     '日志已写入 / Log written to:',
     logPath,
