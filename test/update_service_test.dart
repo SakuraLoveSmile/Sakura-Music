@@ -323,4 +323,14 @@ void main() {
       expect(receivedUserAgent, startsWith('SakuraMusic/'));
     });
   });
+
+  test(
+    'the default client carries request timeouts (no bare Dio injection)',
+    () {
+      final service = UpdateService();
+      expect(service.dio.options.connectTimeout, isNotNull);
+      expect(service.dio.options.connectTimeout, greaterThan(Duration.zero));
+      expect(service.dio.options.receiveTimeout, isNotNull);
+    },
+  );
 }
