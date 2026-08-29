@@ -236,7 +236,11 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                     const SizedBox(height: 14),
                     Row(
                       children: <Widget>[
-                        const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+                        const Icon(
+                          Icons.tune_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           context.l10n.oledSettings,
@@ -255,7 +259,10 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         context.l10n.keepScreenAwake,
-                        style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                        ),
                       ),
                       value: _keepScreenAwake,
                       activeTrackColor: const Color(0xFF1E7BF6),
@@ -276,7 +283,10 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                     const SizedBox(height: 6),
                     Text(
                       context.l10n.lyricsFontSize,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13.5),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -292,7 +302,9 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                                 setModalState(() {});
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? const Color(0xFF1E7BF6)
@@ -304,7 +316,9 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                                   '${(scale * 100).toInt()}%',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -319,52 +333,75 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                     const SizedBox(height: 14),
                     Text(
                       context.l10n.lyricsAlignment,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13.5),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
-                      children: <(TextAlign, String, IconData)>[
-                        (TextAlign.center, context.l10n.alignCenter, Icons.format_align_center_rounded),
-                        (TextAlign.left, context.l10n.alignLeft, Icons.format_align_left_rounded),
-                      ].map((alignOption) {
-                        final isSelected = _textAlign == alignOption.$1;
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () {
-                                setState(() => _textAlign = alignOption.$1);
-                                setModalState(() {});
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF1E7BF6)
-                                      : const Color(0xFF262832),
-                                  borderRadius: BorderRadius.circular(8),
+                      children:
+                          <(TextAlign, String, IconData)>[
+                            (
+                              TextAlign.center,
+                              context.l10n.alignCenter,
+                              Icons.format_align_center_rounded,
+                            ),
+                            (
+                              TextAlign.left,
+                              context.l10n.alignLeft,
+                              Icons.format_align_left_rounded,
+                            ),
+                          ].map((alignOption) {
+                            final isSelected = _textAlign == alignOption.$1;
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    Icon(alignOption.$3, size: 16, color: Colors.white),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      alignOption.$2,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                        color: Colors.white,
-                                      ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () {
+                                    setState(() => _textAlign = alignOption.$1);
+                                    setModalState(() {});
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
                                     ),
-                                  ],
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFF1E7BF6)
+                                          : const Color(0xFF262832),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: <Widget>[
+                                        Icon(
+                                          alignOption.$3,
+                                          size: 16,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          alignOption.$2,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
                     ),
 
                     // 4. Show Translation & Clock
@@ -373,7 +410,10 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         context.l10n.showTranslation,
-                        style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                        ),
                       ),
                       value: _showTranslation,
                       activeTrackColor: const Color(0xFF1E7BF6),
@@ -386,7 +426,10 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         context.l10n.showClock,
-                        style: const TextStyle(color: Colors.white, fontSize: 14.5),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                        ),
                       ),
                       value: _showClock,
                       activeTrackColor: const Color(0xFF1E7BF6),
@@ -502,11 +545,7 @@ class _OledLyricsStageState extends ConsumerState<OledLyricsStage> {
               onTap: () => _showOledSettingsModal(context),
               child: const Padding(
                 padding: EdgeInsets.all(8),
-                child: Icon(
-                  Icons.tune_rounded,
-                  size: 18,
-                  color: Colors.white,
-                ),
+                child: Icon(Icons.tune_rounded, size: 18, color: Colors.white),
               ),
             ),
           ),

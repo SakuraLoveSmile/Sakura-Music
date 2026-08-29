@@ -37,7 +37,8 @@ class TrackDiscoverySheet extends ConsumerStatefulWidget {
   final AudioPlayerService service;
 
   @override
-  ConsumerState<TrackDiscoverySheet> createState() => _TrackDiscoverySheetState();
+  ConsumerState<TrackDiscoverySheet> createState() =>
+      _TrackDiscoverySheetState();
 }
 
 class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
@@ -75,43 +76,56 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
     }
 
     // 1. Fetch Similar Songs
-    client.getSimilarSongs2(widget.item.id, count: 20).then((songs) {
-      if (mounted) {
-        setState(() {
-          _similarSongs = songs;
-          _loadingSimilar = false;
+    client
+        .getSimilarSongs2(widget.item.id, count: 20)
+        .then((songs) {
+          if (mounted) {
+            setState(() {
+              _similarSongs = songs;
+              _loadingSimilar = false;
+            });
+          }
+        })
+        .catchError((_) {
+          if (mounted) setState(() => _loadingSimilar = false);
         });
-      }
-    }).catchError((_) {
-      if (mounted) setState(() => _loadingSimilar = false);
-    });
 
     // 2. Fetch Artist Songs
     if (widget.item.artistId != null && widget.item.artistId!.isNotEmpty) {
-      client.getArtist(widget.item.artistId!).then((artist) {
-        final allSongs = <Song>[
-          for (final album in artist.albums) ...album.songs,
-        ];
-        if (mounted) {
-          setState(() {
-            _artistSongs = allSongs.where((s) => s.id != widget.item.id).toList();
-            _loadingArtist = false;
+      client
+          .getArtist(widget.item.artistId!)
+          .then((artist) {
+            final allSongs = <Song>[
+              for (final album in artist.albums) ...album.songs,
+            ];
+            if (mounted) {
+              setState(() {
+                _artistSongs = allSongs
+                    .where((s) => s.id != widget.item.id)
+                    .toList();
+                _loadingArtist = false;
+              });
+            }
+          })
+          .catchError((_) {
+            if (mounted) setState(() => _loadingArtist = false);
           });
-        }
-      }).catchError((_) {
-        if (mounted) setState(() => _loadingArtist = false);
-      });
     } else if (widget.item.artist != null && widget.item.artist!.isNotEmpty) {
-      client.search3(widget.item.artist!).then((result) {
-        if (mounted) {
-          setState(() {
-            _artistSongs = result.songs.where((s) => s.id != widget.item.id).toList();
-            _loadingArtist = false;
+      client
+          .search3(widget.item.artist!)
+          .then((result) {
+            if (mounted) {
+              setState(() {
+                _artistSongs = result.songs
+                    .where((s) => s.id != widget.item.id)
+                    .toList();
+                _loadingArtist = false;
+              });
+            }
+          })
+          .catchError((_) {
+            if (mounted) setState(() => _loadingArtist = false);
           });
-        }
-      }).catchError((_) {
-        if (mounted) setState(() => _loadingArtist = false);
-      });
     } else {
       if (mounted) setState(() => _loadingArtist = false);
     }
@@ -213,7 +227,11 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
             // Header & Instant Radio Action Button
             Row(
               children: <Widget>[
-                const Icon(Icons.explore_rounded, color: Color(0xFF5BA4FF), size: 22),
+                const Icon(
+                  Icons.explore_rounded,
+                  color: Color(0xFF5BA4FF),
+                  size: 22,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.discovery,
@@ -225,9 +243,16 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white60,
+                    size: 20,
+                  ),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -239,14 +264,21 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
               borderRadius: BorderRadius.circular(14),
               onTap: _isStartingRadio ? null : _startInstantRadio,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: <Color>[Color(0xFF1E7BF6), Color(0xFF3346B8)],
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: const <BoxShadow>[
-                    BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -254,9 +286,16 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
                     _isStartingRadio
                         ? const SizedBox.square(
                             dimension: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
-                        : const Icon(Icons.sensors_rounded, color: Colors.white, size: 22),
+                        : const Icon(
+                            Icons.sensors_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -280,7 +319,11 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 14),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white70,
+                      size: 14,
+                    ),
                   ],
                 ),
               ),
@@ -294,7 +337,10 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
               indicatorWeight: 3,
               labelColor: const Color(0xFF5BA4FF),
               unselectedLabelColor: Colors.white60,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13.5,
+              ),
               tabs: <Widget>[
                 Tab(text: context.l10n.similarSongs),
                 Tab(text: context.l10n.moreByArtist),
@@ -360,8 +406,13 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
             : null;
 
         return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 2,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           leading: SizedBox.square(
             dimension: 40,
             child: ClipRRect(
@@ -369,7 +420,11 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
               child: coverUrl == null
                   ? Container(
                       color: const Color(0xFF222634),
-                      child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 20),
+                      child: const Icon(
+                        Icons.music_note_rounded,
+                        color: Colors.white38,
+                        size: 20,
+                      ),
                     )
                   : CachedNetworkImage(
                       imageUrl: coverUrl,
@@ -383,25 +438,40 @@ class _TrackDiscoverySheetState extends ConsumerState<TrackDiscoverySheet>
             song.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           subtitle: Text(
             [song.artist, song.album].whereType<String>().join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11.5),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45),
+              fontSize: 11.5,
+            ),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               IconButton(
                 tooltip: context.l10n.queueTitle,
-                icon: const Icon(Icons.playlist_add_rounded, size: 20, color: Colors.white60),
+                icon: const Icon(
+                  Icons.playlist_add_rounded,
+                  size: 20,
+                  color: Colors.white60,
+                ),
                 onPressed: () => _insertNextSong(song),
               ),
               IconButton(
                 tooltip: context.l10n.nowPlaying,
-                icon: const Icon(Icons.play_circle_fill_rounded, size: 24, color: Color(0xFF5BA4FF)),
+                icon: const Icon(
+                  Icons.play_circle_fill_rounded,
+                  size: 24,
+                  color: Color(0xFF5BA4FF),
+                ),
                 onPressed: () => _playSong(song),
               ),
             ],

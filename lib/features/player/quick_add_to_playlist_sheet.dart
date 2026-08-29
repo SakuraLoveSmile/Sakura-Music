@@ -29,10 +29,12 @@ class QuickAddToPlaylistSheet extends ConsumerStatefulWidget {
   final PlayableItem item;
 
   @override
-  ConsumerState<QuickAddToPlaylistSheet> createState() => _QuickAddToPlaylistSheetState();
+  ConsumerState<QuickAddToPlaylistSheet> createState() =>
+      _QuickAddToPlaylistSheetState();
 }
 
-class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistSheet> {
+class _QuickAddToPlaylistSheetState
+    extends ConsumerState<QuickAddToPlaylistSheet> {
   bool _isCreating = false;
 
   Future<void> _addToExistingPlaylist(Playlist playlist) async {
@@ -75,7 +77,10 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF20232E),
-        title: Text(ctx.l10n.createAndAdd, style: const TextStyle(color: Colors.white, fontSize: 17)),
+        title: Text(
+          ctx.l10n.createAndAdd,
+          style: const TextStyle(color: Colors.white, fontSize: 17),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -83,14 +88,21 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
           decoration: InputDecoration(
             hintText: ctx.l10n.newPlaylistName,
             hintStyle: const TextStyle(color: Colors.white38),
-            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF1E7BF6))),
+            enabledBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF1E7BF6)),
+            ),
           ),
         ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(ctx.l10n.cancel, style: const TextStyle(color: Colors.white60)),
+            child: Text(
+              ctx.l10n.cancel,
+              style: const TextStyle(color: Colors.white60),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -114,7 +126,10 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
 
     setState(() => _isCreating = true);
     try {
-      await client.createPlaylist(name: name, songIds: <String>[widget.item.id]);
+      await client.createPlaylist(
+        name: name,
+        songIds: <String>[widget.item.id],
+      );
       ref.invalidate(playlistsProvider);
       HapticFeedback.mediumImpact();
 
@@ -172,7 +187,11 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
             // Title Row
             Row(
               children: <Widget>[
-                const Icon(Icons.playlist_add_rounded, color: Color(0xFF5BA4FF), size: 22),
+                const Icon(
+                  Icons.playlist_add_rounded,
+                  color: Color(0xFF5BA4FF),
+                  size: 22,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.selectPlaylist,
@@ -184,9 +203,16 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white60,
+                    size: 20,
+                  ),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -209,7 +235,11 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
                       child: widget.item.artworkUrl == null
                           ? Container(
                               color: const Color(0xFF2A2D3A),
-                              child: const Icon(Icons.music_note_rounded, color: Colors.white38, size: 20),
+                              child: const Icon(
+                                Icons.music_note_rounded,
+                                color: Colors.white38,
+                                size: 20,
+                              ),
                             )
                           : CachedNetworkImage(
                               imageUrl: widget.item.artworkUrl!,
@@ -253,7 +283,9 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
             // Create New Playlist Row
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               tileColor: const Color(0xFF1E7BF6).withValues(alpha: 0.12),
               leading: Container(
                 width: 38,
@@ -265,9 +297,16 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
                 child: _isCreating
                     ? const Padding(
                         padding: EdgeInsets.all(10),
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                    : const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
               ),
               title: Text(
                 context.l10n.createAndAdd,
@@ -286,7 +325,9 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
             // Playlists List
             Expanded(
               child: playlistsAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
                 error: (err, _) => Center(
                   child: Text(
                     err.toString(),
@@ -298,7 +339,10 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
                     return Center(
                       child: Text(
                         context.l10n.emptyPlaylists,
-                        style: const TextStyle(color: Colors.white38, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13,
+                        ),
                       ),
                     );
                   }
@@ -317,8 +361,13 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
                           : null;
 
                       return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         leading: SizedBox.square(
                           dimension: 38,
                           child: ClipRRect(
@@ -326,9 +375,16 @@ class _QuickAddToPlaylistSheetState extends ConsumerState<QuickAddToPlaylistShee
                             child: coverUrl == null
                                 ? Container(
                                     color: const Color(0xFF222634),
-                                    child: const Icon(Icons.queue_music_rounded, color: Colors.white54, size: 20),
+                                    child: const Icon(
+                                      Icons.queue_music_rounded,
+                                      color: Colors.white54,
+                                      size: 20,
+                                    ),
                                   )
-                                : CachedNetworkImage(imageUrl: coverUrl, fit: BoxFit.cover),
+                                : CachedNetworkImage(
+                                    imageUrl: coverUrl,
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
                         ),
                         title: Text(
