@@ -90,6 +90,51 @@ void main() {
         );
       }
     });
+
+    test('keeps IPv6 literals bracketed', () {
+      final parts = decomposeBaseUrl('http://[2001:db8::1]:4533');
+      expect(parts.scheme, 'http');
+      expect(parts.host, '[2001:db8::1]');
+      expect(parts.port, '4533');
+      expect(
+        composeBaseUrl(
+          scheme: parts.scheme,
+          host: parts.host,
+          port: parts.port,
+        ),
+        'http://[2001:db8::1]:4533',
+      );
+    });
+
+    test('handles IPv6 without an explicit port', () {
+      final parts = decomposeBaseUrl('http://[2001:db8::1]');
+      expect(parts.host, '[2001:db8::1]');
+      expect(parts.port, isNull);
+      expect(
+        composeBaseUrl(
+          scheme: parts.scheme,
+          host: parts.host,
+          port: parts.port,
+        ),
+        'http://[2001:db8::1]',
+      );
+    });
+
+    test('keeps an explicit port together with a reverse-proxy path', () {
+      const url = 'https://music.example.com:8443/subsonic';
+      final parts = decomposeBaseUrl(url);
+      expect(parts.scheme, 'https');
+      expect(parts.host, 'music.example.com/subsonic');
+      expect(parts.port, '8443');
+      expect(
+        composeBaseUrl(
+          scheme: parts.scheme,
+          host: parts.host,
+          port: parts.port,
+        ),
+        url,
+      );
+    });
   });
 
   group('inferServerType', () {

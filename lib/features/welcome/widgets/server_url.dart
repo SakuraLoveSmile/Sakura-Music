@@ -35,7 +35,14 @@ String composeBaseUrl({
   if (normalizedPort.isEmpty) {
     return '$scheme://$normalizedHost';
   }
-  return '$scheme://$normalizedHost:$normalizedPort';
+  // The port belongs after the hostname, never after a reverse-proxy
+  // subpath (and never inside an IPv6 literal's brackets).
+  final pathStart = normalizedHost.indexOf('/');
+  final hostname = pathStart == -1
+      ? normalizedHost
+      : normalizedHost.substring(0, pathStart);
+  final path = pathStart == -1 ? '' : normalizedHost.substring(pathStart);
+  return '$scheme://$hostname:$normalizedPort$path';
 }
 
 /// The split representation of a stored base URL, used to refill the form in
@@ -66,7 +73,10 @@ ServerUrlParts decomposeBaseUrl(String baseUrl) {
       uri.host.isNotEmpty) {
     scheme = uri.scheme;
     final path = uri.path == '/' ? '' : uri.path;
-    host = uri.host + path;
+    // Dart's Uri.host strips the brackets from an IPv6 literal; they must be
+    // kept so composeBaseUrl can round-trip the address.
+    final bareHost = uri.host;
+    host = (bareHost.contains(':') ? '[$bareHost]' : bareHost) + path;
     port = uri.hasPort ? uri.port.toString() : null;
   } else {
     host = raw.replaceFirst(RegExp(r'^[a-zA-Z0-9+.-]*://'), '');
