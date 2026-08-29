@@ -4,16 +4,23 @@ import '../server_repository.dart';
 import 'webdav_client.dart';
 
 /// Builds a [WebDavClient] for the active server, or `null` when no WebDAV
-/// server is active.
+/// server is active. The password comes from the credential store mirror; the
+/// database column is empty once the credential migrated.
 final webdavClientProvider = Provider<WebDavClient?>((ref) {
   final server = ref.watch(activeServerProvider);
   if (server == null || server.type != 'webdav') {
     return null;
   }
+  final password = ref
+      .watch(credentialStoreProvider)
+      .cachedServerPassword(server.id);
+  if (password == null || password.isEmpty) {
+    return null;
+  }
   return WebDavClient(
     baseUrl: server.baseUrl,
     username: server.username,
-    password: server.password,
+    password: password,
   );
 });
 

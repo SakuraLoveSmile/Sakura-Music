@@ -68,6 +68,7 @@ dependencies:
   archive: ^4.2.0
   nsd: ^5.0.1
   wakelock_plus: ^1.7.0
+  flutter_secure_storage: ^11.0.0
 
 dev_dependencies:
   flutter_test:

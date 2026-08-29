@@ -47,7 +47,7 @@ Future<bool> confirmAndDeleteServer(
   if (confirmed != true) {
     return false;
   }
-  await ref.read(serverRepositoryProvider).deleteServer(server.id);
+  await ref.read(serverRepositoryProvider).deleteServerCascade(server.id);
   if (ref.read(selectedServerIdProvider) == server.id) {
     ref.read(selectedServerIdProvider.notifier).state = null;
   }
