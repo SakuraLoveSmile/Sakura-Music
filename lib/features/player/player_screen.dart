@@ -22,6 +22,7 @@ import 'lyrics/lyrics_view.dart';
 import 'lyrics/oled_lyrics_stage.dart';
 import 'queue_panel.dart';
 import 'quick_add_to_playlist_sheet.dart';
+import 'sleep_timer_sheet.dart';
 import 'smooth_position_builder.dart';
 import 'vinyl/vinyl_turntable_stage.dart';
 
@@ -539,7 +540,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 case 'speed':
                   _showPlaybackSpeedModal(context, service, state.speed);
                 case 'sleep':
-                  _showSleepTimerModal(context, service);
+                  showSleepTimerSheet(context);
                 case 'artist':
                   if (item.artistId != null && item.artistId!.isNotEmpty) {
                     context.go(
@@ -1693,7 +1694,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   width: 30,
                   height: 30,
                 ),
-                onPressed: () => _showSleepTimerModal(context, service),
+                onPressed: () => showSleepTimerSheet(context),
                 icon: const Icon(
                   Icons.timer_outlined,
                   size: 18,
@@ -2028,7 +2029,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       width: 36,
                       height: 32,
                     ),
-                    onPressed: () => _showSleepTimerModal(context, service),
+                    onPressed: () => showSleepTimerSheet(context),
                     icon: const Icon(
                       Icons.timer_outlined,
                       size: 20,
@@ -2041,180 +2042,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           ),
         );
       },
-    );
-  }
-
-  static Timer? _activeSleepTimer;
-  static Timer? _sleepFadeTimer;
-  static int? _activeSleepMinutes;
-
-  void _setSleepTimer(
-    BuildContext context,
-    AudioPlayerService service,
-    int minutes,
-  ) {
-    _activeSleepTimer?.cancel();
-    _sleepFadeTimer?.cancel();
-    _activeSleepMinutes = minutes;
-
-    final totalDuration = Duration(minutes: minutes);
-    final fadeStartDelay = totalDuration > const Duration(seconds: 25)
-        ? totalDuration - const Duration(seconds: 20)
-        : Duration.zero;
-
-    _sleepFadeTimer = Timer(fadeStartDelay, () async {
-      final initialVol = service.currentSnapshot?.volume ?? 1.0;
-      const fadeSteps = 8;
-      for (int i = 1; i <= fadeSteps; i++) {
-        await Future<void>.delayed(const Duration(seconds: 2));
-        if (_activeSleepTimer == null) break;
-        final vol = initialVol * (1.0 - (i / fadeSteps));
-        await service.setVolume(vol.clamp(0.0, 1.0));
-      }
-    });
-
-    _activeSleepTimer = Timer(totalDuration, () async {
-      await service.pause();
-      await service.setVolume(1.0);
-      _activeSleepTimer = null;
-      _sleepFadeTimer = null;
-      _activeSleepMinutes = null;
-    });
-  }
-
-  void _cancelSleepTimer() {
-    _activeSleepTimer?.cancel();
-    _sleepFadeTimer?.cancel();
-    _activeSleepTimer = null;
-    _sleepFadeTimer = null;
-    _activeSleepMinutes = null;
-  }
-
-  void _showSleepTimerModal(BuildContext context, AudioPlayerService service) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF1B1D26),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  const Icon(
-                    Icons.timer_outlined,
-                    color: Color(0xFF1E7BF6),
-                    size: 22,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    sheetContext.l10n.sleepTimerTitle,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_activeSleepMinutes != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E7BF6).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${_activeSleepMinutes}m',
-                        style: const TextStyle(
-                          color: Color(0xFF5BA4FF),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: <int>[15, 30, 45, 60, 90].map((minutes) {
-                  final isActive = _activeSleepMinutes == minutes;
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      _setSleepTimer(context, service, minutes);
-                      Navigator.of(sheetContext).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(context.l10n.sleepTimerSet(minutes)),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? const Color(0xFF1E7BF6)
-                            : const Color(0xFF242733),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isActive
-                              ? const Color(0xFF1E7BF6)
-                              : Colors.white.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Text(
-                        sheetContext.l10n.minutesLabel(minutes),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: isActive
-                              ? FontWeight.bold
-                              : FontWeight.w600,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              // "Stop after current track" is intentionally absent: it was
-              // only ever a snackbar without a real end-of-track listener.
-              const Divider(color: Colors.white12, height: 1),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.close_rounded,
-                  color: Colors.redAccent,
-                ),
-                title: Text(
-                  sheetContext.l10n.cancelSleepTimer,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 14),
-                ),
-                onTap: () {
-                  _cancelSleepTimer();
-                  Navigator.of(sheetContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.sleepTimerCancelled)),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
