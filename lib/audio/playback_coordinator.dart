@@ -18,6 +18,7 @@ class PlaybackCoordinator {
     required this.service,
     required this.database,
     required this.server,
+    this.saveInterval = const Duration(seconds: 5),
   }) {
     _subscription = service.snapshot.listen(_onSnapshot);
     unawaited(_restore());
@@ -30,13 +31,27 @@ class PlaybackCoordinator {
   /// its metadata on restore; they are never persisted.
   final Server? server;
 
+  /// Minimum interval between two periodic playback-state saves. Short enough
+  /// that a killed app loses at most a few seconds of position, long enough
+  /// to keep the write volume negligible during steady playback.
+  final Duration saveInterval;
+
   late final StreamSubscription<PlayerSnapshot> _subscription;
-  Timer? _saveTimer;
   PlayerSnapshot? _lastSnapshot;
-  // Per-play recording guard: each distinct song play is recorded at most
-  // once. The guard resets whenever the active song changes, so replaying a
-  // song later (after the 5-minute DB de-duplication window) is allowed.
-  bool _recordedActive = false;
+
+  // Throttle state: the last time a save actually ran, plus at most one
+  // trailing timer. Unlike the previous debounce this keeps saving during
+  // steady playback instead of pushing the save further away on every
+  // position update.
+  DateTime? _lastPersistAt;
+  Timer? _trailingSave;
+
+  // Per-play recording guard: every play session (one track from the moment
+  // it becomes current) is recorded at most once, identified by a generation
+  // counter so an in-flight database write can never mark a newer session as
+  // already recorded.
+  int _playGeneration = 0;
+  int _recordedGeneration = -1;
   bool _restoring = true;
   bool _disposed = false;
 
@@ -202,42 +217,54 @@ class PlaybackCoordinator {
       return;
     }
 
-    _scheduleSave(snapshot);
+    final trackChanged =
+        previous != null &&
+        previous.currentItem?.id != snapshot.currentItem?.id;
+    final playPauseChanged =
+        previous != null &&
+        previous.playing != snapshot.playing &&
+        snapshot.currentItem != null;
+    if (trackChanged) {
+      // A new play session starts. The previous song is only recorded when it
+      // reached the threshold before the switch happened.
+      _playGeneration++;
+      _persistNow(snapshot);
+    } else if (playPauseChanged) {
+      // Play/pause transitions flush immediately so a killed app always
+      // resumes in the right state.
+      _persistNow(snapshot);
+    } else {
+      _scheduleSave(snapshot);
+    }
 
-    final item = snapshot.currentItem;
-    final changed = previous != null && previous.currentItem?.id != item?.id;
-    if (changed) {
-      // The previously active song is ending. Record it once more if it was
-      // skipped before the half-way point (guarded by its own recorded state).
-      unawaited(_recordRecentPlayIfEligible(previous, force: true));
-      // Starting a new song resets the per-play recording guard.
-      _recordedActive = false;
-    }
-    if (snapshot.status == PlayerStatus.completed || _hasPassedHalf(snapshot)) {
-      unawaited(_recordRecentPlayIfEligible(snapshot));
-    }
+    unawaited(_recordRecentPlayIfEligible(snapshot));
   }
 
-  bool _hasPassedHalf(PlayerSnapshot snapshot) {
+  /// A song counts as played once it has been heard for 30 seconds or half of
+  /// its duration, whichever comes first. Tracks skipped before that are
+  /// never recorded.
+  bool _reachedRecordThreshold(PlayerSnapshot snapshot) {
+    if (snapshot.position >= const Duration(seconds: 30)) {
+      return true;
+    }
     final duration = snapshot.duration ?? snapshot.currentItem?.duration;
     return duration != null &&
         duration > Duration.zero &&
         snapshot.position >= duration ~/ 2;
   }
 
-  Future<void> _recordRecentPlayIfEligible(
-    PlayerSnapshot snapshot, {
-    bool force = false,
-  }) async {
+  Future<void> _recordRecentPlayIfEligible(PlayerSnapshot snapshot) async {
     final item = snapshot.currentItem;
-    if (item == null ||
-        item.id.isEmpty ||
-        (!force && !_hasPassedHalf(snapshot))) {
+    if (item == null || item.id.isEmpty) {
       return;
     }
-    if (_recordedActive) {
+    if (!_reachedRecordThreshold(snapshot)) {
       return;
     }
+    if (_recordedGeneration == _playGeneration) {
+      return;
+    }
+    final generation = _playGeneration;
     final activeServer = server;
     if (activeServer != null) {
       try {
@@ -252,15 +279,40 @@ class PlaybackCoordinator {
         );
       } catch (_) {
         // History is best effort and must not interrupt playback.
+        return;
       }
     }
-    _recordedActive = true;
+    // Only the session that performed the write is marked as recorded; when
+    // the track changed while the write was in flight, the new session stays
+    // eligible for its own record.
+    if (generation == _playGeneration && !_disposed) {
+      _recordedGeneration = generation;
+    }
   }
 
+  /// Saves immediately and resets the throttle window.
+  void _persistNow(PlayerSnapshot snapshot) {
+    _trailingSave?.cancel();
+    _trailingSave = null;
+    _lastPersistAt = DateTime.now();
+    unawaited(_save(snapshot));
+  }
+
+  /// Saves the latest snapshot at most once per [saveInterval], with a
+  /// trailing edge so the newest state still lands inside the window even
+  /// when steady playback only produces throttled position updates.
   void _scheduleSave(PlayerSnapshot snapshot) {
-    _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(seconds: 2), () {
-      unawaited(_save(snapshot));
+    final last = _lastPersistAt;
+    if (last == null || DateTime.now().difference(last) >= saveInterval) {
+      _persistNow(snapshot);
+      return;
+    }
+    _trailingSave ??= Timer(saveInterval - DateTime.now().difference(last), () {
+      _trailingSave = null;
+      final latest = _lastSnapshot;
+      if (latest != null && !_disposed) {
+        _persistNow(latest);
+      }
     });
   }
 
@@ -297,7 +349,8 @@ class PlaybackCoordinator {
       return;
     }
     _disposed = true;
-    _saveTimer?.cancel();
+    _trailingSave?.cancel();
+    _trailingSave = null;
     final snapshot = _lastSnapshot;
     if (snapshot != null) {
       await _save(snapshot);

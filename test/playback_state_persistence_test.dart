@@ -37,7 +37,11 @@ class _FakeAudioPlayerService implements AudioPlayerService {
   Future<void> play() async {}
 
   @override
-  Future<void> pause() async {}
+  Future<void> pause() async {
+    pauseCalls++;
+  }
+
+  int pauseCalls = 0;
 
   @override
   Future<void> next() async {}
@@ -496,4 +500,341 @@ void main() {
       expect(service.setQueueCalls, isEmpty);
     });
   });
+
+  group('PlaybackCoordinator throttled saves', () {
+    late _SpyDatabase database;
+
+    setUp(() {
+      database = _SpyDatabase();
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    Future<int> addServer() => database.insertServer(
+      ServersCompanion.insert(
+        name: 'Test server',
+        baseUrl: 'https://music.example.test',
+        username: 'demo',
+        password: 'server-password',
+      ),
+    );
+
+    test(
+      'pausing saves immediately without waiting for the interval',
+      () async {
+        final serverId = await addServer();
+        final server = await database.getServer(serverId);
+        final service = _FakeAudioPlayerService();
+        final coordinator = PlaybackCoordinator(
+          service: service,
+          database: database,
+          server: server,
+          // Long interval: only the immediate flush paths can produce a second
+          // save within the test window.
+          saveInterval: const Duration(seconds: 10),
+        );
+        addTearDown(() => coordinator.dispose());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        service.emit(
+          _snapshot(playing: true, position: const Duration(seconds: 1)),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(database.savePlaybackStateCalls, 1);
+
+        service.emit(
+          _snapshot(playing: false, position: const Duration(seconds: 2)),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        expect(database.savePlaybackStateCalls, greaterThanOrEqualTo(2));
+      },
+    );
+
+    test('steady playback keeps saving periodically', () async {
+      final serverId = await addServer();
+      final server = await database.getServer(serverId);
+      final service = _FakeAudioPlayerService();
+      final coordinator = PlaybackCoordinator(
+        service: service,
+        database: database,
+        server: server,
+        saveInterval: const Duration(milliseconds: 60),
+      );
+      addTearDown(() => coordinator.dispose());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // The first snapshot flushes immediately; the following position
+      // updates arrive faster than the interval. With the old debounce the
+      // timer kept resetting and nothing further would be saved.
+      service.emit(
+        _snapshot(playing: true, position: const Duration(seconds: 1)),
+      );
+      for (var i = 2; i <= 10; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        service.emit(_snapshot(playing: true, position: Duration(seconds: i)));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(database.savePlaybackStateCalls, greaterThanOrEqualTo(3));
+    });
+
+    test('a track switch saves immediately', () async {
+      final serverId = await addServer();
+      final server = await database.getServer(serverId);
+      final service = _FakeAudioPlayerService();
+      final coordinator = PlaybackCoordinator(
+        service: service,
+        database: database,
+        server: server,
+        saveInterval: const Duration(seconds: 10),
+      );
+      addTearDown(() => coordinator.dispose());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      service.emit(
+        _snapshot(playing: true, position: const Duration(seconds: 1)),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(database.savePlaybackStateCalls, 1);
+
+      service.emit(
+        _snapshot(playing: true, position: Duration.zero, itemId: 'song-2'),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(database.savePlaybackStateCalls, 2);
+    });
+  });
+
+  group('PlaybackCoordinator recent-play history', () {
+    late AppDatabase database;
+
+    setUp(() {
+      database = AppDatabase(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    Future<int> addServer() => database.insertServer(
+      ServersCompanion.insert(
+        name: 'Test server',
+        baseUrl: 'https://music.example.test',
+        username: 'demo',
+        password: 'server-password',
+      ),
+    );
+
+    test('skipping songs before the threshold records none of them', () async {
+      final serverId = await addServer();
+      final server = await database.getServer(serverId);
+      final service = _FakeAudioPlayerService();
+      final coordinator = PlaybackCoordinator(
+        service: service,
+        database: database,
+        server: server,
+      );
+      addTearDown(() => coordinator.dispose());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Rapid-fire through ten short previews: none reaches 30 seconds or
+      // half of its duration.
+      for (var i = 1; i <= 10; i++) {
+        service.emit(
+          _snapshot(
+            playing: true,
+            position: const Duration(seconds: 2),
+            itemId: 'skip-$i',
+            duration: const Duration(minutes: 4),
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(await database.getRecentPlays(serverId: serverId), isEmpty);
+    });
+
+    test(
+      'the final track of a fast skip chain is recorded once played long',
+      () async {
+        final serverId = await addServer();
+        final server = await database.getServer(serverId);
+        final service = _FakeAudioPlayerService();
+        final coordinator = PlaybackCoordinator(
+          service: service,
+          database: database,
+          server: server,
+        );
+        addTearDown(() => coordinator.dispose());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        for (var i = 1; i <= 10; i++) {
+          service.emit(
+            _snapshot(
+              playing: true,
+              position: const Duration(seconds: 2),
+              itemId: 'skip-$i',
+              duration: const Duration(minutes: 4),
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        // The user settles on the last track and listens past 30 seconds.
+        service.emit(
+          _snapshot(
+            playing: true,
+            position: const Duration(seconds: 35),
+            itemId: 'final-song',
+            duration: const Duration(minutes: 4),
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final plays = await database.getRecentPlays(serverId: serverId);
+        expect(plays, hasLength(1));
+        expect(plays.single.songId, 'final-song');
+      },
+    );
+
+    test('a song below half of a short duration is not recorded', () async {
+      final serverId = await addServer();
+      final server = await database.getServer(serverId);
+      final service = _FakeAudioPlayerService();
+      final coordinator = PlaybackCoordinator(
+        service: service,
+        database: database,
+        server: server,
+      );
+      addTearDown(() => coordinator.dispose());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // A 20 second jingle: the 30 second rule can never fire, so the 50%
+      // rule (10 seconds) applies.
+      service.emit(
+        _snapshot(
+          playing: true,
+          position: const Duration(seconds: 9),
+          itemId: 'jingle',
+          duration: const Duration(seconds: 20),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(await database.getRecentPlays(serverId: serverId), isEmpty);
+
+      service.emit(
+        _snapshot(
+          playing: true,
+          position: const Duration(seconds: 11),
+          itemId: 'jingle',
+          duration: const Duration(seconds: 20),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final plays = await database.getRecentPlays(serverId: serverId);
+      expect(plays, hasLength(1));
+      expect(plays.single.songId, 'jingle');
+    });
+
+    test('replaying a song in a new session records it again', () async {
+      final serverId = await addServer();
+      final server = await database.getServer(serverId);
+      final service = _FakeAudioPlayerService();
+      final coordinator = PlaybackCoordinator(
+        service: service,
+        database: database,
+        server: server,
+      );
+      addTearDown(() => coordinator.dispose());
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      PlayerSnapshot snapshot(String id) => _snapshot(
+        playing: true,
+        position: const Duration(seconds: 35),
+        itemId: id,
+        duration: const Duration(minutes: 4),
+      );
+
+      // Session 1: replay-song is recorded.
+      service.emit(snapshot('replay-song'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(await database.getRecentPlays(serverId: serverId), hasLength(1));
+
+      // Age the existing row beyond the 5-minute de-duplication window so a
+      // second record becomes a new history entry.
+      await (database.update(
+        database.recentPlays,
+      )..where((table) => table.songId.equals('replay-song'))).write(
+        RecentPlaysCompanion(
+          playedAt: Value(DateTime.now().subtract(const Duration(minutes: 10))),
+        ),
+      );
+
+      // Session 2: switch away and back, play past the threshold again.
+      service.emit(
+        _snapshot(playing: true, position: Duration.zero, itemId: 'other'),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      service.emit(snapshot('replay-song'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final plays = await database.getRecentPlays(serverId: serverId);
+      expect(plays, hasLength(2));
+      expect(plays.every((play) => play.songId == 'replay-song'), isTrue);
+    });
+  });
+}
+
+/// Counts playback-state writes so throttle behaviour can be asserted.
+class _SpyDatabase extends AppDatabase {
+  _SpyDatabase() : super(NativeDatabase.memory());
+
+  int savePlaybackStateCalls = 0;
+
+  @override
+  Future<void> savePlaybackState({
+    required int? serverId,
+    required String queueJson,
+    required int currentIndex,
+    required int positionMs,
+    required String loopMode,
+    required bool shuffle,
+    required double volume,
+    required double speed,
+  }) async {
+    savePlaybackStateCalls++;
+    return super.savePlaybackState(
+      serverId: serverId,
+      queueJson: queueJson,
+      currentIndex: currentIndex,
+      positionMs: positionMs,
+      loopMode: loopMode,
+      shuffle: shuffle,
+      volume: volume,
+      speed: speed,
+    );
+  }
+}
+
+PlayerSnapshot _snapshot({
+  required bool playing,
+  required Duration position,
+  String itemId = 'song-1',
+  Duration? duration,
+}) {
+  final item = PlayableItem(
+    id: itemId,
+    title: 'Song $itemId',
+    duration: duration,
+    streamUrl: 'https://host/rest/stream?id=$itemId&u=admin&t=tok&s=salt',
+  );
+  return PlayerSnapshot(
+    status: PlayerStatus.ready,
+    playing: playing,
+    position: position,
+    duration: duration,
+    currentItem: item,
+    currentIndex: 0,
+    queue: <PlayableItem>[item],
+  );
 }
