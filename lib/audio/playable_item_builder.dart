@@ -22,6 +22,7 @@ PlayableItem playableItemForSong(
     album: song.album ?? fallbackAlbum,
     albumId: song.albumId,
     artistId: song.artistId,
+    artworkId: coverArt,
     artworkUrl: coverArt == null
         ? null
         : client.coverArtUrl(coverArt, size: 600),
@@ -101,6 +102,7 @@ PlayableItem _withLocalPath(PlayableItem remote, String localPath) {
     album: remote.album,
     albumId: remote.albumId,
     artistId: remote.artistId,
+    artworkId: remote.artworkId,
     artworkUrl: remote.artworkUrl,
     artworkCacheKey: remote.artworkCacheKey,
     duration: remote.duration,
