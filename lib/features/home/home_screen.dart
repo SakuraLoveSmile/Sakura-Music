@@ -905,21 +905,7 @@ class _RecentlyPlayedSongsSection extends ConsumerWidget {
                 onTap: () async {
                   final plays = recentPlaysAsync.value;
                   if (plays == null || plays.isEmpty) return;
-                  final songs = plays
-                      .map(
-                        (p) => Song(
-                          id: p.songId,
-                          title: p.title ?? p.songId,
-                          artist: p.artist,
-                          album: p.album,
-                          albumId: p.albumId,
-                          artistId: p.artistId,
-                          coverArt: (p.albumId != null && p.albumId!.isNotEmpty)
-                              ? p.albumId
-                              : p.songId,
-                        ),
-                      )
-                      .toList();
+                  final songs = plays.map(songFromRecentPlay).toList();
                   final items = await playableItemsForSongsWithLocalFiles(
                     client,
                     ref.read(downloadManagerProvider),
@@ -958,22 +944,7 @@ class _RecentlyPlayedSongsSection extends ConsumerWidget {
                 );
               }
 
-              final songs = plays
-                  .take(15)
-                  .map(
-                    (p) => Song(
-                      id: p.songId,
-                      title: p.title ?? p.songId,
-                      artist: p.artist,
-                      album: p.album,
-                      albumId: p.albumId,
-                      artistId: p.artistId,
-                      coverArt: (p.albumId != null && p.albumId!.isNotEmpty)
-                          ? p.albumId
-                          : p.songId,
-                    ),
-                  )
-                  .toList();
+              final songs = plays.take(15).map(songFromRecentPlay).toList();
 
               return ListView.separated(
                 scrollDirection: Axis.horizontal,

@@ -7,6 +7,28 @@ import '../data/db/app_database.dart';
 import '../data/server_repository.dart';
 import 'security/server_connection.dart';
 
+/// Reconstructs a song from denormalized recent-play metadata. New rows use
+/// the real cover-art id; the album/song fallback is only for old databases.
+Song songFromRecentPlay(RecentPlay play) {
+  final legacyCoverArt = play.albumId != null && play.albumId!.trim().isNotEmpty
+      ? play.albumId!.trim()
+      : play.songId.trim().isNotEmpty
+      ? play.songId.trim()
+      : null;
+  final coverArt = play.coverArtId != null && play.coverArtId!.trim().isNotEmpty
+      ? play.coverArtId!.trim()
+      : legacyCoverArt;
+  return Song(
+    id: play.songId,
+    title: play.title ?? play.songId,
+    artist: play.artist,
+    album: play.album,
+    albumId: play.albumId,
+    artistId: play.artistId,
+    coverArt: coverArt,
+  );
+}
+
 /// Connection config for the active Subsonic-compatible server, with the
 /// password resolved from the credential store instead of the (empty) database
 /// column. Null for WebDAV servers or when no credential is available.
@@ -311,22 +333,7 @@ final frequentSongsProvider = StreamProvider<List<Song>>((ref) {
       return timeB.compareTo(timeA);
     });
     return <Song>[
-      for (final entry in entries)
-        Song(
-          id: entry.key,
-          title: latest[entry.key]!.title ?? entry.key,
-          artist: latest[entry.key]!.artist,
-          album: latest[entry.key]!.album,
-          albumId: latest[entry.key]!.albumId,
-          artistId: latest[entry.key]!.artistId,
-          coverArt:
-              (latest[entry.key]!.albumId != null &&
-                  latest[entry.key]!.albumId!.trim().isNotEmpty)
-              ? latest[entry.key]!.albumId!.trim()
-              : (latest[entry.key]!.songId.trim().isNotEmpty
-                    ? latest[entry.key]!.songId.trim()
-                    : null),
-        ),
+      for (final entry in entries) songFromRecentPlay(latest[entry.key]!),
     ];
   });
 });

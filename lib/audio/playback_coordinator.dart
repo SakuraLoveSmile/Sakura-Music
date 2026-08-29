@@ -57,6 +57,7 @@ class PlaybackCoordinator {
   // already recorded.
   int _playGeneration = 0;
   int _recordedGeneration = -1;
+  final Set<int> _recordingGenerations = <int>{};
   bool _restoring = true;
   bool _disposed = false;
 
@@ -169,9 +170,9 @@ class PlaybackCoordinator {
     String? artworkUrl;
     String? artworkCacheKey;
 
-    if (entry.artworkId != null && subsonic != null) {
-      artworkUrl = subsonic.coverArtUrl(entry.artworkId!, size: 600);
-      artworkCacheKey = 'cover_${entry.artworkId!}_600';
+    if (entry.coverArtId != null && subsonic != null) {
+      artworkUrl = subsonic.coverArtUrl(entry.coverArtId!, size: 600);
+      artworkCacheKey = 'cover_${entry.coverArtId!}_600';
     }
 
     switch (entry.sourceType) {
@@ -232,6 +233,7 @@ class PlaybackCoordinator {
     final trackChanged =
         previous != null &&
         previous.currentItem?.id != snapshot.currentItem?.id;
+    var generation = _playGeneration;
     final playPauseChanged =
         previous != null &&
         previous.playing != snapshot.playing &&
@@ -240,6 +242,7 @@ class PlaybackCoordinator {
       // A new play session starts. The previous song is only recorded when it
       // reached the threshold before the switch happened.
       _playGeneration++;
+      generation = _playGeneration;
       _persistNow(snapshot);
     } else if (playPauseChanged) {
       // Play/pause transitions flush immediately so a killed app always
@@ -249,50 +252,62 @@ class PlaybackCoordinator {
       _scheduleSave(snapshot);
     }
 
-    unawaited(_recordRecentPlayIfEligible(snapshot));
+    unawaited(_recordRecentPlayIfEligible(snapshot, generation: generation));
   }
 
-  /// A song counts as played once it has been heard for 30 seconds or half of
-  /// its duration, whichever comes first. Tracks skipped before that are
-  /// never recorded.
-  bool _reachedRecordThreshold(PlayerSnapshot snapshot) {
-    if (snapshot.position >= const Duration(seconds: 30)) {
+  /// A song counts as played once it completes naturally, or once playback
+  /// reaches the smaller of 30 seconds and half of its known duration. When a
+  /// duration is unavailable, the 30-second threshold is used.
+  bool _isRecentPlayEligible(PlayerSnapshot snapshot) {
+    if (snapshot.status == PlayerStatus.completed) {
       return true;
     }
     final duration = snapshot.duration ?? snapshot.currentItem?.duration;
-    return duration != null &&
-        duration > Duration.zero &&
-        snapshot.position >= duration ~/ 2;
+    final threshold = duration == null || duration <= Duration.zero
+        ? const Duration(seconds: 30)
+        : duration < const Duration(seconds: 60)
+        ? duration ~/ 2
+        : const Duration(seconds: 30);
+    return snapshot.position >= threshold;
   }
 
-  Future<void> _recordRecentPlayIfEligible(PlayerSnapshot snapshot) async {
+  Future<void> _recordRecentPlayIfEligible(
+    PlayerSnapshot snapshot, {
+    required int generation,
+  }) async {
     final item = snapshot.currentItem;
     if (item == null || item.id.isEmpty) {
       return;
     }
-    if (!_reachedRecordThreshold(snapshot)) {
+    if (!_isRecentPlayEligible(snapshot)) {
       return;
     }
-    if (_recordedGeneration == _playGeneration) {
+    if (_recordedGeneration == generation) {
       return;
     }
-    final generation = _playGeneration;
+    if (!_recordingGenerations.add(generation)) {
+      return;
+    }
     final activeServer = server;
-    if (activeServer != null) {
-      try {
-        await database.recordRecentPlay(
-          songId: item.id,
-          serverId: activeServer.id,
-          title: item.title,
-          artist: item.artist,
-          album: item.album,
-          albumId: item.albumId,
-          artistId: item.artistId,
-        );
-      } catch (_) {
-        // History is best effort and must not interrupt playback.
+    try {
+      if (activeServer == null) {
         return;
       }
+      await database.recordRecentPlay(
+        songId: item.id,
+        serverId: activeServer.id,
+        title: item.title,
+        artist: item.artist,
+        album: item.album,
+        albumId: item.albumId,
+        artistId: item.artistId,
+        coverArtId: item.coverArtId,
+      );
+    } catch (_) {
+      // History is best effort and must not interrupt playback.
+      return;
+    } finally {
+      _recordingGenerations.remove(generation);
     }
     // Only the session that performed the write is marked as recorded; when
     // the track changed while the write was in flight, the new session stays

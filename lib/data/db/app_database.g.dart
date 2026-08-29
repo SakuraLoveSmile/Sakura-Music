@@ -587,6 +587,17 @@ class $RecentPlaysTable extends RecentPlays
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _coverArtIdMeta = const VerificationMeta(
+    'coverArtId',
+  );
+  @override
+  late final GeneratedColumn<String> coverArtId = GeneratedColumn<String>(
+    'cover_art_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _playedAtMeta = const VerificationMeta(
     'playedAt',
   );
@@ -609,6 +620,7 @@ class $RecentPlaysTable extends RecentPlays
     album,
     albumId,
     artistId,
+    coverArtId,
     playedAt,
   ];
   @override
@@ -672,6 +684,15 @@ class $RecentPlaysTable extends RecentPlays
         artistId.isAcceptableOrUnknown(data['artist_id']!, _artistIdMeta),
       );
     }
+    if (data.containsKey('cover_art_id')) {
+      context.handle(
+        _coverArtIdMeta,
+        coverArtId.isAcceptableOrUnknown(
+          data['cover_art_id']!,
+          _coverArtIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('played_at')) {
       context.handle(
         _playedAtMeta,
@@ -719,6 +740,10 @@ class $RecentPlaysTable extends RecentPlays
         DriftSqlType.string,
         data['${effectivePrefix}artist_id'],
       ),
+      coverArtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_art_id'],
+      ),
       playedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}played_at'],
@@ -741,6 +766,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
   final String? album;
   final String? albumId;
   final String? artistId;
+  final String? coverArtId;
   final DateTime playedAt;
   const RecentPlay({
     required this.id,
@@ -751,6 +777,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     this.album,
     this.albumId,
     this.artistId,
+    this.coverArtId,
     required this.playedAt,
   });
   @override
@@ -773,6 +800,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     }
     if (!nullToAbsent || artistId != null) {
       map['artist_id'] = Variable<String>(artistId);
+    }
+    if (!nullToAbsent || coverArtId != null) {
+      map['cover_art_id'] = Variable<String>(coverArtId);
     }
     map['played_at'] = Variable<DateTime>(playedAt);
     return map;
@@ -798,6 +828,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       artistId: artistId == null && nullToAbsent
           ? const Value.absent()
           : Value(artistId),
+      coverArtId: coverArtId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverArtId),
       playedAt: Value(playedAt),
     );
   }
@@ -816,6 +849,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       album: serializer.fromJson<String?>(json['album']),
       albumId: serializer.fromJson<String?>(json['albumId']),
       artistId: serializer.fromJson<String?>(json['artistId']),
+      coverArtId: serializer.fromJson<String?>(json['coverArtId']),
       playedAt: serializer.fromJson<DateTime>(json['playedAt']),
     );
   }
@@ -831,6 +865,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       'album': serializer.toJson<String?>(album),
       'albumId': serializer.toJson<String?>(albumId),
       'artistId': serializer.toJson<String?>(artistId),
+      'coverArtId': serializer.toJson<String?>(coverArtId),
       'playedAt': serializer.toJson<DateTime>(playedAt),
     };
   }
@@ -844,6 +879,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     Value<String?> album = const Value.absent(),
     Value<String?> albumId = const Value.absent(),
     Value<String?> artistId = const Value.absent(),
+    Value<String?> coverArtId = const Value.absent(),
     DateTime? playedAt,
   }) => RecentPlay(
     id: id ?? this.id,
@@ -854,6 +890,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     album: album.present ? album.value : this.album,
     albumId: albumId.present ? albumId.value : this.albumId,
     artistId: artistId.present ? artistId.value : this.artistId,
+    coverArtId: coverArtId.present ? coverArtId.value : this.coverArtId,
     playedAt: playedAt ?? this.playedAt,
   );
   RecentPlay copyWithCompanion(RecentPlaysCompanion data) {
@@ -866,6 +903,9 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
       album: data.album.present ? data.album.value : this.album,
       albumId: data.albumId.present ? data.albumId.value : this.albumId,
       artistId: data.artistId.present ? data.artistId.value : this.artistId,
+      coverArtId: data.coverArtId.present
+          ? data.coverArtId.value
+          : this.coverArtId,
       playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
     );
   }
@@ -881,6 +921,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
           ..write('album: $album, ')
           ..write('albumId: $albumId, ')
           ..write('artistId: $artistId, ')
+          ..write('coverArtId: $coverArtId, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
@@ -896,6 +937,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
     album,
     albumId,
     artistId,
+    coverArtId,
     playedAt,
   );
   @override
@@ -910,6 +952,7 @@ class RecentPlay extends DataClass implements Insertable<RecentPlay> {
           other.album == this.album &&
           other.albumId == this.albumId &&
           other.artistId == this.artistId &&
+          other.coverArtId == this.coverArtId &&
           other.playedAt == this.playedAt);
 }
 
@@ -922,6 +965,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
   final Value<String?> album;
   final Value<String?> albumId;
   final Value<String?> artistId;
+  final Value<String?> coverArtId;
   final Value<DateTime> playedAt;
   const RecentPlaysCompanion({
     this.id = const Value.absent(),
@@ -932,6 +976,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     this.album = const Value.absent(),
     this.albumId = const Value.absent(),
     this.artistId = const Value.absent(),
+    this.coverArtId = const Value.absent(),
     this.playedAt = const Value.absent(),
   });
   RecentPlaysCompanion.insert({
@@ -943,6 +988,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     this.album = const Value.absent(),
     this.albumId = const Value.absent(),
     this.artistId = const Value.absent(),
+    this.coverArtId = const Value.absent(),
     this.playedAt = const Value.absent(),
   }) : songId = Value(songId),
        serverId = Value(serverId);
@@ -955,6 +1001,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     Expression<String>? album,
     Expression<String>? albumId,
     Expression<String>? artistId,
+    Expression<String>? coverArtId,
     Expression<DateTime>? playedAt,
   }) {
     return RawValuesInsertable({
@@ -966,6 +1013,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
       if (album != null) 'album': album,
       if (albumId != null) 'album_id': albumId,
       if (artistId != null) 'artist_id': artistId,
+      if (coverArtId != null) 'cover_art_id': coverArtId,
       if (playedAt != null) 'played_at': playedAt,
     });
   }
@@ -979,6 +1027,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     Value<String?>? album,
     Value<String?>? albumId,
     Value<String?>? artistId,
+    Value<String?>? coverArtId,
     Value<DateTime>? playedAt,
   }) {
     return RecentPlaysCompanion(
@@ -990,6 +1039,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
       album: album ?? this.album,
       albumId: albumId ?? this.albumId,
       artistId: artistId ?? this.artistId,
+      coverArtId: coverArtId ?? this.coverArtId,
       playedAt: playedAt ?? this.playedAt,
     );
   }
@@ -1021,6 +1071,9 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
     if (artistId.present) {
       map['artist_id'] = Variable<String>(artistId.value);
     }
+    if (coverArtId.present) {
+      map['cover_art_id'] = Variable<String>(coverArtId.value);
+    }
     if (playedAt.present) {
       map['played_at'] = Variable<DateTime>(playedAt.value);
     }
@@ -1038,6 +1091,7 @@ class RecentPlaysCompanion extends UpdateCompanion<RecentPlay> {
           ..write('album: $album, ')
           ..write('albumId: $albumId, ')
           ..write('artistId: $artistId, ')
+          ..write('coverArtId: $coverArtId, ')
           ..write('playedAt: $playedAt')
           ..write(')'))
         .toString();
@@ -4701,6 +4755,7 @@ typedef $$RecentPlaysTableCreateCompanionBuilder =
       Value<String?> album,
       Value<String?> albumId,
       Value<String?> artistId,
+      Value<String?> coverArtId,
       Value<DateTime> playedAt,
     });
 typedef $$RecentPlaysTableUpdateCompanionBuilder =
@@ -4713,6 +4768,7 @@ typedef $$RecentPlaysTableUpdateCompanionBuilder =
       Value<String?> album,
       Value<String?> albumId,
       Value<String?> artistId,
+      Value<String?> coverArtId,
       Value<DateTime> playedAt,
     });
 
@@ -4762,6 +4818,11 @@ class $$RecentPlaysTableFilterComposer
 
   ColumnFilters<String> get artistId => $composableBuilder(
     column: $table.artistId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverArtId => $composableBuilder(
+    column: $table.coverArtId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4820,6 +4881,11 @@ class $$RecentPlaysTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get coverArtId => $composableBuilder(
+    column: $table.coverArtId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get playedAt => $composableBuilder(
     column: $table.playedAt,
     builder: (column) => ColumnOrderings(column),
@@ -4858,6 +4924,11 @@ class $$RecentPlaysTableAnnotationComposer
 
   GeneratedColumn<String> get artistId =>
       $composableBuilder(column: $table.artistId, builder: (column) => column);
+
+  GeneratedColumn<String> get coverArtId => $composableBuilder(
+    column: $table.coverArtId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get playedAt =>
       $composableBuilder(column: $table.playedAt, builder: (column) => column);
@@ -4902,6 +4973,7 @@ class $$RecentPlaysTableTableManager
                 Value<String?> album = const Value.absent(),
                 Value<String?> albumId = const Value.absent(),
                 Value<String?> artistId = const Value.absent(),
+                Value<String?> coverArtId = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => RecentPlaysCompanion(
                 id: id,
@@ -4912,6 +4984,7 @@ class $$RecentPlaysTableTableManager
                 album: album,
                 albumId: albumId,
                 artistId: artistId,
+                coverArtId: coverArtId,
                 playedAt: playedAt,
               ),
           createCompanionCallback:
@@ -4924,6 +4997,7 @@ class $$RecentPlaysTableTableManager
                 Value<String?> album = const Value.absent(),
                 Value<String?> albumId = const Value.absent(),
                 Value<String?> artistId = const Value.absent(),
+                Value<String?> coverArtId = const Value.absent(),
                 Value<DateTime> playedAt = const Value.absent(),
               }) => RecentPlaysCompanion.insert(
                 id: id,
@@ -4934,6 +5008,7 @@ class $$RecentPlaysTableTableManager
                 album: album,
                 albumId: albumId,
                 artistId: artistId,
+                coverArtId: coverArtId,
                 playedAt: playedAt,
               ),
           withReferenceMapper: (p0) => p0
