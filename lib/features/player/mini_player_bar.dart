@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'queue_panel.dart';
+import 'sleep_timer_sheet.dart';
 import 'smooth_position_builder.dart';
 
 typedef _MiniPlayerState = ({
@@ -447,6 +448,24 @@ class MiniPlayerBar extends ConsumerWidget {
 
                                   // Extra tools for desktop
                                   if (isDesktop) ...[
+                                    IconButton(
+                                      tooltip: context.l10n.sleepTimer,
+                                      padding: EdgeInsets.zero,
+                                      constraints:
+                                          const BoxConstraints.tightFor(
+                                            width: 30,
+                                            height: 30,
+                                          ),
+                                      onPressed: () =>
+                                          showSleepTimerSheet(context),
+                                      icon: Icon(
+                                        Icons.bedtime_outlined,
+                                        size: 17,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.65,
+                                        ),
+                                      ),
+                                    ),
                                     IconButton(
                                       tooltip: context.l10n.lyrics,
                                       padding: EdgeInsets.zero,
