@@ -16,7 +16,7 @@ class PersistedPlayableItem {
     this.albumId,
     this.artistId,
     this.durationMs,
-    this.artworkId,
+    this.coverArtId,
     this.localFilePath,
   });
 
@@ -40,7 +40,11 @@ class PersistedPlayableItem {
 
   /// Subsonic cover-art id; the signed artwork URL is regenerated, never
   /// stored.
-  final String? artworkId;
+  final String? coverArtId;
+
+  /// Compatibility getter for queues created before the field was renamed.
+  @Deprecated('Use coverArtId')
+  String? get artworkId => coverArtId;
 
   /// Absolute path of a downloaded file; persisted instead of the `file:`
   /// URI so a moved cache root can still be detected on restore.
@@ -69,7 +73,7 @@ class PersistedPlayableItem {
       albumId: item.albumId,
       artistId: item.artistId,
       durationMs: item.duration?.inMilliseconds,
-      artworkId: item.artworkId,
+      coverArtId: item.coverArtId,
       localFilePath: localFilePath,
     );
   }
@@ -102,7 +106,9 @@ class PersistedPlayableItem {
       durationMs: json['durationMs'] is num
           ? (json['durationMs'] as num).toInt()
           : null,
-      artworkId: _artworkIdFromCacheKey(json['artworkCacheKey']?.toString()),
+      coverArtId:
+          (json['coverArtId'] ?? json['artworkId'])?.toString() ??
+          _coverArtIdFromCacheKey(json['artworkCacheKey']?.toString()),
       localFilePath: localFilePath,
     );
   }
@@ -121,7 +127,7 @@ class PersistedPlayableItem {
     if (albumId != null) 'albumId': albumId,
     if (artistId != null) 'artistId': artistId,
     if (durationMs != null) 'durationMs': durationMs,
-    if (artworkId != null) 'artworkId': artworkId,
+    if (coverArtId != null) 'coverArtId': coverArtId,
     if (localFilePath != null) 'localFilePath': localFilePath,
   };
 
@@ -137,7 +143,7 @@ class PersistedPlayableItem {
       durationMs: json['durationMs'] is num
           ? (json['durationMs'] as num).toInt()
           : null,
-      artworkId: json['artworkId']?.toString(),
+      coverArtId: (json['coverArtId'] ?? json['artworkId'])?.toString(),
       localFilePath: json['localFilePath']?.toString(),
     );
   }
@@ -158,7 +164,7 @@ class PersistedPlayableItem {
       album: album,
       albumId: albumId,
       artistId: artistId,
-      artworkId: artworkId,
+      coverArtId: coverArtId,
       artworkUrl: artworkUrl,
       artworkCacheKey: artworkCacheKey,
       duration: durationMs == null ? null : Duration(milliseconds: durationMs!),
@@ -169,7 +175,7 @@ class PersistedPlayableItem {
   static const artworkCacheKeyPrefix = 'cover_';
   static const artworkCacheKeySuffix = '_600';
 
-  static String? _artworkIdFromCacheKey(String? cacheKey) {
+  static String? _coverArtIdFromCacheKey(String? cacheKey) {
     if (cacheKey == null ||
         !cacheKey.startsWith(artworkCacheKeyPrefix) ||
         !cacheKey.endsWith(artworkCacheKeySuffix)) {

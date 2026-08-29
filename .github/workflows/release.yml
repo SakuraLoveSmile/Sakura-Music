@@ -15,8 +15,58 @@ permissions:
   contents: write
 
 jobs:
+  validate-release:
+    name: Validate Release Version
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.validate.outputs.release_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate release tag and pubspec version
+        id: validate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG_NAME: ${{ inputs.tag_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            RELEASE_TAG="$INPUT_TAG_NAME"
+            if [[ -z "$RELEASE_TAG" ]]; then
+              echo "workflow_dispatch requires a non-empty tag_name" >&2
+              exit 1
+            fi
+          else
+            RELEASE_TAG="$GITHUB_REF_NAME"
+          fi
+
+          if [[ "$RELEASE_TAG" != v* ]]; then
+            echo "Release tag must start with v: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          RELEASE_VERSION="${RELEASE_TAG#v}"
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Release tag is not a valid app version: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          PUBSPEC_VERSION="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*$/\1/p' pubspec.yaml | head -n 1)"
+          PUBSPEC_BASE_VERSION="${PUBSPEC_VERSION%%+*}"
+          if [[ -z "$PUBSPEC_VERSION" || "$PUBSPEC_BASE_VERSION" != "$RELEASE_VERSION" ]]; then
+            echo "Release tag $RELEASE_TAG does not match pubspec.yaml version $PUBSPEC_VERSION" >&2
+            exit 1
+          fi
+
+          echo "Release tag: $RELEASE_TAG"
+          echo "pubspec version: $PUBSPEC_VERSION"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
   build-android:
     name: Build Android
+    needs: validate-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -66,6 +116,7 @@ jobs:
 
   build-windows:
     name: Build Windows
+    needs: validate-release
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -97,6 +148,7 @@ jobs:
 
   build-macos:
     name: Build macOS
+    needs: validate-release
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -128,6 +180,7 @@ jobs:
 
   build-ios:
     name: Build iOS
+    needs: validate-release
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -163,7 +216,7 @@ jobs:
 
   publish-release:
     name: Publish GitHub Release
-    needs: [build-android, build-windows, build-macos, build-ios]
+    needs: [validate-release, build-android, build-windows, build-macos, build-ios]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -181,12 +234,10 @@ jobs:
           ls -lh release-files/
 
       - name: Determine Release Tag
+        env:
+          RELEASE_TAG: ${{ needs.validate-release.outputs.release_tag }}
         run: |
-          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
-            echo "RELEASE_TAG=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
-          else
-            echo "RELEASE_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
-          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

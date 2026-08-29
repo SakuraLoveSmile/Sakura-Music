@@ -48,7 +48,7 @@ Song _song(String id, {String suffix = 'flac'}) =>
 AppDatabase _memoryDb() => AppDatabase(NativeDatabase.memory());
 
 void main() {
-  group('v13 -> v14 migration', () {
+  group('v13 -> v15 migration', () {
     late Directory tempDir;
 
     setUp(() async {
@@ -68,7 +68,7 @@ void main() {
         final fixture = sqlite3.open(dbFile.path);
         const now = 1756000000;
         fixture.execute('''
-        CREATE TABLE downloads (
+      CREATE TABLE downloads (
           song_id TEXT NOT NULL PRIMARY KEY,
           server_id INTEGER NOT NULL,
           title TEXT NOT NULL,
@@ -82,6 +82,24 @@ void main() {
           progress REAL NOT NULL DEFAULT 0.0,
           created_at INTEGER NOT NULL
         )
+      ''');
+        fixture.execute('''
+        CREATE TABLE recent_plays (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          song_id TEXT NOT NULL,
+          server_id INTEGER NOT NULL,
+          title TEXT NULL,
+          artist TEXT NULL,
+          album TEXT NULL,
+          album_id TEXT NULL,
+          artist_id TEXT NULL,
+          played_at INTEGER NOT NULL
+        )
+      ''');
+        fixture.execute('''
+        INSERT INTO recent_plays
+          (song_id, server_id, title, artist, album, album_id, artist_id, played_at)
+        VALUES ('recent-song', 1, 'Recent', NULL, NULL, NULL, NULL, $now)
       ''');
         fixture.execute('''
         INSERT INTO downloads
@@ -101,7 +119,10 @@ void main() {
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 14);
+        expect(database.schemaVersion, 15);
+
+        final recent = await database.getRecentPlays(serverId: 1);
+        expect(recent.single.coverArtId, isNull);
 
         // Rows survive the rebuild with their values intact.
         final song1 = await database.getDownload('song-1', serverId: 1);
@@ -141,6 +162,61 @@ void main() {
         final paths2 = await database.getCompletedDownloadPaths(2);
         expect(paths1['song-1'], '/legacy/song-1.flac');
         expect(paths2['song-1'], '/other/song-1.flac');
+      },
+    );
+
+    test(
+      'upgrades an existing v14 database with the new history column',
+      () async {
+        final dbFile = File('${tempDir.path}/v14.db');
+        final fixture = sqlite3.open(dbFile.path);
+        fixture.execute('''
+        CREATE TABLE downloads (
+          song_id TEXT NOT NULL,
+          server_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          artist TEXT NULL,
+          album TEXT NULL,
+          file_path TEXT NOT NULL,
+          cover_art_id TEXT NULL,
+          ext TEXT NOT NULL DEFAULT 'mp3',
+          bytes INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'completed',
+          progress REAL NOT NULL DEFAULT 1.0,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (server_id, song_id)
+        )
+      ''');
+        fixture.execute('''
+        CREATE TABLE recent_plays (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          song_id TEXT NOT NULL,
+          server_id INTEGER NOT NULL,
+          title TEXT NULL,
+          artist TEXT NULL,
+          album TEXT NULL,
+          album_id TEXT NULL,
+          artist_id TEXT NULL,
+          played_at INTEGER NOT NULL
+        )
+      ''');
+        fixture.execute('''
+        INSERT INTO downloads
+          (song_id, server_id, title, file_path, created_at)
+        VALUES ('v14-song', 2, 'V14', '/v14/song.mp3', 1756000000)
+      ''');
+        fixture.execute('PRAGMA user_version = 14');
+        fixture.dispose();
+
+        final database = AppDatabase(NativeDatabase(dbFile));
+        addTearDown(database.close);
+
+        expect(database.schemaVersion, 15);
+        expect((await database.getRecentPlays(serverId: 2)), isEmpty);
+        expect(
+          (await database.getDownload('v14-song', serverId: 2))!.filePath,
+          '/v14/song.mp3',
+        );
       },
     );
   });

@@ -42,6 +42,8 @@ class RecentPlays extends Table {
 
   TextColumn get artistId => text().nullable()();
 
+  TextColumn get coverArtId => text().nullable()();
+
   DateTimeColumn get playedAt => dateTime().withDefault(currentDateAndTime)();
 }
 

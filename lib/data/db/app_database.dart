@@ -23,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -95,28 +95,34 @@ class AppDatabase extends _$AppDatabase {
         }
         await m.createTable(dailyRecommends);
       }
-      if (from >= 5 && from < 14) {
-        // V14: the downloads primary key becomes (serverId, songId) so the
+      if (from >= 9 && from < 15) {
+        // V14: recent plays keep the real Subsonic cover-art identifier.
+        await m.addColumn(recentPlays, recentPlays.coverArtId);
+      }
+      if (from >= 5 && from < 15) {
+        // V15: the downloads primary key becomes (serverId, songId) so the
         // same song id on two servers no longer overwrites one another.
         // SQLite cannot change a primary key in place: rename the old table,
         // create the new schema, copy every row (keeping the newest one for
         // a theoretical (serverId, songId) duplicate), then drop the copy.
-        await customStatement('ALTER TABLE downloads RENAME TO downloads_v13');
+        await customStatement(
+          'ALTER TABLE downloads RENAME TO downloads_legacy',
+        );
         await m.createTable(downloads);
         await customStatement(
           'INSERT INTO downloads (song_id, server_id, title, artist, album, '
           'file_path, cover_art_id, ext, bytes, status, progress, created_at) '
           'SELECT song_id, server_id, title, artist, album, file_path, '
           'cover_art_id, ext, bytes, status, progress, created_at '
-          'FROM downloads_v13 AS old WHERE NOT EXISTS ('
-          'SELECT 1 FROM downloads_v13 AS newer '
+          'FROM downloads_legacy AS old WHERE NOT EXISTS ('
+          'SELECT 1 FROM downloads_legacy AS newer '
           'WHERE newer.server_id = old.server_id '
           'AND newer.song_id = old.song_id '
           'AND (newer.created_at > old.created_at '
           'OR (newer.created_at = old.created_at '
           'AND newer.rowid > old.rowid)))',
         );
-        await customStatement('DROP TABLE downloads_v13');
+        await customStatement('DROP TABLE downloads_legacy');
       }
     },
     beforeOpen: (details) async {
@@ -191,6 +197,7 @@ class AppDatabase extends _$AppDatabase {
     String? album,
     String? albumId,
     String? artistId,
+    String? coverArtId,
   }) {
     return recordRecentPlay(
       songId: songId,
@@ -200,6 +207,7 @@ class AppDatabase extends _$AppDatabase {
       album: album,
       albumId: albumId,
       artistId: artistId,
+      coverArtId: coverArtId,
     );
   }
 
@@ -211,6 +219,7 @@ class AppDatabase extends _$AppDatabase {
     String? album,
     String? albumId,
     String? artistId,
+    String? coverArtId,
   }) async {
     final now = DateTime.now();
     final cutoff = now.subtract(const Duration(minutes: 5));
@@ -239,7 +248,8 @@ class AppDatabase extends _$AppDatabase {
         artist != null ||
         album != null ||
         albumId != null ||
-        artistId != null) {
+        artistId != null ||
+        coverArtId != null) {
       await (update(recentPlays)..where((table) => table.id.equals(id))).write(
         RecentPlaysCompanion(
           title: title == null ? const Value.absent() : Value(title),
@@ -247,6 +257,9 @@ class AppDatabase extends _$AppDatabase {
           album: album == null ? const Value.absent() : Value(album),
           albumId: albumId == null ? const Value.absent() : Value(albumId),
           artistId: artistId == null ? const Value.absent() : Value(artistId),
+          coverArtId: coverArtId == null
+              ? const Value.absent()
+              : Value(coverArtId),
         ),
       );
     }

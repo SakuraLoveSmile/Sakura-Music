@@ -15,7 +15,7 @@ class PlayableItem {
     this.album,
     this.albumId,
     this.artistId,
-    this.artworkId,
+    this.coverArtId,
     this.artworkUrl,
     this.artworkCacheKey,
     this.duration,
@@ -33,7 +33,12 @@ class PlayableItem {
   /// Server-side cover-art identifier (Subsonic `coverArt` value). Kept in
   /// metadata so [artworkUrl] can be regenerated without persisting the
   /// signed URL itself.
-  final String? artworkId;
+  final String? coverArtId;
+
+  /// Compatibility getter for code written before this field was named after
+  /// the Subsonic API field. New code must use [coverArtId].
+  @Deprecated('Use coverArtId')
+  String? get artworkId => coverArtId;
   final String? artworkUrl;
   final String? artworkCacheKey;
   final Duration? duration;
@@ -47,7 +52,7 @@ class PlayableItem {
     'album': album,
     'albumId': albumId,
     'artistId': artistId,
-    'artworkId': artworkId,
+    'coverArtId': coverArtId,
     'artworkUrl': artworkUrl,
     'artworkCacheKey': artworkCacheKey,
     'durationMs': duration?.inMilliseconds,
@@ -72,7 +77,7 @@ class PlayableItem {
       album: json['album']?.toString(),
       albumId: json['albumId']?.toString(),
       artistId: json['artistId']?.toString(),
-      artworkId: json['artworkId']?.toString(),
+      coverArtId: (json['coverArtId'] ?? json['artworkId'])?.toString(),
       artworkUrl: json['artworkUrl']?.toString(),
       artworkCacheKey: json['artworkCacheKey']?.toString(),
       duration: durationMs is num

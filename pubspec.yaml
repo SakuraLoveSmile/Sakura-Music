@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Keep the +N build number strictly increasing across releases: Android
 # split-per-abi APKs encode versionCode as ABI*1000 + N (e.g. arm64 = 2000 + N),
 # so resetting N downgrades the app and fails installation.
-version: 0.3.0-alpha.8+23
+version: 0.3.0-alpha.9+24
 
 environment:
   sdk: ^3.11.1

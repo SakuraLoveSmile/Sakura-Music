@@ -24,6 +24,7 @@ void main() {
     expect(recentPlays, hasLength(1));
     expect(recentPlays.single.songId, 'song-1');
     expect(recentPlays.single.serverId, serverId);
+    expect(recentPlays.single.coverArtId, isNull);
 
     await database.recordRecentPlay(songId: 'song-1', serverId: serverId);
     expect(await database.select(database.recentPlays).get(), hasLength(1));
@@ -35,11 +36,30 @@ void main() {
       serverId: serverId,
       title: 'First Song',
       artist: 'Artist',
+      album: 'First Album',
+      albumId: 'album-1',
+      artistId: 'artist-1',
+      coverArtId: 'cover-123',
     );
     final playsWithMeta = await database.getRecentPlays(serverId: serverId);
     expect(playsWithMeta, hasLength(1));
     expect(playsWithMeta.single.title, 'First Song');
     expect(playsWithMeta.single.artist, 'Artist');
+    expect(playsWithMeta.single.album, 'First Album');
+    expect(playsWithMeta.single.albumId, 'album-1');
+    expect(playsWithMeta.single.artistId, 'artist-1');
+    expect(playsWithMeta.single.coverArtId, 'cover-123');
+
+    // A later play inside the de-duplication window refreshes metadata while
+    // keeping a single history row.
+    await database.recordRecentPlay(
+      songId: 'song-1',
+      serverId: serverId,
+      coverArtId: 'cover-456',
+    );
+    final refreshed = await database.getRecentPlays(serverId: serverId);
+    expect(refreshed, hasLength(1));
+    expect(refreshed.single.coverArtId, 'cover-456');
     expect(await database.getRecentPlayIds(serverId: serverId), <String>[
       'song-1',
     ]);
@@ -136,6 +156,52 @@ void main() {
       'song-1': '/music/song-1.mp3',
     });
   });
+
+  test(
+    'download update and delete operations stay scoped to serverId',
+    () async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      Future<void> insert(int serverId, String path) => database.upsertDownload(
+        songId: 'shared-song',
+        serverId: serverId,
+        title: 'Server $serverId',
+        artist: null,
+        album: null,
+        filePath: path,
+        coverArtId: null,
+        ext: 'mp3',
+        status: 'completed',
+        progress: 1,
+      );
+
+      await insert(1, '/server-1/shared-song.mp3');
+      await insert(2, '/server-2/shared-song.mp3');
+
+      expect(
+        await database.updateDownload(
+          songId: 'shared-song',
+          serverId: 1,
+          status: 'failed',
+          filePath: '/server-1/retry.mp3',
+        ),
+        isTrue,
+      );
+      expect(
+        (await database.getDownload('shared-song', serverId: 1))!.status,
+        'failed',
+      );
+      expect(
+        (await database.getDownload('shared-song', serverId: 2))!.status,
+        'completed',
+      );
+
+      expect(await database.deleteDownload('shared-song', serverId: 1), 1);
+      expect(await database.getDownload('shared-song', serverId: 1), isNull);
+      expect(await database.getDownload('shared-song', serverId: 2), isNotNull);
+    },
+  );
 
   test(
     'batch cache writes replace only the requested server entries',

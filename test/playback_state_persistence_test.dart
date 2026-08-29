@@ -86,6 +86,40 @@ class _FakeAudioPlayerService implements AudioPlayerService {
   Future<void> dispose() async {}
 }
 
+class _DelayedRecentPlayDatabase extends AppDatabase {
+  _DelayedRecentPlayDatabase() : super(NativeDatabase.memory());
+
+  final firstRecordStarted = Completer<void>();
+  final releaseFirstRecord = Completer<void>();
+
+  @override
+  Future<int> recordRecentPlay({
+    required String songId,
+    required int serverId,
+    String? title,
+    String? artist,
+    String? album,
+    String? albumId,
+    String? artistId,
+    String? coverArtId,
+  }) async {
+    if (songId == 'song-a') {
+      firstRecordStarted.complete();
+      await releaseFirstRecord.future;
+    }
+    return super.recordRecentPlay(
+      songId: songId,
+      serverId: serverId,
+      title: title,
+      artist: artist,
+      album: album,
+      albumId: albumId,
+      artistId: artistId,
+      coverArtId: coverArtId,
+    );
+  }
+}
+
 PlayableItem _sensitiveSubsonicItem() {
   return PlayableItem(
     id: 'song-1',
@@ -94,9 +128,9 @@ PlayableItem _sensitiveSubsonicItem() {
     album: 'Album A',
     albumId: 'al-1',
     artistId: 'ar-1',
-    artworkId: 'al-1',
-    artworkUrl: 'https://host/rest/getCoverArt?id=al-1&u=admin&t=tok&s=salt',
-    artworkCacheKey: 'cover_al-1_600',
+    coverArtId: 'cover-1',
+    artworkUrl: 'https://host/rest/getCoverArt?id=cover-1&u=admin&t=tok&s=salt',
+    artworkCacheKey: 'cover_cover-1_600',
     duration: const Duration(milliseconds: 95000),
     streamUrl: 'https://host/rest/stream?id=song-1&u=admin&t=tok&s=salt',
     headers: const <String, String>{'Authorization': 'Basic dXNlcjpwYXNz'},
@@ -148,7 +182,7 @@ void main() {
       expect(restored.albumId, 'al-1');
       expect(restored.artistId, 'ar-1');
       expect(restored.durationMs, 95000);
-      expect(restored.artworkId, 'al-1');
+      expect(restored.coverArtId, 'cover-1');
       expect(restored.localFilePath, isNull);
     });
 
@@ -182,7 +216,7 @@ void main() {
       expect(persisted.id, 'song-1');
       expect(persisted.albumId, 'al-1');
       expect(persisted.artistId, 'ar-1');
-      expect(persisted.artworkId, 'al-1');
+      expect(persisted.coverArtId, 'al-1');
       expect(persisted.durationMs, 95000);
     });
 
@@ -271,7 +305,7 @@ void main() {
         expect(queueJson, contains('"sourceType":"subsonic"'));
         expect(queueJson, contains('"albumId":"al-1"'));
         expect(queueJson, contains('"artistId":"ar-1"'));
-        expect(queueJson, contains('"artworkId":"al-1"'));
+        expect(queueJson, contains('"coverArtId":"cover-1"'));
       },
     );
 
@@ -315,8 +349,8 @@ void main() {
       expect(item.albumId, 'al-1');
       expect(item.artistId, 'ar-1');
       expect(item.artworkUrl, contains('getCoverArt'));
-      expect(item.artworkUrl, contains('id=al-1'));
-      expect(item.artworkCacheKey, 'cover_al-1_600');
+      expect(item.artworkUrl, contains('id=cover-1'));
+      expect(item.artworkCacheKey, 'cover_cover-1_600');
       expect(item.duration, const Duration(milliseconds: 95000));
     });
 
@@ -748,6 +782,92 @@ void main() {
       expect(plays.single.songId, 'jingle');
     });
 
+    test(
+      'a completed track is recorded even when its position is inaccurate',
+      () async {
+        final serverId = await addServer();
+        final server = await database.getServer(serverId);
+        final service = _FakeAudioPlayerService();
+        final coordinator = PlaybackCoordinator(
+          service: service,
+          database: database,
+          server: server,
+          readPassword: (_) => 'server-password',
+        );
+        addTearDown(() => coordinator.dispose());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        service.emit(
+          _snapshot(
+            status: PlayerStatus.completed,
+            playing: false,
+            position: Duration.zero,
+            itemId: 'completed-song',
+            duration: const Duration(minutes: 4),
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        final plays = await database.getRecentPlays(serverId: serverId);
+        expect(plays, hasLength(1));
+        expect(plays.single.songId, 'completed-song');
+      },
+    );
+
+    test(
+      'an earlier async record cannot mark the next session recorded',
+      () async {
+        final delayedDatabase = _DelayedRecentPlayDatabase();
+        addTearDown(delayedDatabase.close);
+        final serverId = await delayedDatabase.insertServer(
+          ServersCompanion.insert(
+            name: 'Test server',
+            baseUrl: 'https://music.example.test',
+            username: 'demo',
+            password: 'server-password',
+          ),
+        );
+        final server = await delayedDatabase.getServer(serverId);
+        final service = _FakeAudioPlayerService();
+        final coordinator = PlaybackCoordinator(
+          service: service,
+          database: delayedDatabase,
+          server: server,
+          readPassword: (_) => 'server-password',
+        );
+        addTearDown(() => coordinator.dispose());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        service.emit(
+          _snapshot(
+            playing: true,
+            position: const Duration(seconds: 35),
+            itemId: 'song-a',
+            duration: const Duration(minutes: 4),
+          ),
+        );
+        await delayedDatabase.firstRecordStarted.future;
+
+        service.emit(
+          _snapshot(
+            playing: true,
+            position: const Duration(seconds: 35),
+            itemId: 'song-b',
+            duration: const Duration(minutes: 4),
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        delayedDatabase.releaseFirstRecord.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final plays = await delayedDatabase.getRecentPlays(serverId: serverId);
+        expect(
+          plays.map((play) => play.songId),
+          containsAll(<String>['song-a', 'song-b']),
+        );
+      },
+    );
+
     test('replaying a song in a new session records it again', () async {
       final serverId = await addServer();
       final server = await database.getServer(serverId);
@@ -832,6 +952,7 @@ class _SpyDatabase extends AppDatabase {
 PlayerSnapshot _snapshot({
   required bool playing,
   required Duration position,
+  PlayerStatus status = PlayerStatus.ready,
   String itemId = 'song-1',
   Duration? duration,
 }) {
@@ -842,7 +963,7 @@ PlayerSnapshot _snapshot({
     streamUrl: 'https://host/rest/stream?id=$itemId&u=admin&t=tok&s=salt',
   );
   return PlayerSnapshot(
-    status: PlayerStatus.ready,
+    status: status,
     playing: playing,
     position: position,
     duration: duration,

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -81,28 +82,54 @@ class UpdateInstaller {
       '${extractionDirectory.parent.path}${Platform.pathSeparator}'
       'sakuramusic-update-${DateTime.now().microsecondsSinceEpoch}.ps1',
     );
+    final logDirectory = Directory(
+      '${Directory.systemTemp.path}${Platform.pathSeparator}SakuraMusic',
+    );
+    await logDirectory.create(recursive: true);
+    final logPath = '${logDirectory.path}${Platform.pathSeparator}update.log';
     await script.writeAsString(r'''
-param([int]$ProcessId, [string]$Source, [string]$Target, [string]$ExecutableName)
+param(
+  [int]$ProcessId,
+  [string]$Source,
+  [string]$Target,
+  [string]$ExecutableName,
+  [string]$LogPath
+)
 $ErrorActionPreference = 'Stop'
-while (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) {
-  Start-Sleep -Milliseconds 250
+try {
+  $logDirectory = Split-Path -Parent $LogPath
+  New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+  Set-Content -LiteralPath $LogPath -Value 'update started'
+  Add-Content -LiteralPath $LogPath -Value 'waiting for process'
+  while (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) {
+    Start-Sleep -Milliseconds 250
+  }
+  Add-Content -LiteralPath $LogPath -Value 'process exited'
+  Add-Content -LiteralPath $LogPath -Value 'copy started'
+  Copy-Item -Path (Join-Path $Source '*') -Destination $Target -Recurse -Force
+  Add-Content -LiteralPath $LogPath -Value 'copy completed'
+  Add-Content -LiteralPath $LogPath -Value 'relaunch started'
+  Start-Process -FilePath (Join-Path $Target $ExecutableName)
+  Add-Content -LiteralPath $LogPath -Value 'update completed'
+  Remove-Item -LiteralPath $Source -Recurse -Force -ErrorAction SilentlyContinue
+} catch {
+  $_ | Out-String | Add-Content -LiteralPath $LogPath
+  exit 1
 }
-Copy-Item -Path (Join-Path $Source '*') -Destination $Target -Recurse -Force
-Start-Process -FilePath (Join-Path $Target $ExecutableName)
-Remove-Item -LiteralPath $Source -Recurse -Force -ErrorAction SilentlyContinue
 ''');
 
-    await _processStarter('powershell.exe', <String>[
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-File',
-      script.path,
-      '$pid',
-      sourceRoot.path,
-      installDirectory.path,
-      executableName,
-    ], mode: ProcessStartMode.detached);
+    await _processStarter(
+      'powershell.exe',
+      buildWindowsUpdaterArguments(
+        scriptPath: script.path,
+        processId: pid,
+        sourcePath: sourceRoot.path,
+        targetPath: installDirectory.path,
+        executableName: executableName,
+        logPath: logPath,
+      ),
+      mode: ProcessStartMode.detached,
+    );
     _exitProcess(0);
   }
 
@@ -141,11 +168,36 @@ rm -rf "$(dirname "$source_app")"
 
     await _processStarter('/bin/bash', <String>[
       script.path,
-      '$pid',
+      pid.toString(),
       sourceApp.path,
       targetApp.path,
     ], mode: ProcessStartMode.detached);
     _exitProcess(0);
+  }
+
+  /// Builds the Windows updater invocation. Kept separate so the PID and all
+  /// paths can be asserted without starting a platform updater in unit tests.
+  @visibleForTesting
+  static List<String> buildWindowsUpdaterArguments({
+    required String scriptPath,
+    required int processId,
+    required String sourcePath,
+    required String targetPath,
+    required String executableName,
+    required String logPath,
+  }) {
+    return <String>[
+      '-NoProfile',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      scriptPath,
+      processId.toString(),
+      sourcePath,
+      targetPath,
+      executableName,
+      logPath,
+    ];
   }
 
   Future<Directory> _extractZip(File package) async {

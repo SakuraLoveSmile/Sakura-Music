@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
@@ -201,6 +202,7 @@ class _DebugScreenState extends ConsumerState<DebugScreen> {
             devices: _outputDevices,
             selectedDeviceId: _selectedDeviceId,
             onSelect: _selectOutputDevice,
+            selectionSupported: !Platform.isWindows,
           ),
           const SizedBox(height: 16),
           _SafeAudioCard(
@@ -264,11 +266,13 @@ class _AudioSessionCard extends StatelessWidget {
     required this.devices,
     required this.selectedDeviceId,
     required this.onSelect,
+    required this.selectionSupported,
   });
 
   final List<AudioDevice> devices;
   final int? selectedDeviceId;
   final ValueChanged<AudioDevice?> onSelect;
+  final bool selectionSupported;
 
   @override
   Widget build(BuildContext context) {
@@ -279,6 +283,14 @@ class _AudioSessionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          if (!selectionSupported)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Windows 桌面播放器暂不支持应用内切换输出设备',
+                style: TextStyle(color: Colors.white60),
+              ),
+            ),
           _KeyValueRow(
             label: l10n.debugOutputDevices,
             value: devices.length.toString(),
@@ -288,7 +300,7 @@ class _AudioSessionCard extends StatelessWidget {
             icon: Icons.speaker,
             name: l10n.debugOutputDeviceDefault,
             selected: selectedDeviceId == null,
-            onTap: () => onSelect(null),
+            onTap: selectionSupported ? () => onSelect(null) : null,
           ),
           if (devices.isEmpty)
             const _DeviceTile(
@@ -303,7 +315,7 @@ class _AudioSessionCard extends StatelessWidget {
                 icon: Icons.volume_up,
                 name: device.name,
                 selected: selectedDeviceId == int.tryParse(device.id),
-                onTap: () => onSelect(device),
+                onTap: selectionSupported ? () => onSelect(device) : null,
               ),
             ),
         ],

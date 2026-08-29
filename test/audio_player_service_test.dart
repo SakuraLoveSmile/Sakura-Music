@@ -35,6 +35,50 @@ void main() {
   );
   const queue = <PlayableItem>[item];
 
+  test('PlayableItem round-trips playback and cover metadata', () {
+    const original = PlayableItem(
+      id: 'song-42',
+      title: 'Round Trip',
+      artist: 'Artist',
+      album: 'Album',
+      albumId: 'album-7',
+      artistId: 'artist-8',
+      coverArtId: 'cover-9',
+      artworkUrl: 'https://example.test/cover-9.jpg',
+      artworkCacheKey: 'cover_cover-9_600',
+      duration: Duration(milliseconds: 95000),
+      streamUrl: 'https://example.test/song-42.mp3',
+      headers: <String, String>{'X-Test': 'header'},
+    );
+
+    final restored = PlayableItem.fromJson(
+      Map<String, dynamic>.from(original.toJson()),
+    );
+
+    expect(restored.id, original.id);
+    expect(restored.title, original.title);
+    expect(restored.artist, original.artist);
+    expect(restored.album, original.album);
+    expect(restored.albumId, original.albumId);
+    expect(restored.artistId, original.artistId);
+    expect(restored.coverArtId, original.coverArtId);
+    expect(restored.artworkUrl, original.artworkUrl);
+    expect(restored.artworkCacheKey, original.artworkCacheKey);
+    expect(restored.duration, original.duration);
+    expect(restored.streamUrl, original.streamUrl);
+    expect(restored.headers, original.headers);
+
+    expect(
+      PlayableItem.fromJson(<String, dynamic>{
+        'id': 'legacy-song',
+        'title': 'Legacy',
+        'streamUrl': 'https://example.test/legacy.mp3',
+        'artworkId': 'legacy-cover',
+      }).coverArtId,
+      'legacy-cover',
+    );
+  });
+
   PlayerSnapshot snapshot({
     Duration position = Duration.zero,
     bool playing = false,
