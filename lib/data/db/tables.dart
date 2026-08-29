@@ -126,8 +126,10 @@ class Settings extends Table {
 class Downloads extends Table {
   TextColumn get songId => text()();
 
+  /// Composite key with [songId]: the same song id can exist on several
+  /// servers, and their downloads must not overwrite each other.
   @override
-  Set<Column> get primaryKey => {songId};
+  Set<Column> get primaryKey => {serverId, songId};
 
   IntColumn get serverId => integer()();
 

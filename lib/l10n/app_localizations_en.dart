@@ -564,6 +564,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failedStatus => 'Failed';
 
   @override
+  String get cancelledStatus => 'Cancelled';
+
+  @override
   String get favorite => 'Favorite';
 
   @override

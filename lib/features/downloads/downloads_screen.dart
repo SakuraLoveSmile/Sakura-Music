@@ -167,7 +167,10 @@ Widget _downloadTile({
               tooltip: context.l10n.deleteDownload,
               onPressed: manager == null
                   ? null
-                  : () => manager.delete(download.songId),
+                  : () => manager.delete(
+                      download.songId,
+                      serverId: download.serverId,
+                    ),
               icon: const Icon(Icons.delete_outline),
             ),
           ],
@@ -217,6 +220,7 @@ String _statusLabel(BuildContext context, String status) {
   return switch (status) {
     'downloading' => context.l10n.downloading,
     'failed' => context.l10n.failedStatus,
+    'cancelled' => context.l10n.cancelledStatus,
     _ => status,
   };
 }

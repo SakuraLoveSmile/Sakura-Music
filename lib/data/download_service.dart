@@ -17,19 +17,52 @@ class DownloadService {
     required this.serverId,
     Dio? dio,
     this.maxConcurrent = 2,
-  }) : _dio = dio ?? Dio();
+    Future<Directory>? downloadsRoot,
+  }) : _dio = dio ?? Dio(),
+       _downloadsRootOverride = downloadsRoot {
+    // .part files left behind by an interrupted transfer are never valid;
+    // this instance owns the server directory now, so clear them.
+    unawaited(_cleanupStaleParts());
+  }
 
   final AppDatabase database;
   final SubsonicClient client;
   final int serverId;
   final Dio _dio;
   final int maxConcurrent;
+  final Future<Directory>? _downloadsRootOverride;
 
   final List<_DownloadTask> _pending = <_DownloadTask>[];
   final Map<String, _DownloadTask> _active = <String, _DownloadTask>{};
   final Map<String, _DownloadTask> _tasks = <String, _DownloadTask>{};
   bool _disposed = false;
   bool _draining = false;
+
+  /// Root of the on-disk download area. Tests inject a temporary directory;
+  /// production uses the application documents directory.
+  Future<Directory> _downloadsRoot() async {
+    final override = _downloadsRootOverride;
+    if (override != null) {
+      return override;
+    }
+    final directory = await getApplicationDocumentsDirectory();
+    return Directory('${directory.path}/downloads');
+  }
+
+  /// Canonical, server-isolated location of a finished download:
+  /// `<downloads-root>/<serverId>/<songId>.<ext>`.
+  File _finalFile(String songId, String ext, Directory root) {
+    final serverDirectory = Directory('${root.path}/$serverId');
+    return File('${serverDirectory.path}/${Uri.encodeComponent(songId)}.$ext');
+  }
+
+  static bool _isValidLength(File file) {
+    try {
+      return file.existsSync() && file.lengthSync() > 0;
+    } on FileSystemException {
+      return false;
+    }
+  }
 
   /// Adds a song to the queue. At most [maxConcurrent] downloads run at once.
   /// The returned future completes when this song reaches a terminal state.
@@ -51,8 +84,9 @@ class DownloadService {
     return task.completer.future;
   }
 
-  /// Cancels a queued or active download. A canceled item is kept as a failed
-  /// record until the user deletes it, so the UI can explain what happened.
+  /// Cancels a queued or active download. A canceled item is kept as a
+  /// `cancelled` record until the user deletes it, so the UI can explain what
+  /// happened.
   Future<void> cancel(String songId) async {
     final task = _tasks[songId];
     if (task == null) {
@@ -60,7 +94,11 @@ class DownloadService {
     }
     task.cancelled = true;
     if (_pending.remove(task)) {
-      await database.updateDownload(songId: songId, status: 'failed');
+      await database.updateDownload(
+        songId: songId,
+        serverId: serverId,
+        status: 'cancelled',
+      );
       _finish(task);
       _drain();
       return;
@@ -68,10 +106,17 @@ class DownloadService {
     task.cancelToken?.cancel('Canceled by user');
   }
 
-  Future<void> delete(String songId) async {
-    final existing = await database.getDownload(songId, serverId: serverId);
+  /// Deletes the record and file. Pass [serverId] explicitly when deleting a
+  /// row that belongs to another server (the downloads screen lists every
+  /// server); it defaults to this service's server.
+  Future<void> delete(String songId, {int? serverId}) async {
+    final effectiveServerId = serverId ?? this.serverId;
+    final existing = await database.getDownload(
+      songId,
+      serverId: effectiveServerId,
+    );
     final task = _tasks[songId];
-    if (task != null) {
+    if (task != null && this.serverId == effectiveServerId) {
       await cancel(songId);
       try {
         await task.completer.future;
@@ -79,14 +124,24 @@ class DownloadService {
         // Deletion should still remove the record after a failed transfer.
       }
     }
-    final path = existing?.filePath;
-    if (path != null) {
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
+    final paths = <String?>[
+      existing?.filePath,
+      if (existing?.filePath != null) '${existing!.filePath}.part',
+    ];
+    for (final path in paths) {
+      if (path == null) {
+        continue;
+      }
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (_) {
+        // A locked file must not block removing the record.
       }
     }
-    await database.deleteDownload(songId);
+    await database.deleteDownload(songId, serverId: effectiveServerId);
   }
 
   Future<String?> completedPathForSong(String songId) async {
@@ -97,16 +152,80 @@ class DownloadService {
     if (download == null) {
       return null;
     }
-    final file = File(download.filePath);
-    if (!await file.exists() || await file.length() == 0) {
-      await database.updateDownload(songId: songId, status: 'failed');
+    final resolved = await _resolveCompletedFile(download);
+    if (resolved == null) {
+      await database.updateDownload(
+        songId: songId,
+        serverId: serverId,
+        status: 'failed',
+      );
       return null;
     }
-    return file.path;
+    return resolved;
   }
 
   Future<Map<String, String>> completedDownloadPaths() {
     return database.getCompletedDownloadPaths(serverId);
+  }
+
+  /// Locates a usable file for a completed record:
+  ///
+  /// 1. the canonical server-scoped path,
+  /// 2. the recorded path from before the per-server layout existed, which is
+  ///    then migrated into the canonical location,
+  /// 3. nothing — the caller marks the record failed.
+  Future<String?> _resolveCompletedFile(Download download) async {
+    final root = await _downloadsRoot();
+    final canonical = _finalFile(download.songId, download.ext, root);
+    if (_isValidLength(canonical)) {
+      if (download.filePath != canonical.path) {
+        await database.updateDownload(
+          songId: download.songId,
+          serverId: serverId,
+          filePath: canonical.path,
+        );
+      }
+      return canonical.path;
+    }
+    final recorded = File(download.filePath);
+    if (_isValidLength(recorded)) {
+      if (await _migrateLegacyFile(
+        legacy: recorded,
+        canonical: canonical,
+        songId: download.songId,
+      )) {
+        return canonical.path;
+      }
+      return recorded.path;
+    }
+    return null;
+  }
+
+  /// Moves a pre-v14 flat-layout file into the server-scoped directory.
+  /// Returns false when the move failed; the recorded location stays valid.
+  Future<bool> _migrateLegacyFile({
+    required File legacy,
+    required File canonical,
+    required String songId,
+  }) async {
+    try {
+      await canonical.parent.create(recursive: true);
+      try {
+        await legacy.rename(canonical.path);
+      } on FileSystemException {
+        // Different volumes: fall back to a copy + delete.
+        await legacy.copy(canonical.path);
+        await legacy.delete();
+      }
+      await database.updateDownload(
+        songId: songId,
+        serverId: serverId,
+        filePath: canonical.path,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   void _drain() {
@@ -124,19 +243,63 @@ class DownloadService {
 
   Future<void> _run(_DownloadTask task) async {
     final song = task.song;
+    File? partFile;
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final downloadsDirectory = Directory('${directory.path}/downloads');
-      await downloadsDirectory.create(recursive: true);
+      final root = await _downloadsRoot();
       final ext = _safeSuffix(song.suffix);
-      final path =
-          '${downloadsDirectory.path}/${Uri.encodeComponent(song.id)}.$ext';
-      final file = File(path);
-      task.cancelToken = CancelToken();
+      final finalFile = _finalFile(song.id, ext, root);
+      partFile = File('${finalFile.path}.part');
+
+      // Resume shortcut: only a record already marked completed together with
+      // a valid file counts as done. A stray file without a completed record
+      // may be a partial transfer from an interrupted run and is discarded.
+      final existing = await database.getDownload(song.id, serverId: serverId);
+      if (existing?.status == 'completed') {
+        if (_isValidLength(finalFile)) {
+          await database.updateDownload(
+            songId: song.id,
+            serverId: serverId,
+            bytes: await finalFile.length(),
+            progress: 1,
+            status: 'completed',
+          );
+          _finish(task);
+          return;
+        }
+        final legacy = File(existing!.filePath);
+        if (existing.filePath != finalFile.path && _isValidLength(legacy)) {
+          // Pre-v14 layout: migrate the finished file instead of re-downloading.
+          if (await _migrateLegacyFile(
+            legacy: legacy,
+            canonical: finalFile,
+            songId: song.id,
+          )) {
+            await database.updateDownload(
+              songId: song.id,
+              serverId: serverId,
+              bytes: await finalFile.length(),
+              progress: 1,
+              status: 'completed',
+            );
+            _finish(task);
+            return;
+          }
+        }
+      }
 
       if (task.cancelled) {
+        await database.updateDownload(
+          songId: song.id,
+          serverId: serverId,
+          status: 'cancelled',
+        );
         _finish(task);
         return;
+      }
+
+      await finalFile.parent.create(recursive: true);
+      if (await partFile.exists()) {
+        await partFile.delete();
       }
 
       await database.upsertDownload(
@@ -145,29 +308,25 @@ class DownloadService {
         title: song.title,
         artist: song.artist,
         album: song.album,
-        filePath: path,
+        filePath: finalFile.path,
         coverArtId: song.coverArt,
         ext: ext,
         status: 'downloading',
       );
 
-      if (await file.exists() && await file.length() > 0) {
-        await database.updateDownload(
-          songId: song.id,
-          bytes: await file.length(),
-          progress: 1,
-          status: 'completed',
-        );
-        _finish(task);
-        return;
-      }
-
+      task.cancelToken = CancelToken();
+      // Content-Length reported by the server; null when the server streams
+      // without a length, in which case the transfer is accepted as-is.
+      int? expectedLength;
       var lastUpdate = DateTime.fromMillisecondsSinceEpoch(0);
       await _dio.download(
         client.streamUrl(song.id),
-        path,
+        partFile.path,
         cancelToken: task.cancelToken,
         onReceiveProgress: (received, total) {
+          if (total > 0) {
+            expectedLength = total;
+          }
           final now = DateTime.now();
           if (now.difference(lastUpdate) < const Duration(milliseconds: 200)) {
             return;
@@ -179,6 +338,7 @@ class DownloadService {
           unawaited(
             database.updateDownload(
               songId: song.id,
+              serverId: serverId,
               bytes: received,
               progress: progress,
               status: 'downloading',
@@ -186,24 +346,88 @@ class DownloadService {
           );
         },
       );
+
+      final downloadedLength = await partFile.length();
       if (task.cancelled) {
-        await database.updateDownload(songId: song.id, status: 'failed');
-      } else {
+        await _discardPart(partFile);
         await database.updateDownload(
           songId: song.id,
-          bytes: await file.length(),
-          progress: 1,
-          status: 'completed',
+          serverId: serverId,
+          status: 'cancelled',
         );
+        _finish(task);
+        return;
       }
+      if (expectedLength != null && downloadedLength != expectedLength) {
+        await _discardPart(partFile);
+        await database.updateDownload(
+          songId: song.id,
+          serverId: serverId,
+          bytes: downloadedLength,
+          status: 'failed',
+        );
+        _finish(
+          task,
+          error: StateError(
+            'downloaded length $downloadedLength does not match '
+            'Content-Length $expectedLength',
+          ),
+        );
+        return;
+      }
+      // Move the validated .part into place; only now is the download
+      // complete.
+      await partFile.rename(finalFile.path);
+      await database.updateDownload(
+        songId: song.id,
+        serverId: serverId,
+        bytes: downloadedLength,
+        progress: 1,
+        status: 'completed',
+      );
       _finish(task);
     } catch (error, stackTrace) {
-      await database.updateDownload(songId: song.id, status: 'failed');
-      if (task.cancelled || _isCanceled(error)) {
+      if (partFile != null) {
+        await _discardPart(partFile);
+      }
+      final cancelled = task.cancelled || _isCanceled(error);
+      await database.updateDownload(
+        songId: song.id,
+        serverId: serverId,
+        status: cancelled ? 'cancelled' : 'failed',
+      );
+      if (cancelled) {
         _finish(task);
       } else {
         _finish(task, error: error, stackTrace: stackTrace);
       }
+    }
+  }
+
+  Future<void> _discardPart(File partFile) async {
+    try {
+      if (await partFile.exists()) {
+        await partFile.delete();
+      }
+    } catch (_) {
+      // A leftover .part is cleaned up on the next start.
+    }
+  }
+
+  Future<void> _cleanupStaleParts() async {
+    try {
+      final root = await _downloadsRoot();
+      final directory = Directory('${root.path}/$serverId');
+      if (!await directory.exists()) {
+        return;
+      }
+      await for (final entity in directory.list()) {
+        if (entity is File && entity.path.endsWith('.part')) {
+          await entity.delete().catchError((_) => entity);
+        }
+      }
+    } catch (_) {
+      // Diagnostics cleanup only; never affects downloads.
     }
   }
 

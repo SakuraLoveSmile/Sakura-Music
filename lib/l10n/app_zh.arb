@@ -195,6 +195,7 @@
   "equalizerLoadFailed": "读取均衡器设置失败：{error}",
   "equalizerTitle": "均衡器",
   "failedStatus": "失败",
+  "cancelledStatus": "已取消",
   "favorite": "收藏",
   "favoritesLoadFailed": "加载收藏失败：{error}",
   "favoritesTitle": "收藏",

@@ -3015,7 +3015,7 @@ class $DownloadsTable extends Downloads
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {songId};
+  Set<GeneratedColumn> get $primaryKey => {serverId, songId};
   @override
   Download map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';

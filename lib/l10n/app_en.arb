@@ -168,6 +168,7 @@
   "equalizerLoadFailed": "Failed to load equalizer settings: {error}",
   "equalizerTitle": "Equalizer",
   "failedStatus": "Failed",
+  "cancelledStatus": "Cancelled",
   "favorite": "Favorite",
   "favoritesLoadFailed": "Failed to load favorites: {error}",
   "favoritesTitle": "Favorites",
