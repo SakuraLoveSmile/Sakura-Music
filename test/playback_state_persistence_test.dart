@@ -239,6 +239,7 @@ void main() {
           service: service,
           database: database,
           server: server,
+          readPassword: (_) => 'server-password',
         );
         addTearDown(() => coordinator.dispose());
 
@@ -297,6 +298,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
 
@@ -337,6 +339,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
 
@@ -392,6 +395,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
 
@@ -458,6 +462,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
 
@@ -493,6 +498,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
 
@@ -531,6 +537,7 @@ void main() {
           service: service,
           database: database,
           server: server,
+          readPassword: (_) => 'server-password',
           // Long interval: only the immediate flush paths can produce a second
           // save within the test window.
           saveInterval: const Duration(seconds: 10),
@@ -560,6 +567,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
         saveInterval: const Duration(milliseconds: 60),
       );
       addTearDown(() => coordinator.dispose());
@@ -587,6 +595,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
         saveInterval: const Duration(seconds: 10),
       );
       addTearDown(() => coordinator.dispose());
@@ -634,6 +643,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -665,6 +675,7 @@ void main() {
           service: service,
           database: database,
           server: server,
+          readPassword: (_) => 'server-password',
         );
         addTearDown(() => coordinator.dispose());
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -705,6 +716,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -744,6 +756,7 @@ void main() {
         service: service,
         database: database,
         server: server,
+        readPassword: (_) => 'server-password',
       );
       addTearDown(() => coordinator.dispose());
       await Future<void>.delayed(const Duration(milliseconds: 50));

@@ -154,6 +154,35 @@ class AppDatabase extends _$AppDatabase {
     return (delete(servers)..where((table) => table.id.equals(id))).go();
   }
 
+  /// Writes the password column directly. Used by the credential migration to
+  /// blank out a value after it moved to secure storage; new passwords are
+  /// stored via [ServerRepository], never here.
+  Future<void> updateServerPassword(int serverId, String password) {
+    return (update(servers)..where((table) => table.id.equals(serverId))).write(
+      ServersCompanion(password: Value(password)),
+    );
+  }
+
+  /// Removes every per-server derived row when a server is deleted: album /
+  /// artist caches, the daily recommendation and the saved playback state.
+  /// Download records and their files are intentionally kept.
+  Future<void> clearServerData(int serverId) {
+    return transaction(() async {
+      await (delete(
+        cachedAlbums,
+      )..where((table) => table.serverId.equals(serverId))).go();
+      await (delete(
+        cachedArtists,
+      )..where((table) => table.serverId.equals(serverId))).go();
+      await (delete(
+        dailyRecommends,
+      )..where((table) => table.serverId.equals(serverId))).go();
+      await (delete(
+        playbackStates,
+      )..where((table) => table.serverId.equals(serverId))).go();
+    });
+  }
+
   Future<int> addRecentPlay({
     required String songId,
     required int serverId,
@@ -382,7 +411,9 @@ class AppDatabase extends _$AppDatabase {
         statusBarLyricsEnabled: Value(
           statusBarLyricsEnabled ?? current?.statusBarLyricsEnabled ?? false,
         ),
-        safeAudioMode: Value(safeAudioMode ?? current?.safeAudioMode ?? false),
+        // The column default is true; a partial update on a fresh row must
+        // not flip the diagnostic toggle to false.
+        safeAudioMode: Value(safeAudioMode ?? current?.safeAudioMode ?? true),
         localeCode: Value(localeCode ?? current?.localeCode ?? 'zh'),
         membershipActive: Value(
           membershipActive ?? current?.membershipActive ?? false,

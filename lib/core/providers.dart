@@ -5,21 +5,34 @@ import 'package:subsonic_api/subsonic_api.dart';
 
 import '../data/db/app_database.dart';
 import '../data/server_repository.dart';
+import 'security/server_connection.dart';
 
-final activeSubsonicClientProvider = Provider<SubsonicClient?>((ref) {
+/// Connection config for the active Subsonic-compatible server, with the
+/// password resolved from the credential store instead of the (empty) database
+/// column. Null for WebDAV servers or when no credential is available.
+final activeServerConnectionProvider = Provider<ServerConnection?>((ref) {
   final server = ref.watch(activeServerProvider);
-  if (server == null) {
+  if (server == null || server.type == 'webdav') {
     return null;
   }
-  // WebDAV sources are not Subsonic-compatible; never build a Subsonic client
-  // for them so the rest of the app routes them to the WebDAV backend.
-  if (server.type == 'webdav') {
+  final password = ref
+      .watch(credentialStoreProvider)
+      .cachedServerPassword(server.id);
+  if (password == null || password.isEmpty) {
+    return null;
+  }
+  return ServerConnection(server: server, password: password);
+});
+
+final activeSubsonicClientProvider = Provider<SubsonicClient?>((ref) {
+  final connection = ref.watch(activeServerConnectionProvider);
+  if (connection == null) {
     return null;
   }
   return SubsonicClient(
-    baseUrl: server.baseUrl,
-    username: server.username,
-    password: server.password,
+    baseUrl: connection.baseUrl,
+    username: connection.username,
+    password: connection.password,
   );
 });
 

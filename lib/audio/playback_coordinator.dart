@@ -18,6 +18,7 @@ class PlaybackCoordinator {
     required this.service,
     required this.database,
     required this.server,
+    required this.readPassword,
     this.saveInterval = const Duration(seconds: 5),
   }) {
     _subscription = service.snapshot.listen(_onSnapshot);
@@ -30,6 +31,10 @@ class PlaybackCoordinator {
   /// The server the queue belongs to. URLs and headers are regenerated from
   /// its metadata on restore; they are never persisted.
   final Server? server;
+
+  /// Resolves the credential for a server (credential store mirror). The
+  /// database column stays empty once the password migrated to secure storage.
+  final String? Function(int serverId) readPassword;
 
   /// Minimum interval between two periodic playback-state saves. Short enough
   /// that a killed app loses at most a few seconds of position, long enough
@@ -73,16 +78,22 @@ class PlaybackCoordinator {
       if (persisted.isEmpty) {
         return;
       }
-      final subsonic = activeServer.type == 'webdav'
+      final password = readPassword(activeServer.id) ?? '';
+      final subsonic = (activeServer.type == 'webdav' || password.isEmpty)
           ? null
           : SubsonicClient(
               baseUrl: activeServer.baseUrl,
               username: activeServer.username,
-              password: activeServer.password,
+              password: password,
             );
       final items = <PlayableItem>[];
       for (final entry in persisted) {
-        final item = await _rebuildPlayableItem(entry, activeServer, subsonic);
+        final item = await _rebuildPlayableItem(
+          entry,
+          activeServer,
+          subsonic,
+          password,
+        );
         if (item != null) {
           items.add(item);
         }
@@ -151,6 +162,7 @@ class PlaybackCoordinator {
     PersistedPlayableItem entry,
     Server activeServer,
     SubsonicClient? subsonic,
+    String password,
   ) async {
     String? streamUrl;
     Map<String, String>? headers;
@@ -174,7 +186,7 @@ class PlaybackCoordinator {
           activeServer.baseUrl,
         ).resolve(entry.id).toString();
         final credentials = base64Encode(
-          utf8.encode('${activeServer.username}:${activeServer.password}'),
+          utf8.encode('${activeServer.username}:$password'),
         );
         headers = <String, String>{'Authorization': 'Basic $credentials'};
       case 'subsonic':
@@ -376,6 +388,8 @@ final playbackCoordinatorProvider = Provider<PlaybackCoordinator?>((ref) {
     service: ref.watch(audioPlayerProvider),
     database: ref.watch(databaseProvider),
     server: server,
+    readPassword: (serverId) =>
+        ref.read(credentialStoreProvider).cachedServerPassword(serverId),
   );
   ref.onDispose(() {
     unawaited(coordinator.dispose());
