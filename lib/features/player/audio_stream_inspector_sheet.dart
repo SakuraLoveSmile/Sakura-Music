@@ -4,12 +4,13 @@ import 'package:subsonic_api/subsonic_api.dart';
 import '../../audio/audio_player_service.dart';
 import '../../l10n/l10n.dart';
 
-enum AudioQualityTier {
-  hiRes,
-  lossless,
-  standard,
-}
+enum AudioQualityTier { lossless, standard }
 
+/// Only reports values that can be derived from real data (Subsonic `suffix`,
+/// `bitRate`, the item duration and the stream URL scheme). Everything the
+/// server does not tell us is rendered as 未知 instead of a guessed constant:
+/// no "FLAC => 96 kHz/24 bit" inference, no fake Hi-Res tier, no fabricated
+/// file sizes.
 class AudioQualityInfo {
   const AudioQualityInfo({
     required this.tier,
@@ -23,76 +24,64 @@ class AudioQualityInfo {
     required this.fileSizeText,
   });
 
+  /// Codecs that are lossless by definition. Lossless is judged only on the
+  /// actual codec, never on a high bitrate.
+  static const _losslessCodecs = <String>{
+    'FLAC',
+    'WAV',
+    'ALAC',
+    'AIFF',
+    'APE',
+    'DSF',
+    'DFF',
+    'DSD',
+    'WV',
+  };
+
+  static const unknownText = '未知';
+
   factory AudioQualityInfo.fromItem(PlayableItem item, {Song? song}) {
-    final rawSuffix = (song?.suffix ?? _extractExtension(item.streamUrl))?.toUpperCase();
-    final codec = (rawSuffix != null && rawSuffix.isNotEmpty) ? rawSuffix : 'AAC/MP3';
+    final rawSuffix = (song?.suffix ?? _extractExtension(item.streamUrl))
+        ?.toUpperCase();
+    final codec = (rawSuffix != null && rawSuffix.isNotEmpty)
+        ? rawSuffix
+        : unknownText;
+    final isLosslessCodec = _losslessCodecs.contains(codec);
+
+    final tier = isLosslessCodec
+        ? AudioQualityTier.lossless
+        : AudioQualityTier.standard;
 
     final bitRate = song?.bitRate;
-    final isLosslessCodec = codec == 'FLAC' ||
-        codec == 'WAV' ||
-        codec == 'ALAC' ||
-        codec == 'DSD' ||
-        codec == 'DSF' ||
-        codec == 'DFF' ||
-        codec == 'AIFF';
-
-    final isHiRes = (bitRate != null && bitRate > 900) ||
-        codec == 'DSD' ||
-        codec == 'DSF' ||
-        codec == 'DFF' ||
-        (isLosslessCodec && (bitRate == null || bitRate >= 900));
-
-    final AudioQualityTier tier;
-    if (isHiRes) {
-      tier = AudioQualityTier.hiRes;
-    } else if (isLosslessCodec || (bitRate != null && bitRate >= 320)) {
-      tier = AudioQualityTier.lossless;
-    } else {
-      tier = AudioQualityTier.standard;
-    }
-
     final bitrateText = (bitRate != null && bitRate > 0)
         ? '$bitRate kbps'
-        : (isLosslessCodec ? 'VBR (无损可变码率)' : '320 kbps (估计)');
+        : unknownText;
 
-    final String sampleRateText;
-    final String bitDepthText;
-    if (codec == 'DSD' || codec == 'DSF' || codec == 'DFF') {
-      sampleRateText = '2.8224 MHz (DSD64)';
-      bitDepthText = '1 bit Direct Stream';
-    } else if (isHiRes) {
-      sampleRateText = (bitRate != null && bitRate > 1500) ? '192.0 kHz' : '96.0 kHz';
-      bitDepthText = '24 bit';
-    } else if (isLosslessCodec) {
-      sampleRateText = '44.1 kHz';
-      bitDepthText = '16 bit';
-    } else {
-      sampleRateText = '44.1 kHz';
-      bitDepthText = '16 bit (有损压缩)';
-    }
+    // Sample rate, bit depth and channel layout are not provided by the
+    // Subsonic API responses this app consumes, so they stay unknown.
+    const sampleRateText = unknownText;
+    const bitDepthText = unknownText;
+    const channelsText = unknownText;
 
-    final isLocal = item.streamUrl.startsWith('file:') || (item.headers == null || item.headers!.isEmpty);
-    final sourceTypeText = isLocal ? '本地无损缓存 / 离线' : '服务器原始流直通';
+    final sourceTypeText = item.streamUrl.startsWith('file:')
+        ? '本地文件（已下载）'
+        : '服务器在线流';
 
-    final String fileSizeText;
+    String fileSizeText;
     if (item.duration != null && bitRate != null && bitRate > 0) {
+      // Arithmetic on real data; still labelled as an estimate.
       final estBytes = (item.duration!.inSeconds * bitRate * 1000) ~/ 8;
-      fileSizeText = '~${_formatBytes(estBytes)}';
+      fileSizeText = '~${_formatBytes(estBytes)}（估算）';
     } else {
-      fileSizeText = isLosslessCodec ? '~35.0 MB' : '~8.5 MB';
+      fileSizeText = unknownText;
     }
 
-    final parts = <String>[];
-    if (tier == AudioQualityTier.hiRes) {
-      parts.add('Hi-Res');
-    } else if (tier == AudioQualityTier.lossless) {
-      parts.add('Lossless');
-    }
-    parts.add(codec);
-    if (bitRate != null && bitRate > 0) {
-      parts.add('${bitRate}k');
-    }
-    final badgeLabel = parts.join(' • ');
+    final parts = <String>[
+      if (tier == AudioQualityTier.lossless) 'Lossless',
+      if (codec != unknownText) codec,
+      if (bitRate != null && bitRate > 0) '${bitRate}k',
+    ];
+    final badgeLabel = parts.isEmpty ? unknownText : parts.join(' • ');
 
     return AudioQualityInfo(
       tier: tier,
@@ -101,7 +90,7 @@ class AudioQualityInfo {
       bitrateText: bitrateText,
       sampleRateText: sampleRateText,
       bitDepthText: bitDepthText,
-      channelsText: '立体声 (2.0 Stereo)',
+      channelsText: channelsText,
       sourceTypeText: sourceTypeText,
       fileSizeText: fileSizeText,
     );
@@ -119,12 +108,20 @@ class AudioQualityInfo {
 
   static String? _extractExtension(String? url) {
     if (url == null) return null;
-    final clean = url.split('?').first;
-    final lastDot = clean.lastIndexOf('.');
-    if (lastDot != -1 && lastDot < clean.length - 1) {
-      return clean.substring(lastDot + 1);
+    final path = url.split('?').first;
+    // Only the last path segment can carry a file extension; this avoids
+    // misreading host fragments like `example.com/rest/stream` as a codec.
+    final slash = path.lastIndexOf('/');
+    final segment = slash == -1 ? path : path.substring(slash + 1);
+    final dot = segment.lastIndexOf('.');
+    if (dot == -1 || dot == segment.length - 1) {
+      return null;
     }
-    return null;
+    final extension = segment.substring(dot + 1);
+    if (!RegExp('^[A-Za-z0-9]{1,5}\$').hasMatch(extension)) {
+      return null;
+    }
+    return extension;
   }
 
   static String _formatBytes(int bytes) {
@@ -163,11 +160,6 @@ class AudioStreamQualityBadge extends StatelessWidget {
     final IconData icon;
 
     switch (info.tier) {
-      case AudioQualityTier.hiRes:
-        primaryColor = const Color(0xFFFFD54F); // Golden amber
-        backgroundColor = const Color(0xFF2E2413);
-        borderColor = const Color(0xFFFFD54F).withValues(alpha: 0.45);
-        icon = Icons.auto_awesome_rounded;
       case AudioQualityTier.lossless:
         primaryColor = const Color(0xFF64B5F6); // Cyan / Sky Blue
         backgroundColor = const Color(0xFF152638);
@@ -184,7 +176,8 @@ class AudioStreamQualityBadge extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => showAudioStreamInspectorSheet(context, item: item, song: song),
+        onTap: () =>
+            showAudioStreamInspectorSheet(context, item: item, song: song),
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 7 : 9,
@@ -194,15 +187,6 @@ class AudioStreamQualityBadge extends StatelessWidget {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor, width: 0.9),
-            boxShadow: info.tier == AudioQualityTier.hiRes
-                ? <BoxShadow>[
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      spreadRadius: -1,
-                    ),
-                  ]
-                : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -293,9 +277,16 @@ void showAudioStreamInspectorSheet(
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white60,
+                      size: 20,
+                    ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
@@ -308,23 +299,13 @@ void showAudioStreamInspectorSheet(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(
-                    colors: info.tier == AudioQualityTier.hiRes
-                        ? <Color>[
-                            const Color(0xFF382C17),
-                            const Color(0xFF201B18),
-                          ]
-                        : <Color>[
-                            const Color(0xFF182B42),
-                            const Color(0xFF161C26),
-                          ],
+                  gradient: const LinearGradient(
+                    colors: <Color>[Color(0xFF182B42), Color(0xFF161C26)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   border: Border.all(
-                    color: info.tier == AudioQualityTier.hiRes
-                        ? const Color(0xFFFFD54F).withValues(alpha: 0.35)
-                        : const Color(0xFF64B5F6).withValues(alpha: 0.3),
+                    color: const Color(0xFF64B5F6).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -333,27 +314,23 @@ void showAudioStreamInspectorSheet(
                     Row(
                       children: <Widget>[
                         Icon(
-                          info.tier == AudioQualityTier.hiRes
-                              ? Icons.workspace_premium_rounded
-                              : Icons.verified_rounded,
+                          info.tier == AudioQualityTier.lossless
+                              ? Icons.verified_rounded
+                              : Icons.graphic_eq_rounded,
                           size: 18,
-                          color: info.tier == AudioQualityTier.hiRes
-                              ? const Color(0xFFFFD54F)
-                              : const Color(0xFF64B5F6),
+                          color: info.tier == AudioQualityTier.lossless
+                              ? const Color(0xFF64B5F6)
+                              : Colors.white70,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          info.tier == AudioQualityTier.hiRes
-                              ? ctx.l10n.audioHiResLossless
-                              : (info.tier == AudioQualityTier.lossless
-                                  ? ctx.l10n.audioLossless
-                                  : ctx.l10n.audioStandard),
-                          style: TextStyle(
+                          info.tier == AudioQualityTier.lossless
+                              ? ctx.l10n.audioLossless
+                              : ctx.l10n.audioStandard,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: info.tier == AudioQualityTier.hiRes
-                                ? const Color(0xFFFFD54F)
-                                : const Color(0xFF64B5F6),
+                            color: Color(0xFF64B5F6),
                           ),
                         ),
                       ],
@@ -415,7 +392,7 @@ void showAudioStreamInspectorSheet(
                   _buildSpecCard(
                     icon: Icons.headphones_outlined,
                     label: ctx.l10n.audioChannels,
-                    value: ctx.l10n.audioStereo,
+                    value: info.channelsText,
                   ),
                   _buildSpecCard(
                     icon: Icons.folder_zip_outlined,
@@ -429,19 +406,31 @@ void showAudioStreamInspectorSheet(
               // Source transmission indicator card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
                 ),
                 child: Row(
                   children: <Widget>[
-                    const Icon(Icons.cloud_sync_outlined, size: 18, color: Colors.white70),
+                    const Icon(
+                      Icons.cloud_sync_outlined,
+                      size: 18,
+                      color: Colors.white70,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       ctx.l10n.audioSourceType,
-                      style: const TextStyle(fontSize: 12.5, color: Colors.white70),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: Colors.white70,
+                      ),
                     ),
                     const Spacer(),
                     Text(

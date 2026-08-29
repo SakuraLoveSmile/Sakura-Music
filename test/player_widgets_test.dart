@@ -1091,32 +1091,80 @@ void main() {
       expect(find.text('Top Song'), findsOneWidget);
     });
 
-    test('AudioQualityInfo calculates correct tiers and specs', () {
-      // 1. Hi-Res FLAC
-      const itemHiRes = PlayableItem(
+    test('AudioQualityInfo only reports real data, no guessed values', () {
+      // 1. Lossless FLAC: tier comes from the codec, never from a bitrate
+      //    guess; Hi-Res is not claimed without sample-rate/bit-depth data.
+      const item = PlayableItem(
         id: 's-1',
         title: 'Song 1',
         streamUrl: 'http://example.com/stream/s-1.flac',
       );
-      const songHiRes = Song(id: 's-1', title: 'Song 1', suffix: 'FLAC', bitRate: 1107);
-      final infoHiRes = AudioQualityInfo.fromItem(itemHiRes, song: songHiRes);
-      expect(infoHiRes.tier, AudioQualityTier.hiRes);
-      expect(infoHiRes.codec, 'FLAC');
-      expect(infoHiRes.badgeLabel, contains('Hi-Res'));
-      expect(infoHiRes.badgeLabel, contains('FLAC'));
-      expect(infoHiRes.badgeLabel, contains('1107k'));
+      const songFlac = Song(
+        id: 's-1',
+        title: 'Song 1',
+        suffix: 'FLAC',
+        bitRate: 1107,
+      );
+      final infoFlac = AudioQualityInfo.fromItem(item, song: songFlac);
+      expect(infoFlac.tier, AudioQualityTier.lossless);
+      expect(infoFlac.codec, 'FLAC');
+      expect(infoFlac.badgeLabel, contains('FLAC'));
+      expect(infoFlac.badgeLabel, contains('1107k'));
+      expect(infoFlac.badgeLabel, isNot(contains('Hi-Res')));
+      expect(infoFlac.bitrateText, '1107 kbps');
+      expect(infoFlac.sampleRateText, AudioQualityInfo.unknownText);
+      expect(infoFlac.bitDepthText, AudioQualityInfo.unknownText);
+      expect(infoFlac.channelsText, AudioQualityInfo.unknownText);
 
-      // 2. Standard Lossless (16bit / 44.1k)
-      const songLossless = Song(id: 's-2', title: 'Song 2', suffix: 'ALAC', bitRate: 750);
-      final infoLossless = AudioQualityInfo.fromItem(itemHiRes, song: songLossless);
-      expect(infoLossless.tier, AudioQualityTier.lossless);
-      expect(infoLossless.codec, 'ALAC');
+      // 2. Lossless ALAC.
+      const songAlac = Song(
+        id: 's-2',
+        title: 'Song 2',
+        suffix: 'ALAC',
+        bitRate: 750,
+      );
+      final infoAlac = AudioQualityInfo.fromItem(item, song: songAlac);
+      expect(infoAlac.tier, AudioQualityTier.lossless);
+      expect(infoAlac.codec, 'ALAC');
 
-      // 3. Lossy Standard
-      const songMp3 = Song(id: 's-3', title: 'Song 3', suffix: 'MP3', bitRate: 192);
-      final infoMp3 = AudioQualityInfo.fromItem(itemHiRes, song: songMp3);
+      // 3. Lossy MP3 stays standard; no fake "320 kbps" estimate.
+      const songMp3 = Song(
+        id: 's-3',
+        title: 'Song 3',
+        suffix: 'MP3',
+        bitRate: 192,
+      );
+      final infoMp3 = AudioQualityInfo.fromItem(item, song: songMp3);
       expect(infoMp3.tier, AudioQualityTier.standard);
       expect(infoMp3.codec, 'MP3');
+      expect(infoMp3.bitrateText, '192 kbps');
+
+      // 4. Unknown codec and bitrate render as 未知 instead of AAC/MP3 or a
+      //    fabricated VBR label.
+      const itemNoExt = PlayableItem(
+        id: 's-4',
+        title: 'Song 4',
+        streamUrl: 'http://example.com/rest/stream?id=s-4',
+      );
+      final infoUnknown = AudioQualityInfo.fromItem(itemNoExt);
+      expect(infoUnknown.codec, AudioQualityInfo.unknownText);
+      expect(infoUnknown.tier, AudioQualityTier.standard);
+      expect(infoUnknown.bitrateText, AudioQualityInfo.unknownText);
+      expect(infoUnknown.badgeLabel, AudioQualityInfo.unknownText);
+      expect(infoUnknown.fileSizeText, AudioQualityInfo.unknownText);
+      expect(infoUnknown.sourceTypeText, contains('服务器'));
+
+      // 5. File size from real duration + bitrate is labelled an estimate.
+      final infoSized = AudioQualityInfo.fromItem(
+        const PlayableItem(
+          id: 's-1',
+          title: 'Song 1',
+          streamUrl: 'http://example.com/stream/s-1.flac',
+          duration: Duration(seconds: 240),
+        ),
+        song: songFlac,
+      );
+      expect(infoSized.fileSizeText, contains('估算'));
     });
 
     testWidgets('AudioStreamQualityBadge renders and opens inspector modal', (
@@ -1149,8 +1197,9 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Hi-Res'), findsOneWidget);
+      expect(find.textContaining('Lossless'), findsOneWidget);
       expect(find.textContaining('FLAC'), findsOneWidget);
+      expect(find.textContaining('Hi-Res'), findsNothing);
 
       // Tap badge to open Audio Stream Inspector
       await tester.tap(find.byType(AudioStreamQualityBadge));
@@ -1184,11 +1233,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('zh'),
           home: Scaffold(
-            body: LyricsShareDialog(
-              item: item,
-              lines: lines,
-              initialIndex: 0,
-            ),
+            body: LyricsShareDialog(item: item, lines: lines, initialIndex: 0),
           ),
         ),
       );
@@ -1223,18 +1268,18 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            playlistsProvider.overrideWith((ref) async => const <Playlist>[
-                  Playlist(id: 'pl-1', name: 'My Favorites', songCount: 12),
-                  Playlist(id: 'pl-2', name: 'Anime OST', songCount: 45),
-                ]),
+            playlistsProvider.overrideWith(
+              (ref) async => const <Playlist>[
+                Playlist(id: 'pl-1', name: 'My Favorites', songCount: 12),
+                Playlist(id: 'pl-2', name: 'Anime OST', songCount: 45),
+              ],
+            ),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('zh'),
-            home: const Scaffold(
-              body: QuickAddToPlaylistSheet(item: item),
-            ),
+            home: const Scaffold(body: QuickAddToPlaylistSheet(item: item)),
           ),
         ),
       );
@@ -1247,45 +1292,46 @@ void main() {
       expect(find.text('Anime OST'), findsOneWidget);
     });
 
-    testWidgets('VinylTurntableStage renders turntable disc, arm, and metadata', (
-      tester,
-    ) async {
-      final service = _TestAudioPlayerService();
-      const item = PlayableItem(
-        id: 's-vinyl',
-        title: 'Retro Symphony',
-        artist: 'Vinyl Maestro',
-        album: 'Analog Memories',
-        streamUrl: 'http://example.com/stream/vinyl.flac',
-      );
+    testWidgets(
+      'VinylTurntableStage renders turntable disc, arm, and metadata',
+      (tester) async {
+        final service = _TestAudioPlayerService();
+        const item = PlayableItem(
+          id: 's-vinyl',
+          title: 'Retro Symphony',
+          artist: 'Vinyl Maestro',
+          album: 'Analog Memories',
+          streamUrl: 'http://example.com/stream/vinyl.flac',
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            starredProvider.overrideWith(() => _FakeStarredNotifier()),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: const Locale('zh'),
-            home: Scaffold(
-              body: VinylTurntableStage(
-                item: item,
-                service: service,
-                playing: true,
-                palette: null,
-                isStarred: false,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              starredProvider.overrideWith(() => _FakeStarredNotifier()),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('zh'),
+              home: Scaffold(
+                body: VinylTurntableStage(
+                  item: item,
+                  service: service,
+                  playing: true,
+                  palette: null,
+                  isStarred: false,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Retro Symphony'), findsOneWidget);
-      expect(find.textContaining('Vinyl Maestro'), findsOneWidget);
-      expect(find.byType(AudioStreamQualityBadge), findsOneWidget);
-      expect(find.byType(VinylTurntableStage), findsOneWidget);
-    });
+        expect(find.text('Retro Symphony'), findsOneWidget);
+        expect(find.textContaining('Vinyl Maestro'), findsOneWidget);
+        expect(find.byType(AudioStreamQualityBadge), findsOneWidget);
+        expect(find.byType(VinylTurntableStage), findsOneWidget);
+      },
+    );
 
     testWidgets('TrackDiscoverySheet renders instant radio banner and tabs', (
       tester,
@@ -1305,10 +1351,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('zh'),
             home: Scaffold(
-              body: TrackDiscoverySheet(
-                item: item,
-                service: service,
-              ),
+              body: TrackDiscoverySheet(item: item, service: service),
             ),
           ),
         ),

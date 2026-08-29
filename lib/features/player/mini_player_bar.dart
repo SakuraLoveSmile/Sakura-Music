@@ -448,51 +448,6 @@ class MiniPlayerBar extends ConsumerWidget {
                                   // Extra tools for desktop
                                   if (isDesktop) ...[
                                     IconButton(
-                                      tooltip: context.l10n.sleepTimer,
-                                      padding: EdgeInsets.zero,
-                                      constraints:
-                                          const BoxConstraints.tightFor(
-                                            width: 30,
-                                            height: 30,
-                                          ),
-                                      onPressed: () =>
-                                          _showSleepTimerDialog(context),
-                                      icon: Icon(
-                                        Icons.bedtime_outlined,
-                                        size: 17,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.65,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: context.l10n.cast,
-                                      padding: EdgeInsets.zero,
-                                      constraints:
-                                          const BoxConstraints.tightFor(
-                                            width: 30,
-                                            height: 30,
-                                          ),
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              context.l10n.localOutputOnly,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      icon: Icon(
-                                        Icons.cast_rounded,
-                                        size: 17,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.65,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
                                       tooltip: context.l10n.lyrics,
                                       padding: EdgeInsets.zero,
                                       constraints:
@@ -503,23 +458,6 @@ class MiniPlayerBar extends ConsumerWidget {
                                       onPressed: () => context.push('/player'),
                                       icon: Icon(
                                         Icons.chat_bubble_outline_rounded,
-                                        size: 17,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.65,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: context.l10n.pictureInPicture,
-                                      padding: EdgeInsets.zero,
-                                      constraints:
-                                          const BoxConstraints.tightFor(
-                                            width: 30,
-                                            height: 30,
-                                          ),
-                                      onPressed: () => context.push('/player'),
-                                      icon: Icon(
-                                        Icons.picture_in_picture_alt_rounded,
                                         size: 17,
                                         color: Colors.white.withValues(
                                           alpha: 0.65,
@@ -750,60 +688,5 @@ class MiniPlayerBar extends ConsumerWidget {
       AppLoopMode.all => context.l10n.loopAllShort,
       AppLoopMode.one => context.l10n.loopOneShort,
     };
-  }
-
-  void _showSleepTimerDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2028),
-        title: Row(
-          children: <Widget>[
-            const Icon(Icons.bedtime_outlined, color: Color(0xFF1E7BF6)),
-            const SizedBox(width: 10),
-            Text(
-              dialogContext.l10n.sleepTimerTitle,
-              style: const TextStyle(color: Colors.white, fontSize: 18),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            for (final minutes in <int>[15, 30, 45, 60])
-              _sleepTimerOption(
-                dialogContext,
-                dialogContext.l10n.minutesLabel(minutes),
-                minutes,
-              ),
-            _sleepTimerOption(
-              dialogContext,
-              dialogContext.l10n.sleepTimerAfterCurrent,
-              0,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sleepTimerOption(BuildContext context, String label, int minutes) {
-    return ListTile(
-      title: Text(
-        label,
-        style: const TextStyle(color: Colors.white70, fontSize: 14),
-      ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        size: 18,
-        color: Colors.white38,
-      ),
-      onTap: () {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.sleepTimerSetLabel(label))),
-        );
-      },
-    );
   }
 }

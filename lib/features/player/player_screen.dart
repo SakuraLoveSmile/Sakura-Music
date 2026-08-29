@@ -76,7 +76,8 @@ class _AmbientPlayerBackground extends StatefulWidget {
   final bool playing;
 
   @override
-  State<_AmbientPlayerBackground> createState() => _AmbientPlayerBackgroundState();
+  State<_AmbientPlayerBackground> createState() =>
+      _AmbientPlayerBackgroundState();
 }
 
 class _AmbientPlayerBackgroundState extends State<_AmbientPlayerBackground>
@@ -524,7 +525,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             onSelected: (value) {
               switch (value) {
                 case 'discovery':
-                  showTrackDiscoverySheet(context, item: item, service: service);
+                  showTrackDiscoverySheet(
+                    context,
+                    item: item,
+                    service: service,
+                  );
                 case 'playlist':
                   showQuickAddToPlaylistSheet(context, item: item);
                 case 'inspector':
@@ -566,7 +571,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     const SizedBox(width: 10),
                     Text(
                       context.l10n.discovery,
-                      style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF5BA4FF)),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF5BA4FF),
+                      ),
                     ),
                   ],
                 ),
@@ -600,7 +608,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     const SizedBox(width: 10),
                     Text(
                       context.l10n.audioStreamInspector,
-                      style: const TextStyle(color: Color(0xFF5BA4FF), fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Color(0xFF5BA4FF),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -789,7 +800,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         offset: const Offset(0, 8),
                       ),
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: playing ? 0.55 : 0.3),
+                        color: Colors.black.withValues(
+                          alpha: playing ? 0.55 : 0.3,
+                        ),
                         blurRadius: playing ? 20 : 10,
                         offset: const Offset(0, 10),
                       ),
@@ -1016,16 +1029,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             // Album Artwork with Horizontal Swipe, Double-Tap Seek, and Tap to Lyrics
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => setState(() => _mobileMode = _MobileStageMode.lyrics),
+              onTap: () =>
+                  setState(() => _mobileMode = _MobileStageMode.lyrics),
               onDoubleTapDown: (details) async {
                 final localX = details.localPosition.dx;
                 final pos = service.currentSnapshot?.position ?? Duration.zero;
-                final dur = service.currentSnapshot?.duration ?? item.duration ?? Duration.zero;
+                final dur =
+                    service.currentSnapshot?.duration ??
+                    item.duration ??
+                    Duration.zero;
 
                 if (localX < coverDimension / 2) {
                   // Rewind 10s
                   final target = pos - const Duration(seconds: 10);
-                  await service.seek(target < Duration.zero ? Duration.zero : target);
+                  await service.seek(
+                    target < Duration.zero ? Duration.zero : target,
+                  );
                   HapticFeedback.lightImpact();
                   _showSeekFeedback('-10s');
                 } else {
@@ -1637,7 +1656,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   width: 30,
                   height: 30,
                 ),
-                onPressed: () => showQuickAddToPlaylistSheet(context, item: item),
+                onPressed: () =>
+                    showQuickAddToPlaylistSheet(context, item: item),
                 icon: const Icon(
                   Icons.playlist_add_rounded,
                   size: 19,
@@ -1653,7 +1673,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   width: 30,
                   height: 30,
                 ),
-                onPressed: () => showTrackDiscoverySheet(context, item: item, service: service),
+                onPressed: () => showTrackDiscoverySheet(
+                  context,
+                  item: item,
+                  service: service,
+                ),
                 icon: const Icon(
                   Icons.explore_outlined,
                   size: 19,
@@ -1971,7 +1995,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       width: 36,
                       height: 32,
                     ),
-                    onPressed: () => showQuickAddToPlaylistSheet(context, item: item),
+                    onPressed: () =>
+                        showQuickAddToPlaylistSheet(context, item: item),
                     icon: const Icon(
                       Icons.playlist_add_rounded,
                       size: 20,
@@ -1985,7 +2010,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       width: 36,
                       height: 32,
                     ),
-                    onPressed: () => showTrackDiscoverySheet(context, item: item, service: service),
+                    onPressed: () => showTrackDiscoverySheet(
+                      context,
+                      item: item,
+                      service: service,
+                    ),
                     icon: const Icon(
                       Icons.explore_outlined,
                       size: 20,
@@ -2019,7 +2048,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   static Timer? _sleepFadeTimer;
   static int? _activeSleepMinutes;
 
-  void _setSleepTimer(BuildContext context, AudioPlayerService service, int minutes) {
+  void _setSleepTimer(
+    BuildContext context,
+    AudioPlayerService service,
+    int minutes,
+  ) {
     _activeSleepTimer?.cancel();
     _sleepFadeTimer?.cancel();
     _activeSleepMinutes = minutes;
@@ -2090,7 +2123,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   const Spacer(),
                   if (_activeSleepMinutes != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1E7BF6).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
@@ -2143,7 +2179,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         sheetContext.l10n.minutesLabel(minutes),
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.w600,
                           fontSize: 13.5,
                         ),
                       ),
@@ -2152,23 +2190,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(
-                  Icons.music_off_outlined,
-                  color: Colors.white70,
-                ),
-                title: Text(
-                  sheetContext.l10n.endOfSong,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.l10n.endOfSong)),
-                  );
-                },
-              ),
+              // "Stop after current track" is intentionally absent: it was
+              // only ever a snackbar without a real end-of-track listener.
               const Divider(color: Colors.white12, height: 1),
               ListTile(
                 contentPadding: EdgeInsets.zero,
