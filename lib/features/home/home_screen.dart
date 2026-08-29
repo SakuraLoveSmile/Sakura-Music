@@ -18,7 +18,8 @@ import '../webdav/webdav_browse_screen.dart';
 String formatAudioSpecs(Song song) {
   final parts = <String>[];
   final ext = song.suffix?.toUpperCase();
-  final isHiRes = (song.bitRate != null && song.bitRate! > 900) ||
+  final isHiRes =
+      (song.bitRate != null && song.bitRate! > 900) ||
       ext == 'FLAC' ||
       ext == 'WAV' ||
       ext == 'DSD' ||
@@ -175,9 +176,7 @@ class HomeScreen extends ConsumerWidget {
 
 /// 1. Top Header with title and quick actions.
 class _TopHeaderBar extends ConsumerWidget {
-  const _TopHeaderBar({
-    required this.server,
-  });
+  const _TopHeaderBar({required this.server});
 
   final Server server;
 
@@ -203,9 +202,7 @@ class _TopHeaderBar extends ConsumerWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1B1C22),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -235,7 +232,8 @@ class _TopHeaderBar extends ConsumerWidget {
                 ),
                 onSelected: (value) {
                   if (value is Server) {
-                    ref.read(selectedServerIdProvider.notifier).state = value.id;
+                    ref.read(selectedServerIdProvider.notifier).state =
+                        value.id;
                   } else if (value == 'manage_servers') {
                     context.go('/welcome');
                   }
@@ -371,11 +369,7 @@ class _HeaderIconButton extends StatelessWidget {
           width: 32,
           height: 32,
           alignment: Alignment.center,
-          child: Icon(
-            icon,
-            size: 19,
-            color: Colors.white70,
-          ),
+          child: Icon(icon, size: 19, color: Colors.white70),
         ),
       ),
     );
@@ -389,11 +383,31 @@ class _CategoryNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <({String label, IconData icon, String route})>[
-      (label: context.l10n.navArtists, icon: Icons.mic_external_on_rounded, route: '/artists'),
-      (label: context.l10n.navAlbums, icon: Icons.album_rounded, route: '/albums'),
-      (label: context.l10n.navSongs, icon: Icons.music_note_rounded, route: '/songs'),
-      (label: context.l10n.playlistsLabel, icon: Icons.queue_music_rounded, route: '/playlists'),
-      (label: context.l10n.myFavorites, icon: Icons.favorite_rounded, route: '/favorites'),
+      (
+        label: context.l10n.navArtists,
+        icon: Icons.mic_external_on_rounded,
+        route: '/artists',
+      ),
+      (
+        label: context.l10n.navAlbums,
+        icon: Icons.album_rounded,
+        route: '/albums',
+      ),
+      (
+        label: context.l10n.navSongs,
+        icon: Icons.music_note_rounded,
+        route: '/songs',
+      ),
+      (
+        label: context.l10n.playlistsLabel,
+        icon: Icons.queue_music_rounded,
+        route: '/playlists',
+      ),
+      (
+        label: context.l10n.myFavorites,
+        icon: Icons.favorite_rounded,
+        route: '/favorites',
+      ),
     ];
 
     return Row(
@@ -476,7 +490,11 @@ class _FeaturedHeroCard extends ConsumerWidget {
       data: (songs) {
         if (songs.isEmpty) return const SizedBox.shrink();
         final featuredSong = songs.first;
-        final coverUrl = resolveSongCoverUrl(song: featuredSong, client: client, size: 240);
+        final coverUrl = resolveSongCoverUrl(
+          song: featuredSong,
+          client: client,
+          size: 240,
+        );
         final coverId = resolveSongCoverArtId(featuredSong);
 
         return Material(
@@ -536,7 +554,9 @@ class _FeaturedHeroCard extends ConsumerWidget {
                             )
                           : CachedNetworkImage(
                               imageUrl: coverUrl,
-                              cacheKey: coverId == null ? null : 'cover_${coverId}_240',
+                              cacheKey: coverId == null
+                                  ? null
+                                  : 'cover_${coverId}_240',
                               fit: BoxFit.cover,
                               errorWidget: (_, _, _) => Container(
                                 color: const Color(0xFF2B2D38),
@@ -644,7 +664,11 @@ class _RandomSongsSection extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 19, color: Colors.white60),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  size: 19,
+                  color: Colors.white60,
+                ),
                 tooltip: context.l10n.refreshBatch,
                 onPressed: () => ref.invalidate(randomSongsProvider),
               ),
@@ -695,7 +719,11 @@ class _RandomSongsSection extends ConsumerWidget {
                 children: displayList.map((song) {
                   final isPlaying = currentSongId == song.id;
                   final isFav = starred.songs.contains(song.id);
-                  final coverUrl = resolveSongCoverUrl(song: song, client: client, size: 120);
+                  final coverUrl = resolveSongCoverUrl(
+                    song: song,
+                    client: client,
+                    size: 120,
+                  );
                   final coverId = resolveSongCoverArtId(song);
                   final specs = formatAudioSpecs(song);
 
@@ -711,11 +739,17 @@ class _RandomSongsSection extends ConsumerWidget {
                         );
                         final idx = songs.indexOf(song);
                         final service = ref.read(audioPlayerProvider);
-                        await service.setQueue(items, startIndex: idx >= 0 ? idx : 0);
+                        await service.setQueue(
+                          items,
+                          startIndex: idx >= 0 ? idx : 0,
+                        );
                         await service.play();
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                           color: isPlaying
@@ -781,7 +815,9 @@ class _RandomSongsSection extends ConsumerWidget {
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.6,
+                                      ),
                                     ),
                                   ),
                                   if (specs.isNotEmpty) ...[
@@ -792,7 +828,9 @@ class _RandomSongsSection extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Colors.white.withValues(alpha: 0.38),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.38,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -867,15 +905,21 @@ class _RecentlyPlayedSongsSection extends ConsumerWidget {
                 onTap: () async {
                   final plays = recentPlaysAsync.value;
                   if (plays == null || plays.isEmpty) return;
-                  final songs = plays.map((p) => Song(
-                    id: p.songId,
-                    title: p.title ?? p.songId,
-                    artist: p.artist,
-                    album: p.album,
-                    albumId: p.albumId,
-                    artistId: p.artistId,
-                    coverArt: (p.albumId != null && p.albumId!.isNotEmpty) ? p.albumId : p.songId,
-                  )).toList();
+                  final songs = plays
+                      .map(
+                        (p) => Song(
+                          id: p.songId,
+                          title: p.title ?? p.songId,
+                          artist: p.artist,
+                          album: p.album,
+                          albumId: p.albumId,
+                          artistId: p.artistId,
+                          coverArt: (p.albumId != null && p.albumId!.isNotEmpty)
+                              ? p.albumId
+                              : p.songId,
+                        ),
+                      )
+                      .toList();
                   final items = await playableItemsForSongsWithLocalFiles(
                     client,
                     ref.read(downloadManagerProvider),
@@ -914,15 +958,22 @@ class _RecentlyPlayedSongsSection extends ConsumerWidget {
                 );
               }
 
-              final songs = plays.take(15).map((p) => Song(
-                id: p.songId,
-                title: p.title ?? p.songId,
-                artist: p.artist,
-                album: p.album,
-                albumId: p.albumId,
-                artistId: p.artistId,
-                coverArt: (p.albumId != null && p.albumId!.isNotEmpty) ? p.albumId : p.songId,
-              )).toList();
+              final songs = plays
+                  .take(15)
+                  .map(
+                    (p) => Song(
+                      id: p.songId,
+                      title: p.title ?? p.songId,
+                      artist: p.artist,
+                      album: p.album,
+                      albumId: p.albumId,
+                      artistId: p.artistId,
+                      coverArt: (p.albumId != null && p.albumId!.isNotEmpty)
+                          ? p.albumId
+                          : p.songId,
+                    ),
+                  )
+                  .toList();
 
               return ListView.separated(
                 scrollDirection: Axis.horizontal,
@@ -992,13 +1043,15 @@ class _RecentlyAddedSongsSection extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 19, color: Colors.white60),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  size: 19,
+                  color: Colors.white60,
+                ),
                 onPressed: () => ref.invalidate(newestAlbumsProvider),
               ),
               const Spacer(),
-              _PlayAllCircleButton(
-                onTap: () => context.go('/albums'),
-              ),
+              _PlayAllCircleButton(onTap: () => context.go('/albums')),
             ],
           ),
         ),
@@ -1042,9 +1095,8 @@ class _RecentlyAddedSongsSection extends ConsumerWidget {
                       album: album,
                       client: client,
                       isFavorite: isFav,
-                      onFavorite: () => ref
-                          .read(starredProvider.notifier)
-                          .toggleAlbum(album),
+                      onFavorite: () =>
+                          ref.read(starredProvider.notifier).toggleAlbum(album),
                       onTap: () => context.go('/albums/${album.id}'),
                     ),
                   );
@@ -1086,7 +1138,11 @@ class _RecentlyUpdatedPlaylistsSection extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 19, color: Colors.white60),
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  size: 19,
+                  color: Colors.white60,
+                ),
                 onPressed: () => ref.invalidate(playlistsProvider),
               ),
               const Spacer(),
@@ -1094,7 +1150,10 @@ class _RecentlyUpdatedPlaylistsSection extends ConsumerWidget {
                 onTap: () => context.go('/playlists'),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   child: Row(
                     children: <Widget>[
                       Text(
@@ -1236,8 +1295,8 @@ class _RecentlyUpdatedPlaylistsSection extends ConsumerWidget {
 class _LibraryStatsGrid extends ConsumerWidget {
   const _LibraryStatsGrid();
 
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
+  String _formatBytes(int? bytes) {
+    if (bytes == null || bytes <= 0) return '—';
     const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
     var i = 0;
     double size = bytes.toDouble();
@@ -1248,12 +1307,14 @@ class _LibraryStatsGrid extends ConsumerWidget {
     return '${size.toStringAsFixed(1)}${suffixes[i]}';
   }
 
-  String _formatHours(int totalSeconds) {
+  String _formatHours(int? totalSeconds) {
+    if (totalSeconds == null) return '—';
     final hours = totalSeconds ~/ 3600;
     return '${hours}h';
   }
 
-  String _formatNumber(int number) {
+  String _formatNumber(int? number) {
+    if (number == null) return '—';
     final str = number.toString();
     final buffer = StringBuffer();
     for (int i = 0; i < str.length; i++) {
@@ -1272,12 +1333,36 @@ class _LibraryStatsGrid extends ConsumerWidget {
     return statsAsync.maybeWhen(
       data: (stats) {
         final cards = <({String value, String label, String route})>[
-          (value: _formatNumber(stats.songCount), label: context.l10n.navSongs, route: '/songs'),
-          (value: _formatNumber(stats.albumCount), label: context.l10n.navAlbums, route: '/albums'),
-          (value: _formatNumber(stats.artistCount), label: context.l10n.navArtists, route: '/artists'),
-          (value: _formatNumber(stats.folderCount), label: context.l10n.foldersCount, route: '/home'),
-          (value: _formatBytes(stats.totalSizeBytes), label: context.l10n.totalSize, route: '/home'),
-          (value: _formatHours(stats.totalDurationSeconds), label: context.l10n.totalDuration, route: '/home'),
+          (
+            value: _formatNumber(stats.songCount),
+            label: context.l10n.navSongs,
+            route: '/songs',
+          ),
+          (
+            value: _formatNumber(stats.albumCount),
+            label: context.l10n.navAlbums,
+            route: '/albums',
+          ),
+          (
+            value: _formatNumber(stats.artistCount),
+            label: context.l10n.navArtists,
+            route: '/artists',
+          ),
+          (
+            value: _formatNumber(stats.folderCount),
+            label: context.l10n.foldersCount,
+            route: '/home',
+          ),
+          (
+            value: _formatBytes(stats.totalSizeBytes),
+            label: context.l10n.totalSize,
+            route: '/home',
+          ),
+          (
+            value: _formatHours(stats.totalDurationSeconds),
+            label: context.l10n.totalDuration,
+            route: '/home',
+          ),
         ];
 
         return Column(
@@ -1313,7 +1398,10 @@ class _LibraryStatsGrid extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
@@ -1417,9 +1505,7 @@ class _PlayAllCircleButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF262832),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: const Icon(
             Icons.play_arrow_rounded,
@@ -1474,7 +1560,9 @@ class _SquareSongCard extends StatelessWidget {
                       )
                     : CachedNetworkImage(
                         imageUrl: coverUrl,
-                        cacheKey: coverId == null ? null : 'cover_${coverId}_280',
+                        cacheKey: coverId == null
+                            ? null
+                            : 'cover_${coverId}_280',
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) => Container(
                           color: const Color(0xFF22242D),
@@ -1514,4 +1602,3 @@ class _SquareSongCard extends StatelessWidget {
     );
   }
 }
-
