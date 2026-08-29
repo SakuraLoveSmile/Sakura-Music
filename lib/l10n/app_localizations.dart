@@ -1106,6 +1106,12 @@ abstract class AppLocalizations {
   /// **'失败'**
   String get failedStatus;
 
+  /// No description provided for @cancelledStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消'**
+  String get cancelledStatus;
+
   /// No description provided for @favorite.
   ///
   /// In zh, this message translates to:

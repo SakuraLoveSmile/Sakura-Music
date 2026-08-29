@@ -543,6 +543,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get failedStatus => '失败';
 
   @override
+  String get cancelledStatus => '已取消';
+
+  @override
   String get favorite => '收藏';
 
   @override

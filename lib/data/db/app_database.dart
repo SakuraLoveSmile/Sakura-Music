@@ -23,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -95,6 +95,38 @@ class AppDatabase extends _$AppDatabase {
         }
         await m.createTable(dailyRecommends);
       }
+      if (from >= 5 && from < 14) {
+        // V14: the downloads primary key becomes (serverId, songId) so the
+        // same song id on two servers no longer overwrites one another.
+        // SQLite cannot change a primary key in place: rename the old table,
+        // create the new schema, copy every row (keeping the newest one for
+        // a theoretical (serverId, songId) duplicate), then drop the copy.
+        await customStatement('ALTER TABLE downloads RENAME TO downloads_v13');
+        await m.createTable(downloads);
+        await customStatement(
+          'INSERT INTO downloads (song_id, server_id, title, artist, album, '
+          'file_path, cover_art_id, ext, bytes, status, progress, created_at) '
+          'SELECT song_id, server_id, title, artist, album, file_path, '
+          'cover_art_id, ext, bytes, status, progress, created_at '
+          'FROM downloads_v13 AS old WHERE NOT EXISTS ('
+          'SELECT 1 FROM downloads_v13 AS newer '
+          'WHERE newer.server_id = old.server_id '
+          'AND newer.song_id = old.song_id '
+          'AND (newer.created_at > old.created_at '
+          'OR (newer.created_at = old.created_at '
+          'AND newer.rowid > old.rowid)))',
+        );
+        await customStatement('DROP TABLE downloads_v13');
+      }
+    },
+    beforeOpen: (details) async {
+      // A 'downloading' row can only be produced by a live transfer. Anything
+      // still marked as downloading when the app starts was interrupted by a
+      // previous process; it must never be treated as completed and is moved
+      // to the failed state so the UI offers a re-download.
+      await customStatement(
+        "UPDATE downloads SET status = 'failed' WHERE status = 'downloading'",
+      );
     },
   );
 
@@ -371,17 +403,19 @@ class AppDatabase extends _$AppDatabase {
         .watch();
   }
 
-  Future<Download?> getCompletedDownload(String songId, {int? serverId}) {
-    final query = select(downloads)
-      ..where(
-        (table) =>
-            table.songId.equals(songId) & table.status.equals('completed'),
-      )
-      ..limit(1);
-    if (serverId != null) {
-      query.where((table) => table.serverId.equals(serverId));
-    }
-    return query.getSingleOrNull();
+  Future<Download?> getCompletedDownload(
+    String songId, {
+    required int serverId,
+  }) {
+    return (select(downloads)
+          ..where(
+            (table) =>
+                table.songId.equals(songId) &
+                table.serverId.equals(serverId) &
+                table.status.equals('completed'),
+          )
+          ..limit(1))
+        .getSingleOrNull();
   }
 
   /// Returns completed download paths in one query without touching the file
@@ -431,21 +465,23 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  Future<Download?> getDownload(String songId, {int? serverId}) {
-    final query = select(downloads)
-      ..where((table) => table.songId.equals(songId))
-      ..limit(1);
-    if (serverId != null) {
-      query.where((table) => table.serverId.equals(serverId));
-    }
-    return query.getSingleOrNull();
+  Future<Download?> getDownload(String songId, {required int serverId}) {
+    return (select(downloads)
+          ..where(
+            (table) =>
+                table.songId.equals(songId) & table.serverId.equals(serverId),
+          )
+          ..limit(1))
+        .getSingleOrNull();
   }
 
   Future<bool> updateDownload({
     required String songId,
+    required int serverId,
     int? bytes,
     double? progress,
     String? status,
+    String? filePath,
   }) async {
     final values = DownloadsCompanion(
       bytes: bytes == null ? const Value.absent() : Value(bytes),
@@ -453,17 +489,23 @@ class AppDatabase extends _$AppDatabase {
           ? const Value.absent()
           : Value(progress.clamp(0, 1)),
       status: status == null ? const Value.absent() : Value(status),
+      filePath: filePath == null ? const Value.absent() : Value(filePath),
     );
-    final count = await (update(
-      downloads,
-    )..where((table) => table.songId.equals(songId))).write(values);
+    final count =
+        await (update(downloads)..where(
+              (table) =>
+                  table.songId.equals(songId) & table.serverId.equals(serverId),
+            ))
+            .write(values);
     return count > 0;
   }
 
-  Future<int> deleteDownload(String songId) {
-    return (delete(
-      downloads,
-    )..where((table) => table.songId.equals(songId))).go();
+  Future<int> deleteDownload(String songId, {required int serverId}) {
+    return (delete(downloads)..where(
+          (table) =>
+              table.songId.equals(songId) & table.serverId.equals(serverId),
+        ))
+        .go();
   }
 
   Future<void> cacheAlbum({
