@@ -69,12 +69,19 @@ class _ServerSidebarState extends ConsumerState<ServerSidebar> {
                       size: 22,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      context.l10n.appName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    // Expanded so the title can never push the fixed-width
+                    // sidebar header past its edge (1.8px overflow on Linux
+                    // font metrics).
+                    Expanded(
+                      child: Text(
+                        context.l10n.appName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ],
