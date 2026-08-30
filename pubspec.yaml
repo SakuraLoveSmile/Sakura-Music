@@ -81,6 +81,24 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
 
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  # Source artwork lives outside assets/ so it is not bundled into the app.
+  image_path: "tool/app_icon.png"
+  android: true
+  # The artwork is a full-bleed rounded square; adaptive layers only show the
+  # centre ~66%, so this background only fills the corners of any shape mask.
+  adaptive_icon_background: "#010214"
+  adaptive_icon_foreground: "tool/app_icon.png"
+  ios: true
+  remove_alpha_ios: true
+  macos:
+    generate: true
+  windows:
+    generate: true
+    icon_size: 256
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
