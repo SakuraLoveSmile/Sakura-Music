@@ -80,8 +80,17 @@ class ServerRepository {
   }
 }
 
+/// The single credential store created during bootstrap (main.dart) and
+/// injected via `overrideWithValue`. Never construct a fresh store here: a
+/// second instance would start with a cold password cache, silently making
+/// every credential look missing (the alpha.9 Android regression), so the
+/// un-overridden read fails loudly instead.
 final credentialStoreProvider = Provider<CredentialStore>((ref) {
-  return SecureCredentialStore();
+  throw StateError(
+    'credentialStoreProvider must be overridden with the bootstrap '
+    'SecureCredentialStore instance (see main.dart _runApp); building a '
+    'second store would drop the warmed-up password cache.',
+  );
 });
 
 final databaseProvider = Provider<AppDatabase>((ref) {

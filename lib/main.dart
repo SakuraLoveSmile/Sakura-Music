@@ -19,6 +19,7 @@ import 'core/desktop_runtime_status.dart';
 import 'core/security/credential_migration.dart';
 import 'core/security/credential_store.dart';
 import 'data/db/app_database.dart';
+import 'data/server_repository.dart';
 
 Future<void> main() async {
   // Wrap the ENTIRE bootstrap (engine init, crash-handler install, and the
@@ -51,11 +52,21 @@ Future<void> _bootstrap() async {
 
   // Move credentials from the plain database into the platform secure storage
   // before any provider can build a client. Idempotent: safe on every start.
+  //
+  // This instance is the ONLY store the app ever uses: it is handed to the
+  // ProviderScope below, so the warmed-up password cache survives into the UI.
+  // Creating another store inside a provider would start with a cold cache
+  // and make every credential look missing (the alpha.9 Android regression).
+  final credentialStore = SecureCredentialStore();
   try {
     final database = AppDatabase();
-    final store = SecureCredentialStore();
-    await CredentialMigrator(database: database, store: store).migrate();
-    await store.warmUp((await database.getAllServers()).map((s) => s.id));
+    await CredentialMigrator(
+      database: database,
+      store: credentialStore,
+    ).migrate();
+    await credentialStore.warmUp(
+      (await database.getAllServers()).map((s) => s.id),
+    );
     await database.close();
   } catch (error, stack) {
     logCrash(error, stack, context: 'credentialMigration');
@@ -115,7 +126,10 @@ Future<void> _bootstrap() async {
       logCrash(error, stack, context: 'AudioService.init');
       audioOverride = UnavailableAudioPlayerService();
     }
-    _runApp(audioOverride: handler ?? audioOverride);
+    _runApp(
+      credentialStore: credentialStore,
+      audioOverride: handler ?? audioOverride,
+    );
     return;
   }
 
@@ -138,16 +152,21 @@ Future<void> _bootstrap() async {
     }
   }
 
-  _runApp();
+  _runApp(credentialStore: credentialStore);
 }
 
-void _runApp({AudioPlayerService? audioOverride}) {
+void _runApp({
+  required CredentialStore credentialStore,
+  AudioPlayerService? audioOverride,
+}) {
   runApp(
     ProviderScope(
       observers: const [CrashReportingObserver()],
-      overrides: audioOverride != null
-          ? [audioPlayerProvider.overrideWithValue(audioOverride)]
-          : const [],
+      overrides: [
+        credentialStoreProvider.overrideWithValue(credentialStore),
+        if (audioOverride != null)
+          audioPlayerProvider.overrideWithValue(audioOverride),
+      ],
       child: const SakuraMusicApp(),
     ),
   );
