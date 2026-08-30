@@ -64,9 +64,32 @@ jobs:
           echo "pubspec version: $PUBSPEC_VERSION"
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
+  test:
+    name: Test
+    needs: validate-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
   build-android:
     name: Build Android
-    needs: validate-release
+    needs: [validate-release, test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -116,7 +139,7 @@ jobs:
 
   build-windows:
     name: Build Windows
-    needs: validate-release
+    needs: [validate-release, test]
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -148,7 +171,7 @@ jobs:
 
   build-macos:
     name: Build macOS
-    needs: validate-release
+    needs: [validate-release, test]
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -180,7 +203,7 @@ jobs:
 
   build-ios:
     name: Build iOS
-    needs: validate-release
+    needs: [validate-release, test]
     runs-on: macos-latest
     steps:
       - name: Checkout repository
