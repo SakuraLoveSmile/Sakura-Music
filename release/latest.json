@@ -2,61 +2,61 @@
   "tag_name": "v0.3.0-alpha.10",
   "html_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.0-alpha.10",
   "body": "",
-  "published_at": "2026-08-30T08:22:14Z",
+  "published_at": "2026-08-30T09:40:44Z",
   "assets": [
     {
       "name": "SakuraMusic-android-arm64-v8a.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-android-arm64-v8a.apk",
-      "size": 32145302,
-      "digest": "sha256:e4109276f8cc6c995f9dd5ba099d0faa47fc462b4b6615f9e5cd9226ca23c232"
+      "size": 32443655,
+      "digest": "sha256:6fd2f276c321968cbf92f23ad1f536ea78a7ad8c352a0dd9bac3eca37cd5bcd3"
     },
     {
       "name": "SakuraMusic-android-armeabi-v7a.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-android-armeabi-v7a.apk",
-      "size": 29243650,
-      "digest": "sha256:e8814fcdf9a9b5eefa543eca54669e5cb17396dfb7190c88f648a390f57ed9ea"
+      "size": 29542003,
+      "digest": "sha256:1bce1f0d68f037215e0743c85408d41bf6e6eb03afa47a1b4b4f6c5731fb7ad4"
     },
     {
       "name": "SakuraMusic-android-universal.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-android-universal.apk",
-      "size": 91659988,
-      "digest": "sha256:159a395866cfa431904b258c9db9b6bf3bf9fe1ad5dc6485907a6fc83e4ae09e"
+      "size": 91958341,
+      "digest": "sha256:a31cf44dc7659e4b85313a5cb074ac5543c6c44fdad70caf91ac75e5a0588a56"
     },
     {
       "name": "SakuraMusic-android-x86_64.apk",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-android-x86_64.apk",
-      "size": 34462548,
-      "digest": "sha256:e41f61a674ad345c0d6ddca5993df16c89be849ffb867d95d0b8136d9661701d"
+      "size": 34760901,
+      "digest": "sha256:6b8dda3f04ef5579cfdb3348ffc2443664f61b8aeb43c756cb60c7e766df2cec"
     },
     {
       "name": "SakuraMusic-ios-Runner.app.zip",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-ios-Runner.app.zip",
-      "size": 13087480,
-      "digest": "sha256:240029558219d9c89961befb581483c0b58d25d4ca44c6ef2703c16482c22cbf"
+      "size": 14551781,
+      "digest": "sha256:2b2aea58316fac334428d9dc688fd2b2765bff455f8992e924773a72d8175804"
     },
     {
       "name": "SakuraMusic-ios-unsigned.ipa",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-ios-unsigned.ipa",
-      "size": 13073352,
-      "digest": "sha256:bdc395390f673581d0b6e5b20dcdba52a3a07d8af323cc460600e24e9494043c"
+      "size": 14535768,
+      "digest": "sha256:9dd40eaf4fa38f43621606e1d8e1ee34067c12576cc13af38972b2830d53f564"
     },
     {
       "name": "SakuraMusic-macos.dmg",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-macos.dmg",
-      "size": 37759622,
-      "digest": "sha256:f8f20646e78c9c77381cd82ecc739e36aaef789a56704cb3d9d86537a07a9110"
+      "size": 39626155,
+      "digest": "sha256:8eb7ba36052dbf32956bc98da3acbb99fca5e5a9fed5a93e54a01b8371b0831d"
     },
     {
       "name": "SakuraMusic-macos.zip",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-macos.zip",
-      "size": 32960955,
-      "digest": "sha256:9d9246de89fd19cec69dfb1083abedb62b0ddc7ed1f984319f9bc776b491e62d"
+      "size": 34788304,
+      "digest": "sha256:07ac188aefa81e29d8a1aefa33d06030c29f8e4249ddd0d1d16813ed3dc81a75"
     },
     {
       "name": "SakuraMusic-windows-x64.zip",
       "browser_download_url": "https://github.com/SakuraLoveSmile/Sakura-Music/releases/download/v0.3.0-alpha.10/SakuraMusic-windows-x64.zip",
-      "size": 23452383,
-      "digest": "sha256:26149e82db98f568d860fb07a48ce37f808dc995caa9cb8345bb8b4a4c5734f9"
+      "size": 23487606,
+      "digest": "sha256:654adf549071111e440eb1027100a54c0fba5014e483a24fa4989116a74ed704"
     }
   ]
 }
