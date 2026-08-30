@@ -777,6 +777,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noSearchMatches => 'No matches found.';
 
   @override
+  String get serverCredentialUnavailableMessage =>
+      'Secure credentials could not be loaded. Reconnect the server to restore access.';
+
+  @override
+  String get serverCredentialUnavailableTitle =>
+      'Server credentials unavailable';
+
+  @override
   String get noServerMessage =>
       'Add or connect a music library on the servers page first.';
 
