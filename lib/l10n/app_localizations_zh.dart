@@ -735,6 +735,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noSearchMatches => '没有找到匹配内容。';
 
   @override
+  String get serverCredentialUnavailableMessage => '安全凭据未能加载，请重新连接服务器以恢复访问。';
+
+  @override
+  String get serverCredentialUnavailableTitle => '服务器凭据不可用';
+
+  @override
   String get noServerMessage => '请先在服务器选择页添加或连接一个音乐库。';
 
   @override

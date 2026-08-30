@@ -228,6 +228,8 @@
   "noMatchingAsset": "No matching package for this platform. The GitHub release page will open instead.",
   "noPlaylists": "No playlists",
   "noSearchMatches": "No matches found.",
+  "serverCredentialUnavailableMessage": "Secure credentials could not be loaded. Reconnect the server to restore access.",
+  "serverCredentialUnavailableTitle": "Server credentials unavailable",
   "noServerMessage": "Add or connect a music library on the servers page first.",
   "noSongHistory": "No song history",
   "nowPlaying": "Now playing",

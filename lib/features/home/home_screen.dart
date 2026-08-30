@@ -57,7 +57,12 @@ class HomeScreen extends ConsumerWidget {
       return const SafeArea(child: WebDavBrowseScreen());
     }
 
-    final client = ref.watch(activeSubsonicClientProvider)!;
+    final client = ref.watch(activeSubsonicClientProvider);
+    // A missing credential (secure storage read failure, upgrade edge case)
+    // must degrade to a readable state, never crash the whole widget tree.
+    if (client == null) {
+      return const SafeArea(child: ServerCredentialUnavailableView());
+    }
     final starred = ref.watch(starredIdsProvider);
     final playerService = ref.watch(audioPlayerProvider);
 

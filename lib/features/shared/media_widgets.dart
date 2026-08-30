@@ -1433,3 +1433,61 @@ class NoServerView extends StatelessWidget {
     );
   }
 }
+
+/// Shown when a server row exists but its secure credential could not be
+/// resolved (e.g. secure storage read failed). Mirrors [NoServerView] so a
+/// missing credential renders as a readable state instead of crashing the
+/// widget tree with a null assertion.
+class ServerCredentialUnavailableView extends StatelessWidget {
+  const ServerCredentialUnavailableView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              Icons.key_off,
+              size: 64,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              context.l10n.serverCredentialUnavailableTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              context.l10n.serverCredentialUnavailableMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => context.go('/welcome'),
+              icon: const Icon(Icons.dns_outlined, size: 18),
+              label: Text(context.l10n.goToServerPicker),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E7BF6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1466,6 +1466,18 @@ abstract class AppLocalizations {
   /// **'没有找到匹配内容。'**
   String get noSearchMatches;
 
+  /// No description provided for @serverCredentialUnavailableMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'安全凭据未能加载，请重新连接服务器以恢复访问。'**
+  String get serverCredentialUnavailableMessage;
+
+  /// No description provided for @serverCredentialUnavailableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器凭据不可用'**
+  String get serverCredentialUnavailableTitle;
+
   /// No description provided for @noServerMessage.
   ///
   /// In zh, this message translates to:

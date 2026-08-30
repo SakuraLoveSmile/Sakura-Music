@@ -255,6 +255,8 @@
   "noMatchingAsset": "当前平台暂无匹配的安装包，将打开 GitHub Release 页面。",
   "noPlaylists": "暂无歌单",
   "noSearchMatches": "没有找到匹配内容。",
+  "serverCredentialUnavailableMessage": "安全凭据未能加载，请重新连接服务器以恢复访问。",
+  "serverCredentialUnavailableTitle": "服务器凭据不可用",
   "noServerMessage": "请先在服务器选择页添加或连接一个音乐库。",
   "noSongHistory": "暂无歌曲记录",
   "nowPlaying": "正在播放",
