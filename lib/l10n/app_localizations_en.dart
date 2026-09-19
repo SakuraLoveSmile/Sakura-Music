@@ -363,6 +363,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkUpdates => 'Check for updates';
 
   @override
+  String get feedbackEntry => 'Send feedback';
+
+  @override
   String get updateAvailable => 'Update available';
 
   @override

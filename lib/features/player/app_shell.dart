@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:feedback_widget/feedback_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -485,15 +486,19 @@ class _TopActionBar extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 1),
-                                  Text(
-                                    _formatServerSubtitle(s),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.4,
+                                  // The server address and account name are
+                                  // masked in feedback screenshots.
+                                  FeedbackCaptureMask(
+                                    child: Text(
+                                      _formatServerSubtitle(s),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        fontSize: 11,
                                       ),
-                                      fontSize: 11,
                                     ),
                                   ),
                                 ],

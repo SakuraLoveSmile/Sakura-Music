@@ -14,6 +14,15 @@ on:
 permissions:
   contents: write
 
+# Feedback wiring passed to every platform build. Matches the defaults in
+# lib/core/feedback/feedback_config.dart (enabled for official builds, the
+# production service, appId `sakuramusic`); declared here so packaging is
+# explicit and auditable, and overridable per run.
+env:
+  FEEDBACK_ENABLED: 'true'
+  FEEDBACK_API_BASE: 'https://feedback.xn--fhqths51enha.cn'
+  FEEDBACK_APP_ID: 'sakuramusic'
+
 jobs:
   validate-release:
     name: Validate Release Version
@@ -78,6 +87,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -114,14 +128,19 @@ jobs:
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
           printf 'storeFile=keystore.jks\nstorePassword=android\nkeyPassword=android\nkeyAlias=androiddebugkey\n' > android/app/key.properties
 
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Android Split APKs
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }}
 
       - name: Build Android Universal APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }}
 
       - name: Collect Android Assets
         run: |
@@ -151,11 +170,16 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Windows
-        run: flutter build windows --release
+        run: flutter build windows --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }}
 
       - name: Package Windows Zip
         shell: pwsh
@@ -183,11 +207,16 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build macOS
-        run: flutter build macos --release
+        run: flutter build macos --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }}
 
       - name: Package macOS App
         run: |
@@ -215,11 +244,16 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build iOS (unsigned)
-        run: flutter build ios --release --no-codesign
+        run: flutter build ios --release --no-codesign --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }}
 
       - name: Package iOS IPA & App
         run: |
