@@ -137,6 +137,7 @@
   "loading": "读取中…",
   "unknown": "未知",
   "checkUpdates": "检查更新",
+  "feedbackEntry": "问题反馈",
   "updateAvailable": "发现新版本",
   "downloading": "下载中",
   "downloaded": "已下载",

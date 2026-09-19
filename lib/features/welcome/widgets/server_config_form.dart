@@ -1,3 +1,4 @@
+import 'package:feedback_widget/feedback_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -407,6 +408,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
             prefixIcon: Icons.link_rounded,
             keyboardType: TextInputType.url,
             onChanged: _handleHostChanged,
+            sensitive: true,
             validator: (value) {
               final text = value?.trim() ?? '';
               if (text.isEmpty) {
@@ -498,6 +500,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
             controller: _usernameController,
             labelText: context.l10n.username,
             prefixIcon: Icons.person_outline_rounded,
+            sensitive: true,
             validator: (v) => v == null || v.trim().isEmpty
                 ? context.l10n.pleaseInputUsername
                 : null,
@@ -508,6 +511,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
             labelText: context.l10n.password,
             prefixIcon: Icons.lock_outline_rounded,
             obscureText: true,
+            sensitive: true,
             validator: (v) => v == null || v.trim().isEmpty
                 ? context.l10n.pleaseInputPassword
                 : null,
@@ -632,6 +636,7 @@ class _InputField extends StatelessWidget {
     this.inputFormatters,
     this.validator,
     this.onChanged,
+    this.sensitive = false,
   });
 
   final TextEditingController controller;
@@ -644,9 +649,13 @@ class _InputField extends StatelessWidget {
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
 
+  /// When true the field is masked in feedback screenshots (server address,
+  /// username, password). A no-op when the feedback layer is not mounted.
+  final bool sensitive;
+
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    final TextFormField field = TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
@@ -686,5 +695,9 @@ class _InputField extends StatelessWidget {
       ),
       validator: validator,
     );
+    // Sensitive fields are covered by a neutral mask in feedback screenshots.
+    // FeedbackCaptureMask is a passthrough when there is no feedback scope
+    // ancestor (e.g. feedback disabled, or the form shown outside the layer).
+    return sensitive ? FeedbackCaptureMask(child: field) : field;
   }
 }

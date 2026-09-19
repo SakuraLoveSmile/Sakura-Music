@@ -21,6 +21,11 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+
       - name: Install dependencies (root)
         run: flutter pub get
 
@@ -47,6 +52,11 @@ jobs:
         with:
           channel: stable
           cache: true
+
+      - name: Load read-only SSH deploy key (private feedback dependency)
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
 
       - name: Install dependencies (root)
         run: flutter pub get

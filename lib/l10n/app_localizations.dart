@@ -758,6 +758,12 @@ abstract class AppLocalizations {
   /// **'检查更新'**
   String get checkUpdates;
 
+  /// No description provided for @feedbackEntry.
+  ///
+  /// In zh, this message translates to:
+  /// **'问题反馈'**
+  String get feedbackEntry;
+
   /// No description provided for @updateAvailable.
   ///
   /// In zh, this message translates to:

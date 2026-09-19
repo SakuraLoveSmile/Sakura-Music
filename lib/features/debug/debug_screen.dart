@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:feedback_widget/feedback_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -520,12 +521,16 @@ class _LogCard extends StatelessWidget {
                 final entry = entries[entries.length - 1 - index];
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    entry.line,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontFamily: 'monospace',
+                  // Diagnostic log lines may embed server/track details: mask
+                  // them in feedback screenshots.
+                  child: FeedbackCaptureMask(
+                    child: Text(
+                      entry.line,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                      ),
                     ),
                   ),
                 );

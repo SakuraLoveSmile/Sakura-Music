@@ -1,3 +1,4 @@
+import 'package:feedback_widget/feedback_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -277,13 +278,16 @@ class _ServerCard extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        server.baseUrl.replaceFirst(RegExp(r'https?://'), ''),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.38),
-                          fontSize: 11.5,
+                      // The server address is masked in feedback screenshots.
+                      FeedbackCaptureMask(
+                        child: Text(
+                          server.baseUrl.replaceFirst(RegExp(r'https?://'), ''),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.38),
+                            fontSize: 11.5,
+                          ),
                         ),
                       ),
                     ],

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/locale.dart';
+import '../../core/feedback/feedback_config.dart';
 import '../../l10n/l10n.dart';
 import '../../core/update/update_providers.dart';
 import '../../data/db/app_database.dart';
@@ -36,6 +37,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final appVersion = ref.watch(appVersionProvider);
     final updateState = ref.watch(updateControllerProvider);
     final localeCode = ref.watch(localeCodeProvider);
+    // Only offer the in-app feedback entry when the layer is actually mounted.
+    final feedbackEnabled = ref.watch(feedbackServiceConfigProvider) != null;
     final downloadNetworkOptions = <String>[
       context.l10n.downloadWifiOnly,
       context.l10n.downloadAnyNetwork,
@@ -321,6 +324,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       : null,
                   onTap: _checkForUpdates,
                 ),
+                if (feedbackEnabled) ...<Widget>[
+                  _buildDivider(),
+                  _buildActionTile(
+                    icon: Icons.feedback_outlined,
+                    iconColor: const Color(0xFFFF9F0A),
+                    title: context.l10n.feedbackEntry,
+                    // Same capture entry as the floating orb: screenshot the
+                    // current viewport, then open the panel.
+                    onTap: () =>
+                        ref.read(feedbackControllerProvider).captureAndOpen(),
+                  ),
+                ],
               ]),
               const SizedBox(height: 36),
             ],
