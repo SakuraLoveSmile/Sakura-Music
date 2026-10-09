@@ -608,21 +608,34 @@ class _FeaturedHeroCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Pulse Wave / Play Button
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
+                  // Shuffle / Refresh Button
+                  Tooltip(
+                    message: context.l10n.refreshBatch,
+                    child: Material(
                       color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
+                      shape: CircleBorder(
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.graphic_eq_rounded,
-                      color: Colors.white,
-                      size: 20,
+                      child: InkWell(
+                        key: const Key('daily-recommend-shuffle-button'),
+                        customBorder: const CircleBorder(),
+                        onTap: () {
+                          ref
+                              .read(dailyRecommendSongsProvider.notifier)
+                              .shuffle();
+                        },
+                        child: const SizedBox(
+                          width: 42,
+                          height: 42,
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
