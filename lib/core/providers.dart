@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
-
+import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
@@ -254,49 +256,312 @@ final randomSongsProvider = FutureProvider<List<Song>>((ref) {
   return client.getRandomSongs(size: 12);
 });
 
-final dailyRecommendSongsProvider = FutureProvider<List<Song>>((ref) async {
-  final server = ref.watch(activeServerProvider);
-  if (server == null) {
-    return const <Song>[];
-  }
-  final client = ref.watch(activeSubsonicClientProvider);
-  if (client == null) {
-    return const <Song>[];
-  }
-  // Local date key. The cached recommendation is stable for the whole day;
-  // the next calendar day overwrites it on first load.
-  final now = DateTime.now();
-  final date =
-      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  final database = ref.watch(databaseProvider);
+class DailyRecommendCacheState {
+  const DailyRecommendCacheState({
+    required this.date,
+    required this.generation,
+  });
 
-  final cached = await database.getDailyRecommend(server.id, date);
-  if (cached != null && cached.songsJson.isNotEmpty) {
-    try {
-      final decoded = jsonDecode(cached.songsJson);
-      if (decoded is List) {
-        return <Song>[
-          for (final entry in decoded)
-            Song.fromJson(entry as Map<String, dynamic>),
-        ];
-      }
-    } catch (_) {
-      // Corrupted cache: fall through and refresh from the server.
+  final String date;
+  final int generation;
+}
+
+class _DatabaseCacheState {
+  final Map<int, DailyRecommendCacheState> committed =
+      <int, DailyRecommendCacheState>{};
+  final Map<int, Future<void>> writeQueues = <int, Future<void>>{};
+}
+
+class DailyRecommendCacheCoordinator {
+  static final Expando<_DatabaseCacheState> _coordinators =
+      Expando<_DatabaseCacheState>();
+  static _DatabaseCacheState? _lastUsedState;
+
+  static _DatabaseCacheState _stateFor(AppDatabase? database) {
+    if (database != null) {
+      final state = _coordinators[database] ??= _DatabaseCacheState();
+      _lastUsedState = state;
+      return state;
+    }
+    return _lastUsedState ??= _DatabaseCacheState();
+  }
+
+  @visibleForTesting
+  static void reset([AppDatabase? database]) {
+    if (database != null) {
+      final state = _coordinators[database];
+      state?.committed.clear();
+      state?.writeQueues.clear();
+    } else {
+      _lastUsedState?.committed.clear();
+      _lastUsedState?.writeQueues.clear();
+      _lastUsedState = null;
     }
   }
 
-  final songs = await client.getRandomSongs(size: 20);
-  try {
-    await database.upsertDailyRecommend(
-      server.id,
-      date,
-      jsonEncode(songs.map((song) => song.toJson()).toList(growable: false)),
-    );
-  } catch (_) {
-    // Caching is best effort; the in-memory list is still returned.
+  @visibleForTesting
+  static DailyRecommendCacheState? getCommittedState(
+    int serverId, {
+    AppDatabase? database,
+  }) => _stateFor(database).committed[serverId];
+
+  static void markBaseline({
+    AppDatabase? database,
+    required int serverId,
+    required String date,
+  }) {
+    final state = _stateFor(database);
+    final current = state.committed[serverId];
+    if (current == null || date.compareTo(current.date) > 0) {
+      state.committed[serverId] = DailyRecommendCacheState(
+        date: date,
+        generation: 0,
+      );
+    }
   }
-  return songs;
-});
+
+  /// Enqueues a read after any pending writes for the given database and serverId.
+  static Future<DailyRecommend?> readCache({
+    required AppDatabase database,
+    required int serverId,
+    required String date,
+  }) {
+    final state = _stateFor(database);
+    final previous = state.writeQueues[serverId] ?? Future<void>.value();
+    return previous.then((_) => database.getDailyRecommend(serverId, date));
+  }
+
+  static Future<void> upsert({
+    required AppDatabase database,
+    required int serverId,
+    required String date,
+    required int generation,
+    required String songsJson,
+  }) {
+    final state = _stateFor(database);
+    final previous = state.writeQueues[serverId] ?? Future<void>.value();
+    final completer = Completer<void>();
+    state.writeQueues[serverId] = completer.future;
+
+    return previous.then((_) async {
+      try {
+        final current = state.committed[serverId];
+        if (current != null) {
+          final dateCmp = date.compareTo(current.date);
+          if (dateCmp < 0) {
+            // Stale date: do not overwrite newer date cache.
+            return;
+          }
+          if (dateCmp == 0 && generation < current.generation) {
+            // Stale generation on same date: do not overwrite newer generation.
+            return;
+          }
+        }
+
+        await database.upsertDailyRecommend(serverId, date, songsJson);
+        state.committed[serverId] = DailyRecommendCacheState(
+          date: date,
+          generation: generation,
+        );
+      } catch (_) {
+        // Best-effort write
+      } finally {
+        completer.complete();
+      }
+    });
+  }
+}
+
+class DailyRecommendSongsNotifier extends AsyncNotifier<List<Song>> {
+  DailyRecommendSongsNotifier([Random? random]) : _random = random ?? Random();
+
+  int _generation = 0;
+  int? _activeShuffleTicket;
+  int? _activeServerId;
+  bool _disposed = false;
+  final Random _random;
+
+  @visibleForTesting
+  int get generation => _generation;
+
+  @visibleForTesting
+  bool get isShuffling => _activeShuffleTicket != null;
+
+  String _formatTodayDate([DateTime? now]) {
+    final time = now ?? DateTime.now();
+    return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Future<List<Song>> build() async {
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+    });
+
+    _generation++;
+    final currentGen = _generation;
+
+    final server = ref.watch(activeServerProvider);
+    if (server == null) {
+      _activeServerId = null;
+      return const <Song>[];
+    }
+    _activeServerId = server.id;
+
+    final client = ref.watch(activeSubsonicClientProvider);
+    if (client == null) {
+      return const <Song>[];
+    }
+
+    final date = _formatTodayDate();
+    final database = ref.watch(databaseProvider);
+
+    try {
+      final cached = await DailyRecommendCacheCoordinator.readCache(
+        database: database,
+        serverId: server.id,
+        date: date,
+      );
+      if (_disposed ||
+          currentGen != _generation ||
+          _activeServerId != server.id) {
+        return state.asData?.value ?? const <Song>[];
+      }
+
+      if (cached != null && cached.songsJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(cached.songsJson);
+          if (decoded is List) {
+            final cachedSongs = <Song>[
+              for (final entry in decoded)
+                Song.fromJson(entry as Map<String, dynamic>),
+            ];
+            if (cachedSongs.isNotEmpty) {
+              DailyRecommendCacheCoordinator.markBaseline(
+                database: database,
+                serverId: server.id,
+                date: date,
+              );
+              return cachedSongs;
+            }
+          }
+        } catch (_) {
+          // Corrupted cache: fall through and refresh from the server.
+        }
+      }
+    } catch (_) {
+      // Database read error: fall through and refresh from server.
+    }
+
+    try {
+      final songs = await client.getRandomSongs(size: 20);
+      if (songs.isNotEmpty) {
+        await DailyRecommendCacheCoordinator.upsert(
+          database: database,
+          serverId: server.id,
+          date: date,
+          generation: currentGen,
+          songsJson: jsonEncode(
+            songs.map((song) => song.toJson()).toList(growable: false),
+          ),
+        );
+      }
+      if (_disposed ||
+          currentGen != _generation ||
+          _activeServerId != server.id) {
+        return state.asData?.value ?? const <Song>[];
+      }
+      return songs;
+    } catch (_) {
+      // Fallback: return empty list on build error
+      return const <Song>[];
+    }
+  }
+
+  Future<void> shuffle() async {
+    if (_activeShuffleTicket != null) {
+      return;
+    }
+
+    final server = ref.read(activeServerProvider);
+    final client = ref.read(activeSubsonicClientProvider);
+    final database = ref.read(databaseProvider);
+    if (server == null || client == null) {
+      return;
+    }
+
+    final ticket = ++_generation;
+    _activeShuffleTicket = ticket;
+    final targetServerId = server.id;
+    final date = _formatTodayDate();
+
+    try {
+      final songs = await client.getRandomSongs(size: 20);
+
+      if (songs.isEmpty) {
+        return;
+      }
+
+      final currentSongs = state.asData?.value ?? const <Song>[];
+      final currentFirstId = currentSongs.firstOrNull?.id;
+      final adjusted = List<Song>.from(songs);
+
+      if (currentFirstId != null && adjusted.isNotEmpty) {
+        final differentIndices = <int>[];
+        for (var i = 0; i < adjusted.length; i++) {
+          if (adjusted[i].id != currentFirstId) {
+            differentIndices.add(i);
+          }
+        }
+
+        // If every song in the response is identical to current first song (e.g. [A, A]),
+        // retain existing batch and do not overwrite cache.
+        if (differentIndices.isEmpty) {
+          return;
+        }
+
+        if (adjusted.first.id == currentFirstId) {
+          final chosenIndex =
+              differentIndices[_random.nextInt(differentIndices.length)];
+          final chosenSong = adjusted.removeAt(chosenIndex);
+          adjusted.insert(0, chosenSong);
+        }
+      }
+
+      final isCurrentForUi =
+          !_disposed &&
+          ticket == _generation &&
+          _activeServerId == targetServerId &&
+          ref.read(activeServerProvider)?.id == targetServerId;
+
+      if (isCurrentForUi) {
+        state = AsyncData<List<Song>>(List<Song>.unmodifiable(adjusted));
+      }
+
+      await DailyRecommendCacheCoordinator.upsert(
+        database: database,
+        serverId: targetServerId,
+        date: date,
+        generation: ticket,
+        songsJson: jsonEncode(
+          adjusted.map((song) => song.toJson()).toList(growable: false),
+        ),
+      );
+    } catch (_) {
+      // Retain existing state without throwing
+    } finally {
+      if (_activeShuffleTicket == ticket) {
+        _activeShuffleTicket = null;
+      }
+    }
+  }
+}
+
+final dailyRecommendSongsProvider =
+    AsyncNotifierProvider<DailyRecommendSongsNotifier, List<Song>>(
+      DailyRecommendSongsNotifier.new,
+    );
 
 final songsListProvider = FutureProvider<List<Song>>((ref) {
   final client = ref.watch(activeSubsonicClientProvider);
