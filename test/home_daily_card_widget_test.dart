@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sakuramusic/audio/audio_player_provider.dart';
@@ -27,6 +28,60 @@ import 'package:subsonic_api/subsonic_api.dart';
 /// the widget tree stays deterministic; the last one wires the REAL notifier to
 /// an isolated data source to prove production refresh logic and the UI meet.
 void main() {
+  for (final key in <LogicalKeyboardKey>[
+    LogicalKeyboardKey.space,
+    LogicalKeyboardKey.enter,
+  ]) {
+    testWidgets(
+      'keyboard ${key.keyLabel} refreshes through the real notifier',
+      (tester) async {
+        final client = _StubSubsonicClient();
+        final harness = await _pumpHome(
+          tester,
+          client: client,
+          useRealNotifier: true,
+        );
+        final icon = find.descendant(
+          of: _shuffleButton(),
+          matching: find.byIcon(Icons.refresh_rounded),
+        );
+        Focus.of(tester.element(icon)).requestFocus();
+        await tester.pump();
+
+        await tester.sendKeyEvent(key);
+        await tester.pumpAndSettle();
+
+        expect(client.randomSongsCalls, <int>[20]);
+        expect(find.text('Real Song One'), findsOneWidget);
+        expect(harness.player.playbackCommands, isEmpty);
+      },
+    );
+  }
+
+  for (final failure in <bool>[false, true]) {
+    testWidgets(
+      '${failure ? 'failed' : 'empty'} real response preserves the card and player',
+      (tester) async {
+        final client = _StubSubsonicClient(
+          response: const <Song>[],
+          shouldThrow: failure,
+        );
+        final harness = await _pumpHome(
+          tester,
+          client: client,
+          useRealNotifier: true,
+        );
+
+        await tester.tap(_shuffleButton());
+        await tester.pumpAndSettle();
+
+        expect(client.randomSongsCalls, <int>[20]);
+        expect(find.text('Old Song One'), findsOneWidget);
+        expect(harness.player.playbackCommands, isEmpty);
+      },
+    );
+  }
+
   testWidgets(
     'the round button shuffles a fresh batch without starting playback',
     (tester) async {
@@ -51,45 +106,44 @@ void main() {
     },
   );
 
-  testWidgets(
-    'the button is independently keyboard/semantics activatable',
-    (tester) async {
-      final harness = await _pumpHome(tester);
+  testWidgets('the button is independently keyboard/semantics activatable', (
+    tester,
+  ) async {
+    final harness = await _pumpHome(tester);
 
-      // The card's button carries its own tooltip — a semantics entry separate
-      // from the card body — so assistive tech and long-press users get a
-      // labelled refresh affordance rather than only the play action.
-      final button = _shuffleButton();
-      expect(button, findsOneWidget);
-      final tooltip = tester.widget<Tooltip>(
-        find.descendant(of: button, matching: find.byType(Tooltip)),
-      );
-      expect(tooltip.message, isNotEmpty);
+    // The card's button carries its own tooltip — a semantics entry separate
+    // from the card body — so assistive tech and long-press users get a
+    // labelled refresh affordance rather than only the play action.
+    final button = _shuffleButton();
+    expect(button, findsOneWidget);
+    final tooltip = tester.widget<Tooltip>(
+      find.descendant(of: button, matching: find.byType(Tooltip)),
+    );
+    expect(tooltip.message, isNotEmpty);
 
-      // Keyboard/assistive activation: the button wraps its own Focus and maps
-      // the activation intents, so dispatching the same intent a hardware Enter
-      // key or an accessibility tap sends must refresh the batch — and must
-      // never start playback. (Invoking it on the card BODY plays instead,
-      // which is what makes this an independent activation entry point.)
-      final inkWell = find.descendant(of: button, matching: find.byType(InkWell));
-      expect(inkWell, findsOneWidget);
-      final buttonFocus = find
-          .descendant(of: inkWell, matching: find.byType(Focus))
-          .first;
-      final focus = tester.widget<Focus>(buttonFocus);
-      expect(
-        focus.canRequestFocus,
-        isTrue,
-        reason: 'the button must be reachable by keyboard focus',
-      );
-      Actions.invoke(tester.element(buttonFocus), const ActivateIntent());
-      await tester.pumpAndSettle();
-      expect(harness.dailyNotifier.shuffleCalls, 1);
-      expect(find.text('New Song One'), findsOneWidget);
-      expect(harness.player.playbackCommands, isEmpty);
-      expect(harness.player.setQueueCalls, isEmpty);
-    },
-  );
+    // Keyboard/assistive activation: the button wraps its own Focus and maps
+    // the activation intents, so dispatching the same intent a hardware Enter
+    // key or an accessibility tap sends must refresh the batch — and must
+    // never start playback. (Invoking it on the card BODY plays instead,
+    // which is what makes this an independent activation entry point.)
+    final inkWell = find.descendant(of: button, matching: find.byType(InkWell));
+    expect(inkWell, findsOneWidget);
+    final buttonFocus = find
+        .descendant(of: inkWell, matching: find.byType(Focus))
+        .first;
+    final focus = tester.widget<Focus>(buttonFocus);
+    expect(
+      focus.canRequestFocus,
+      isTrue,
+      reason: 'the button must be reachable by keyboard focus',
+    );
+    Actions.invoke(tester.element(buttonFocus), const ActivateIntent());
+    await tester.pumpAndSettle();
+    expect(harness.dailyNotifier.shuffleCalls, 1);
+    expect(find.text('New Song One'), findsOneWidget);
+    expect(harness.player.playbackCommands, isEmpty);
+    expect(harness.player.setQueueCalls, isEmpty);
+  });
 
   testWidgets('the card body plays the batch currently shown', (tester) async {
     final harness = await _pumpHome(tester);
@@ -259,7 +313,6 @@ String _todayKey() {
       '${now.day.toString().padLeft(2, '0')}';
 }
 
-
 /// The card's round shuffle button.
 ///
 /// Located by its stable [Key] so it can never be confused with the separate
@@ -303,22 +356,20 @@ Future<_Harness> _pumpHome(
     await database.upsertDailyRecommend(
       server.id,
       _todayKey(),
-      jsonEncode(
-        <Map<String, dynamic>>[
-          const Song(
-            id: 'old-1',
-            title: 'Old Song One',
-            artist: 'Artist',
-            album: 'Album',
-          ).toJson(),
-          const Song(
-            id: 'old-2',
-            title: 'Old Song Two',
-            artist: 'Artist',
-            album: 'Album',
-          ).toJson(),
-        ],
-      ),
+      jsonEncode(<Map<String, dynamic>>[
+        const Song(
+          id: 'old-1',
+          title: 'Old Song One',
+          artist: 'Artist',
+          album: 'Album',
+        ).toJson(),
+        const Song(
+          id: 'old-2',
+          title: 'Old Song Two',
+          artist: 'Artist',
+          album: 'Album',
+        ).toJson(),
+      ]),
     );
   }
 
@@ -534,7 +585,7 @@ class _RecordingPlayerService implements AudioPlayerService {
 /// widget test's fake-async clock cannot drive. Every call is recorded so the
 /// test can assert the refresh really bypassed the cache and asked for 20.
 class _StubSubsonicClient extends SubsonicClient {
-  _StubSubsonicClient()
+  _StubSubsonicClient({this.response = batch, this.shouldThrow = false})
     : super(
         baseUrl: 'http://127.0.0.1:4533',
         username: 'listener',
@@ -542,15 +593,31 @@ class _StubSubsonicClient extends SubsonicClient {
       );
 
   static const batch = <Song>[
-    Song(id: 'real-1', title: 'Real Song One', artist: 'Artist', album: 'Album'),
-    Song(id: 'real-2', title: 'Real Song Two', artist: 'Artist', album: 'Album'),
+    Song(
+      id: 'real-1',
+      title: 'Real Song One',
+      artist: 'Artist',
+      album: 'Album',
+    ),
+    Song(
+      id: 'real-2',
+      title: 'Real Song Two',
+      artist: 'Artist',
+      album: 'Album',
+    ),
   ];
+
+  final List<Song> response;
+  final bool shouldThrow;
 
   final List<int> randomSongsCalls = <int>[];
 
   @override
   Future<List<Song>> getRandomSongs({int size = 10}) async {
     randomSongsCalls.add(size);
-    return batch;
+    if (shouldThrow) {
+      throw StateError('Isolated shuffle failure');
+    }
+    return response;
   }
 }

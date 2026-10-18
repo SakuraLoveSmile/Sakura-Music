@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,883 +10,970 @@ import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
-/// Regression coverage for the home daily-recommendation card's "shuffle"
-/// button (the round button on the right edge of the card).
-///
-/// Tapping it must fetch a fresh random batch, bypassing today's cache, and
-/// refresh the card without ever starting playback — the playback wiring is
-/// deliberately absent from the provider. A failed request keeps the previous
-/// batch instead of surfacing an error.
+class _FakeSubsonicClient extends Fake implements SubsonicClient {
+  _FakeSubsonicClient({this.getRandomSongsHandler});
 
-String _ok([Map<String, dynamic>? body]) {
-  return jsonEncode(<String, dynamic>{
-    'subsonic-response': <String, dynamic>{'status': 'ok', ...?body},
-  });
-}
+  Future<List<Song>> Function({
+    int? size,
+    String? genre,
+    String? fromYear,
+    String? toYear,
+    String? musicFolderId,
+  })?
+  getRandomSongsHandler;
 
-String _randomSongsBody(List<Song> songs) {
-  return _ok(<String, dynamic>{
-    'randomSongs': <String, dynamic>{
-      'song': <Map<String, dynamic>>[for (final song in songs) song.toJson()],
-    },
-  });
-}
+  int getRandomSongsCalls = 0;
 
-Song _song(String id) => Song(id: id, title: 'Song $id');
-
-String _dateKey(DateTime now) {
-  return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-}
-
-/// Starts a loopback HTTP server backed by [handler]; the returned base URL
-/// feeds a [SubsonicClient].
-Future<(HttpServer, String)> _startServer(
-  Future<void> Function(HttpRequest request) handler,
-) async {
-  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-  server.listen((request) async {
-    try {
-      await handler(request);
-    } catch (_) {
-      try {
-        await request.response.close();
-      } catch (_) {}
+  @override
+  Future<List<Song>> getRandomSongs({
+    int? size,
+    String? genre,
+    String? fromYear,
+    String? toYear,
+    String? musicFolderId,
+  }) async {
+    getRandomSongsCalls++;
+    if (getRandomSongsHandler != null) {
+      return getRandomSongsHandler!(
+        size: size,
+        genre: genre,
+        fromYear: fromYear,
+        toYear: toYear,
+        musicFolderId: musicFolderId,
+      );
     }
-  });
-  return (server, 'http://127.0.0.1:${server.port}');
-}
-
-Future<Server> _insertServer(AppDatabase database, String baseUrl) async {
-  final serverId = await database.insertServer(
-    ServersCompanion.insert(
-      name: 'Navidrome',
-      baseUrl: baseUrl,
-      username: 'listener',
-      password: '',
-    ),
-  );
-  return (await database.getServer(serverId))!;
-}
-
-Future<void> _seedTodayCache(
-  AppDatabase database,
-  int serverId,
-  List<Song> songs,
-) {
-  return database.upsertDailyRecommend(
-    serverId,
-    _dateKey(DateTime.now()),
-    jsonEncode(songs.map((song) => song.toJson()).toList(growable: false)),
-  );
-}
-
-Future<List<String>> _cachedSongIds(AppDatabase database, int serverId) async {
-  final cached = await database.getDailyRecommend(
-    serverId,
-    _dateKey(DateTime.now()),
-  );
-  final decoded = jsonDecode(cached!.songsJson) as List<dynamic>;
-  return <String>[
-    for (final entry in decoded)
-      (entry as Map<String, dynamic>)['id'] as String,
-  ];
-}
-
-ProviderContainer _containerFor(
-  AppDatabase database,
-  Server server,
-  String baseUrl,
-) {
-  return ProviderContainer(
-    overrides: [
-      databaseProvider.overrideWithValue(database),
-      activeServerProvider.overrideWithValue(server),
-      activeSubsonicClientProvider.overrideWithValue(
-        SubsonicClient(
-          baseUrl: baseUrl,
-          username: 'listener',
-          password: 'password',
-        ),
-      ),
-    ],
-  );
-}
-
-/// A loopback Subsonic endpoint whose responses stay pending until the test
-/// releases them, so in-flight requests can be driven with explicit gates
-/// instead of fixed sleeps.
-class _GatedServer {
-  _GatedServer._(this.server, this.baseUrl);
-
-  final HttpServer server;
-  final String baseUrl;
-
-  final List<Uri> requests = <Uri>[];
-  final List<Completer<void>> _arrived = <Completer<void>>[];
-  final List<Completer<List<Song>>> _pending = <Completer<List<Song>>>[];
-
-  static Future<_GatedServer> start() async {
-    late final _GatedServer gated;
-    final (server, baseUrl) = await _startServer((request) async {
-      final index = gated.requests.length;
-      gated.requests.add(request.uri);
-      while (gated._arrived.length <= index) {
-        gated._arrived.add(Completer<void>());
-      }
-      if (!gated._arrived[index].isCompleted) {
-        gated._arrived[index].complete();
-      }
-      final pending = Completer<List<Song>>();
-      gated._pending.add(pending);
-      final songs = await pending.future;
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(_randomSongsBody(songs));
-      await request.response.close();
-    });
-    gated = _GatedServer._(server, baseUrl);
-    return gated;
+    return <Song>[
+      const Song(id: 'song-default-1', title: 'Song 1', artist: 'Artist 1'),
+      const Song(id: 'song-default-2', title: 'Song 2', artist: 'Artist 2'),
+    ];
   }
+}
 
-  /// Completes once the [index]-th (0-based) request reached the server.
-  Future<void> requestArrived(int index) {
-    while (_arrived.length <= index) {
-      _arrived.add(Completer<void>());
-    }
-    return _arrived[index].future;
+class _TestServerNotifier extends Notifier<Server?> {
+  _TestServerNotifier(this._initial);
+  final Server? _initial;
+
+  @override
+  Server? build() => _initial;
+
+  void setServer(Server? server) {
+    state = server;
   }
-
-  /// Answers the [index]-th (0-based) request with [songs].
-  void release(int index, List<Song> songs) => _pending[index].complete(songs);
 }
 
 void main() {
-  test(
-    'shuffle bypasses the daily cache, refreshes the card and updates it',
-    () async {
-      final requests = <Uri>[];
-      final (httpServer, baseUrl) = await _startServer((request) async {
-        requests.add(request.uri);
-        request.response
-          ..headers.contentType = ContentType.json
-          ..write(_randomSongsBody(<Song>[_song('song-21'), _song('song-22')]));
-        await request.response.close();
-      });
-      addTearDown(() => httpServer.close(force: true));
+  late AppDatabase database;
+  late Server server1;
+  late Server server2;
 
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
+  setUp(() async {
+    DailyRecommendCacheCoordinator.reset();
+    database = AppDatabase(NativeDatabase.memory());
+    final id1 = await database.insertServer(
+      ServersCompanion.insert(
+        name: 'Server 1',
+        baseUrl: 'https://server1.example.com',
+        username: 'user1',
+        password: 'pwd',
+      ),
+    );
+    final id2 = await database.insertServer(
+      ServersCompanion.insert(
+        name: 'Server 2',
+        baseUrl: 'https://server2.example.com',
+        username: 'user2',
+        password: 'pwd',
+      ),
+    );
+    server1 = (await database.getServer(id1))!;
+    server2 = (await database.getServer(id2))!;
+  });
 
-      final server = await _insertServer(database, baseUrl);
-      await _seedTodayCache(database, server.id, <Song>[
-        _song('song-1'),
-        _song('song-2'),
-      ]);
+  tearDown(() async {
+    DailyRecommendCacheCoordinator.reset(database);
+    DailyRecommendCacheCoordinator.reset();
+    await database.close();
+  });
 
-      final container = _containerFor(database, server, baseUrl);
+  group('DailyRecommendSongsNotifier - Initial build & cache baseline', () {
+    test('loads cached songs on startup without invoking client', () async {
+      final now = DateTime.now();
+      final date =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      const cachedSongs = <Song>[
+        Song(id: 'cached-1', title: 'Cached Song 1', artist: 'Cached Artist'),
+        Song(id: 'cached-2', title: 'Cached Song 2', artist: 'Cached Artist'),
+      ];
+      await database.upsertDailyRecommend(
+        server1.id,
+        date,
+        jsonEncode(cachedSongs.map((s) => s.toJson()).toList()),
+      );
+
+      final client = _FakeSubsonicClient();
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          activeServerProvider.overrideWith((ref) => server1),
+          activeSubsonicClientProvider.overrideWith((ref) => client),
+        ],
+      );
       addTearDown(container.dispose);
 
-      // The card starts from today's cached batch without hitting the server.
-      final initial = await container.read(dailyRecommendSongsProvider.future);
-      expect(initial.map((song) => song.id).toList(), <String>[
-        'song-1',
-        'song-2',
-      ]);
-      expect(requests, isEmpty);
+      final result = await container.read(dailyRecommendSongsProvider.future);
+      expect(result.length, 2);
+      expect(result.first.id, 'cached-1');
+      expect(client.getRandomSongsCalls, 0);
 
-      await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+      final committed = DailyRecommendCacheCoordinator.getCommittedState(
+        server1.id,
+        database: database,
+      );
+      expect(committed?.date, date);
+      expect(committed?.generation, greaterThan(0));
+    });
 
-      final state = container.read(dailyRecommendSongsProvider);
-      expect(state.hasError, isFalse);
-      expect(state.value!.map((song) => song.id).toList(), <String>[
-        'song-21',
-        'song-22',
-      ]);
-      // The fresh batch replaces today's cache so the card stays stable.
-      expect(await _cachedSongIds(database, server.id), <String>[
-        'song-21',
-        'song-22',
-      ]);
-      expect(requests, hasLength(1));
-      expect(requests.single.path, '/rest/getRandomSongs');
-      expect(requests.single.queryParameters['size'], '20');
+    test('fetches and caches when database has no existing cache', () async {
+      final client = _FakeSubsonicClient(
+        getRandomSongsHandler:
+            ({fromYear, genre, musicFolderId, size, toYear}) async {
+              return const <Song>[
+                Song(id: 'net-1', title: 'Network Song 1', artist: 'Artist 1'),
+                Song(id: 'net-2', title: 'Network Song 2', artist: 'Artist 2'),
+              ];
+            },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          activeServerProvider.overrideWith((ref) => server1),
+          activeSubsonicClientProvider.overrideWith((ref) => client),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(dailyRecommendSongsProvider.future);
+      expect(result.length, 2);
+      expect(result.first.id, 'net-1');
+      expect(client.getRandomSongsCalls, 1);
+
+      final now = DateTime.now();
+      final date =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final cachedRow = await database.getDailyRecommend(server1.id, date);
+      expect(cachedRow, isNotNull);
+      final decoded = jsonDecode(cachedRow!.songsJson) as List;
+      expect(decoded.length, 2);
+      expect(decoded[0]['id'], 'net-1');
+    });
+
+    test('handles empty initial network fetch gracefully', () async {
+      final client = _FakeSubsonicClient(
+        getRandomSongsHandler:
+            ({fromYear, genre, musicFolderId, size, toYear}) async {
+              return const <Song>[];
+            },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          activeServerProvider.overrideWith((ref) => server1),
+          activeSubsonicClientProvider.overrideWith((ref) => client),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final result = await container.read(dailyRecommendSongsProvider.future);
+      expect(result, isEmpty);
+    });
+
+    test(
+      'handles initial network failure gracefully without throwing',
+      () async {
+        final client = _FakeSubsonicClient(
+          getRandomSongsHandler:
+              ({fromYear, genre, musicFolderId, size, toYear}) async {
+                throw Exception('Subsonic server unreachable');
+              },
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            activeServerProvider.overrideWith((ref) => server1),
+            activeSubsonicClientProvider.overrideWith((ref) => client),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await container.read(dailyRecommendSongsProvider.future);
+        expect(result, isEmpty);
+      },
+    );
+
+    test(
+      'recovers from corrupted database cache by falling back to network fetch',
+      () async {
+        final now = DateTime.now();
+        final date =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        await database.upsertDailyRecommend(
+          server1.id,
+          date,
+          'invalid json string',
+        );
+
+        final client = _FakeSubsonicClient(
+          getRandomSongsHandler:
+              ({fromYear, genre, musicFolderId, size, toYear}) async {
+                return const <Song>[
+                  Song(id: 'recovered-1', title: 'Recovered Song'),
+                ];
+              },
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            activeServerProvider.overrideWith((ref) => server1),
+            activeSubsonicClientProvider.overrideWith((ref) => client),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await container.read(dailyRecommendSongsProvider.future);
+        expect(result.first.id, 'recovered-1');
+        expect(client.getRandomSongsCalls, 1);
+      },
+    );
+  });
+
+  group(
+    'DailyRecommendSongsNotifier - Shuffle & Candidate replacement & Batch retention',
+    () {
+      test(
+        'rotates different song to index 0 when new batch starts with the same song',
+        () async {
+          var callCount = 0;
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  callCount++;
+                  if (callCount == 1) {
+                    return const <Song>[
+                      Song(id: 'song-A', title: 'Song A'),
+                      Song(id: 'song-B', title: 'Song B'),
+                    ];
+                  } else {
+                    return const <Song>[
+                      Song(id: 'song-A', title: 'Song A'),
+                      Song(id: 'song-C', title: 'Song C'),
+                      Song(id: 'song-D', title: 'Song D'),
+                    ];
+                  }
+                },
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          final initial = await container.read(
+            dailyRecommendSongsProvider.future,
+          );
+          expect(initial.first.id, 'song-A');
+
+          await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+
+          final updated = container.read(dailyRecommendSongsProvider).value!;
+          expect(updated.length, 3);
+          expect(updated[0].id, isNot('song-A'));
+          expect(['song-C', 'song-D'], contains(updated[0].id));
+          expect(
+            updated.map((s) => s.id),
+            containsAll(['song-A', 'song-C', 'song-D']),
+          );
+        },
+      );
+
+      test(
+        'preserves order when new batch first song is already different',
+        () async {
+          var callCount = 0;
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  callCount++;
+                  if (callCount == 1) {
+                    return const <Song>[
+                      Song(id: 'song-1', title: 'Song 1'),
+                      Song(id: 'song-2', title: 'Song 2'),
+                    ];
+                  } else {
+                    return const <Song>[
+                      Song(id: 'song-3', title: 'Song 3'),
+                      Song(id: 'song-4', title: 'Song 4'),
+                    ];
+                  }
+                },
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await container.read(dailyRecommendSongsProvider.future);
+          await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+
+          final updated = container.read(dailyRecommendSongsProvider).value!;
+          expect(updated.first.id, 'song-3');
+          expect(updated[1].id, 'song-4');
+        },
+      );
+
+      test(
+        'preserves old batch and old cache when response only contains current song ID',
+        () async {
+          var callCount = 0;
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  callCount++;
+                  if (callCount == 1) {
+                    return const <Song>[
+                      Song(id: 'song-A', title: 'Song A Initial'),
+                      Song(id: 'song-B', title: 'Song B Initial'),
+                    ];
+                  } else {
+                    return const <Song>[
+                      Song(id: 'song-A', title: 'Song A Duplicate 1'),
+                      Song(id: 'song-A', title: 'Song A Duplicate 2'),
+                    ];
+                  }
+                },
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          final initial = await container.read(
+            dailyRecommendSongsProvider.future,
+          );
+          expect(initial.first.id, 'song-A');
+
+          await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+
+          final current = container.read(dailyRecommendSongsProvider).value!;
+          expect(current.length, 2);
+          expect(current[0].title, 'Song A Initial');
+          expect(current[1].title, 'Song B Initial');
+        },
+      );
+
+      test(
+        'empty network response during shuffle preserves existing card state and cache',
+        () async {
+          var callCount = 0;
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  callCount++;
+                  if (callCount == 1) {
+                    return const <Song>[
+                      Song(id: 'stable-1', title: 'Stable Song 1'),
+                    ];
+                  }
+                  return const <Song>[];
+                },
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await container.read(dailyRecommendSongsProvider.future);
+          await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+
+          final currentState = container.read(dailyRecommendSongsProvider);
+          expect(currentState.value?.first.id, 'stable-1');
+        },
+      );
+
+      test(
+        'network exception during shuffle preserves existing card state',
+        () async {
+          var callCount = 0;
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  callCount++;
+                  if (callCount == 1) {
+                    return const <Song>[
+                      Song(id: 'keep-1', title: 'Keep Song 1'),
+                      Song(id: 'keep-2', title: 'Keep Song 2'),
+                    ];
+                  }
+                  throw Exception('Connection reset by peer');
+                },
+          );
+
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await container.read(dailyRecommendSongsProvider.future);
+          expect(
+            container.read(dailyRecommendSongsProvider).value?.first.id,
+            'keep-1',
+          );
+
+          await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+
+          final currentState = container.read(dailyRecommendSongsProvider);
+          expect(currentState.hasValue, isTrue);
+          expect(currentState.value?.first.id, 'keep-1');
+        },
+      );
+
+      test('shuffle returns safely when server or client is null', () async {
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            activeServerProvider.overrideWith((ref) => null),
+            activeSubsonicClientProvider.overrideWith((ref) => null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container.read(dailyRecommendSongsProvider.notifier).shuffle(),
+          completes,
+        );
+        final result = container.read(dailyRecommendSongsProvider);
+        expect(result.value ?? const <Song>[], isEmpty);
+      });
     },
   );
 
-  test('a failed shuffle keeps the previous batch', () async {
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      request.response.statusCode = HttpStatus.internalServerError;
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
+  group(
+    'DailyRecommendSongsNotifier - Lock ownership & Concurrency superseding',
+    () {
+      test('request lock drops duplicate concurrent shuffle calls', () async {
+        final completer = Completer<List<Song>>();
+        var fetchCalls = 0;
 
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-
-    await container.read(dailyRecommendSongsProvider.future);
-
-    await container.read(dailyRecommendSongsProvider.notifier).shuffle();
-
-    final state = container.read(dailyRecommendSongsProvider);
-    expect(state.hasError, isFalse);
-    expect(state.value!.map((song) => song.id).toList(), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(await _cachedSongIds(database, server.id), <String>[
-      'song-1',
-      'song-2',
-    ]);
-  });
-
-  test('every shuffle bypasses the cache and always asks for size 20', () async {
-    var response = <Song>[_song('song-21'), _song('song-22')];
-    final requests = <Uri>[];
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      requests.add(request.uri);
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(_randomSongsBody(response));
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
-
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-    final notifier = container.read(dailyRecommendSongsProvider.notifier);
-
-    await container.read(dailyRecommendSongsProvider.future);
-    expect(requests, isEmpty, reason: 'the cached batch is served without HTTP');
-
-    await notifier.shuffle();
-    expect(requests, hasLength(1));
-    expect(requests.single.path, '/rest/getRandomSongs');
-    expect(requests.single.queryParameters['size'], '20');
-
-    // A second shuffle must hit the server again: the batch just written to
-    // the cache is never served back to the user as a "fresh" result.
-    response = <Song>[_song('song-31'), _song('song-32')];
-    await notifier.shuffle();
-    expect(requests, hasLength(2), reason: 'shuffle never serves the cache');
-    expect(requests.last.queryParameters['size'], '20');
-    expect(
-      container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toSet(),
-      <String>{'song-31', 'song-32'},
-    );
-  });
-
-  test("a successful shuffle rewrites today's cache for the current server", () async {
-    final requests = <Uri>[];
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      requests.add(request.uri);
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(
-          _randomSongsBody(<Song>[_song('song-1'), _song('song-3')]),
+        final client = _FakeSubsonicClient(
+          getRandomSongsHandler:
+              ({fromYear, genre, musicFolderId, size, toYear}) async {
+                fetchCalls++;
+                if (fetchCalls == 1) {
+                  return const <Song>[
+                    Song(id: 'song-init', title: 'Init Song'),
+                  ];
+                }
+                return completer.future;
+              },
         );
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
 
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-
-    final initial = await container.read(dailyRecommendSongsProvider.future);
-    expect(initial.map((song) => song.id).toList(), <String>[
-      'song-1',
-      'song-2',
-    ]);
-
-    await container.read(dailyRecommendSongsProvider.notifier).shuffle();
-
-    final displayed = container
-        .read(dailyRecommendSongsProvider)
-        .value!
-        .map((song) => song.id)
-        .toList();
-    expect(displayed.first, isNot('song-1'));
-    expect(displayed, <String>['song-3', 'song-1']);
-    expect(await _cachedSongIds(database, server.id), displayed);
-
-    // Re-entering home rebuilds the provider from the cache: it must show the
-    // refreshed order, not revert to the old first song.
-    container.invalidate(dailyRecommendSongsProvider);
-    final reentered = await container.read(dailyRecommendSongsProvider.future);
-    expect(reentered.map((song) => song.id).toList(), displayed);
-    expect(reentered.first.id, isNot('song-1'));
-    expect(requests, hasLength(1), reason: 'the refreshed cache is served');
-  });
-
-  test('rotation moves another response song to the front over many rounds', () async {
-    var displayedFirst = 'song-1';
-    final requests = <Uri>[];
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      requests.add(request.uri);
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(
-          _randomSongsBody(<Song>[
-            _song(displayedFirst),
-            _song('song-other-1'),
-            _song('song-other-2'),
-          ]),
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            activeServerProvider.overrideWith((ref) => server1),
+            activeSubsonicClientProvider.overrideWith((ref) => client),
+          ],
         );
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
+        addTearDown(container.dispose);
 
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
+        await container.read(dailyRecommendSongsProvider.future);
+        expect(fetchCalls, 1);
 
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
+        final notifier = container.read(dailyRecommendSongsProvider.notifier);
 
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-    final notifier = container.read(dailyRecommendSongsProvider.notifier);
-    await container.read(dailyRecommendSongsProvider.future);
+        final f1 = notifier.shuffle();
+        final f2 = notifier.shuffle();
+        final f3 = notifier.shuffle();
+        final f4 = notifier.shuffle();
 
-    for (var round = 0; round < 30; round++) {
-      final before = container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toList();
-      await notifier.shuffle();
-      final after = container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toList();
-      expect(
-        after.first,
-        isNot(before.first),
-        reason: 'round $round: the displayed first song must change',
-      );
-      expect(after, hasLength(3));
-      expect(
-        after.toSet(),
-        <String>{displayedFirst, 'song-other-1', 'song-other-2'},
-        reason: 'round $round: every response song is retained',
-      );
-      displayedFirst = after.first;
-    }
-    expect(requests, hasLength(30));
-  });
+        completer.complete(const <Song>[
+          Song(id: 'song-batch-2', title: 'Batch 2 Song'),
+        ]);
 
-  test('a response of only the displayed song keeps the card and cache', () async {
-    final requests = <Uri>[];
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      requests.add(request.uri);
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(_randomSongsBody(<Song>[_song('song-1')]));
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
+        await Future.wait([f1, f2, f3, f4]);
 
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-    await container.read(dailyRecommendSongsProvider.future);
-
-    await container.read(dailyRecommendSongsProvider.notifier).shuffle();
-
-    final state = container.read(dailyRecommendSongsProvider);
-    expect(state.hasError, isFalse);
-    expect(state.value!.map((song) => song.id).toList(), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(await _cachedSongIds(database, server.id), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(requests, hasLength(1));
-  });
-
-  test('an empty response keeps the card and cache', () async {
-    final requests = <Uri>[];
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      requests.add(request.uri);
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(_randomSongsBody(const <Song>[]));
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
-
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-    await container.read(dailyRecommendSongsProvider.future);
-
-    await container.read(dailyRecommendSongsProvider.notifier).shuffle();
-
-    final state = container.read(dailyRecommendSongsProvider);
-    expect(state.hasError, isFalse);
-    expect(state.value!.map((song) => song.id).toList(), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(await _cachedSongIds(database, server.id), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(requests, hasLength(1));
-  });
-
-  test('a failed shuffle keeps the batch and the cache and never retries', () async {
-    final requests = <Uri>[];
-    final (httpServer, baseUrl) = await _startServer((request) async {
-      requests.add(request.uri);
-      request.response.statusCode = HttpStatus.internalServerError;
-      await request.response.close();
-    });
-    addTearDown(() => httpServer.close(force: true));
-
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, baseUrl);
-    addTearDown(container.dispose);
-    await container.read(dailyRecommendSongsProvider.future);
-
-    await container.read(dailyRecommendSongsProvider.notifier).shuffle();
-
-    final state = container.read(dailyRecommendSongsProvider);
-    expect(state.hasError, isFalse);
-    expect(state.value!.map((song) => song.id).toList(), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(await _cachedSongIds(database, server.id), <String>[
-      'song-1',
-      'song-2',
-    ]);
-    expect(requests, hasLength(1), reason: 'a failure must not be retried');
-  });
-
-  test('repeated taps in flight are ignored and the guard is released after', () async {
-    final gated = await _GatedServer.start();
-    addTearDown(() => gated.server.close(force: true));
-
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final server = await _insertServer(database, gated.baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
-
-    final container = _containerFor(database, server, gated.baseUrl);
-    addTearDown(container.dispose);
-    final notifier = container.read(dailyRecommendSongsProvider.notifier);
-    await container.read(dailyRecommendSongsProvider.future);
-
-    final first = notifier.shuffle();
-    final second = notifier.shuffle();
-    final third = notifier.shuffle();
-    await gated.requestArrived(0);
-    expect(gated.requests, hasLength(1));
-
-    gated.release(0, <Song>[_song('song-21'), _song('song-22')]);
-    await Future.wait(<Future<void>>[first, second, third]);
-    expect(
-      gated.requests,
-      hasLength(1),
-      reason: 'repeated taps must not reach the server',
-    );
-    expect(
-      container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toSet(),
-      <String>{'song-21', 'song-22'},
-    );
-
-    // The in-flight guard is released once the request finishes.
-    final fourth = notifier.shuffle();
-    await gated.requestArrived(1);
-    gated.release(1, <Song>[_song('song-31'), _song('song-32')]);
-    await fourth;
-    expect(gated.requests, hasLength(2));
-    expect(
-      container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toSet(),
-      <String>{'song-31', 'song-32'},
-    );
-  });
-
-  test('a stale library response cannot touch the newly selected library', () async {
-    final gatedA = await _GatedServer.start();
-    addTearDown(() => gatedA.server.close(force: true));
-
-    final requestsB = <Uri>[];
-    final (httpServerB, baseUrlB) = await _startServer((request) async {
-      requestsB.add(request.uri);
-      request.response
-        ..headers.contentType = ContentType.json
-        ..write(
-          _randomSongsBody(<Song>[
-            _song('b-1'),
-            _song('b-2'),
-            _song('b-3'),
-          ]),
+        expect(fetchCalls, 2);
+        expect(
+          container.read(dailyRecommendSongsProvider).value?.first.id,
+          'song-batch-2',
         );
-      await request.response.close();
-    });
-    addTearDown(() => httpServerB.close(force: true));
-
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
-
-    final serverA = await _insertServer(database, gatedA.baseUrl);
-    final serverB = await _insertServer(database, baseUrlB);
-    await _seedTodayCache(database, serverA.id, <Song>[
-      _song('a-1'),
-      _song('a-2'),
-    ]);
-    await _seedTodayCache(database, serverB.id, <Song>[
-      _song('b-1'),
-      _song('b-2'),
-    ]);
-
-    final container = ProviderContainer(
-      overrides: [
-        databaseProvider.overrideWithValue(database),
-        serversProvider.overrideWithValue(
-          AsyncValue.data(<Server>[serverA, serverB]),
-        ),
-        activeSubsonicClientProvider.overrideWith((ref) {
-          final server = ref.watch(activeServerProvider);
-          if (server == null) {
-            return null;
-          }
-          return SubsonicClient(
-            baseUrl: server.baseUrl,
-            username: 'listener',
-            password: 'password',
+      });
+      test(
+        'lock ownership ensures only the active ticket holder releases the lock',
+        () async {
+          final completer = Completer<List<Song>>();
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  return completer.future;
+                },
           );
-        }),
-      ],
-    );
-    addTearDown(container.dispose);
-    container.read(selectedServerIdProvider.notifier).state = serverA.id;
 
-    final notifier = container.read(dailyRecommendSongsProvider.notifier);
-    final initial = await container.read(dailyRecommendSongsProvider.future);
-    expect(initial.map((song) => song.id).toList(), <String>['a-1', 'a-2']);
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
 
-    // Library A's shuffle is held in flight.
-    final staleShuffle = notifier.shuffle();
-    await gatedA.requestArrived(0);
-    expect(gatedA.requests, hasLength(1));
+          final notifier = container.read(dailyRecommendSongsProvider.notifier);
+          final shuffleFuture = notifier.shuffle();
+          expect(notifier.isShuffling, isTrue);
 
-    // Switch libraries while A's request is still open.
-    container.read(selectedServerIdProvider.notifier).state = serverB.id;
-    final switched = await container.read(dailyRecommendSongsProvider.future);
-    expect(switched.map((song) => song.id).toList(), <String>['b-1', 'b-2']);
+          // Complete the shuffle
+          completer.complete(const <Song>[
+            Song(id: 'song-lock-1', title: 'Lock Test Song'),
+          ]);
+          await shuffleFuture;
 
-    // A shuffle for the new library must not be blocked by the stale mutex.
-    final newShuffle = container
-        .read(dailyRecommendSongsProvider.notifier)
-        .shuffle();
-    await newShuffle;
-    expect(
-      requestsB,
-      hasLength(1),
-      reason: 'the stale request must not block the new library',
-    );
+          expect(notifier.isShuffling, isFalse);
+        },
+      );
 
-    final afterB = container
-        .read(dailyRecommendSongsProvider)
-        .value!
-        .map((song) => song.id)
-        .toList();
-    expect(afterB.first, isNot('b-1'));
-    expect(afterB.toSet(), <String>{'b-1', 'b-2', 'b-3'});
-    expect(await _cachedSongIds(database, serverB.id), afterB);
+      test(
+        'stale generation response is superseded and does not overwrite newer state',
+        () async {
+          final completerGen1 = Completer<List<Song>>();
+          final completerGen2 = Completer<List<Song>>();
+          var callIndex = 0;
 
-    // Completing library A's late response must not touch B and must write
-    // library A's own cache key.
-    gatedA.release(0, <Song>[_song('a-1'), _song('a-2'), _song('a-3')]);
-    await staleShuffle;
+          final client = _FakeSubsonicClient(
+            getRandomSongsHandler:
+                ({fromYear, genre, musicFolderId, size, toYear}) async {
+                  callIndex++;
+                  if (callIndex == 1) {
+                    return const <Song>[Song(id: 'initial', title: 'Initial')];
+                  } else if (callIndex == 2) {
+                    return completerGen1.future;
+                  } else {
+                    return completerGen2.future;
+                  }
+                },
+          );
 
-    expect(
-      container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toList(),
-      afterB,
-      reason: 'a stale response must not change the new library card',
-    );
-    expect(await _cachedSongIds(database, serverB.id), afterB);
-    expect(await _cachedSongIds(database, serverA.id), <String>[
-      'a-1',
-      'a-2',
-      'a-3',
-    ]);
-    expect(gatedA.requests, hasLength(1));
-  });
+          final container = ProviderContainer(
+            overrides: [
+              databaseProvider.overrideWithValue(database),
+              activeServerProvider.overrideWith((ref) => server1),
+              activeSubsonicClientProvider.overrideWith((ref) => client),
+            ],
+          );
+          addTearDown(container.dispose);
 
-  test('disposal during an in-flight shuffle still writes the captured key', () async {
-    final gated = await _GatedServer.start();
-    addTearDown(() => gated.server.close(force: true));
+          await container.read(dailyRecommendSongsProvider.future);
+          final notifier = container.read(dailyRecommendSongsProvider.notifier);
 
-    final database = AppDatabase(NativeDatabase.memory());
-    addTearDown(database.close);
+          // Start shuffle 1 (gen 2)
+          final f1 = notifier.shuffle();
+          expect(notifier.isShuffling, isTrue);
 
-    final server = await _insertServer(database, gated.baseUrl);
-    await _seedTodayCache(database, server.id, <Song>[
-      _song('song-1'),
-      _song('song-2'),
-    ]);
+          // Clear database cache so that invalidate re-fetches from network for gen 3
+          await database.delete(database.dailyRecommends).go();
 
-    final container = _containerFor(database, server, gated.baseUrl);
-    final notifier = container.read(dailyRecommendSongsProvider.notifier);
-    await container.read(dailyRecommendSongsProvider.future);
+          // Refresh provider, triggering build() (gen 3)
+          container.invalidate(dailyRecommendSongsProvider);
+          final fGen2Build = container.read(dailyRecommendSongsProvider.future);
+          // Complete Gen 3 (the new build)
+          completerGen2.complete(const <Song>[
+            Song(id: 'gen-3-song', title: 'Gen 3 Song'),
+          ]);
+          await fGen2Build;
+          expect(
+            container.read(dailyRecommendSongsProvider).value?.first.id,
+            'gen-3-song',
+          );
 
-    final shuffle = notifier.shuffle();
-    await gated.requestArrived(0);
+          // Now complete the stale Gen 2 shuffle
+          completerGen1.complete(const <Song>[
+            Song(id: 'gen-2-stale-song', title: 'Gen 2 Stale Song'),
+          ]);
+          await f1;
 
-    container.dispose();
-    gated.release(0, <Song>[_song('song-1'), _song('song-3')]);
+          // UI state must retain gen-3-song!
+          expect(
+            container.read(dailyRecommendSongsProvider).value?.first.id,
+            'gen-3-song',
+          );
+        },
+      );
+    },
+  );
 
-    // Completing after disposal must not raise an unhandled "used after
-    // dispose" error.
-    await expectLater(shuffle, completes);
-    expect(
-      await _cachedSongIds(database, server.id),
-      <String>['song-1', 'song-3'],
-      reason: 'the originally captured cache key is still written',
-    );
-  });
-
-  test(
-    'a duplicate of the displayed song comes back and another still leads',
-    () async {
-      // The server repeats the displayed song TWICE and adds a new one. The
-      // card must still move to a different song, and every entry the server
-      // sent must survive exactly once-per-original-occurrence.
-      final requests = <Uri>[];
-      final (httpServer, baseUrl) = await _startServer((request) async {
-        requests.add(request.uri);
-        request.response
-          ..headers.contentType = ContentType.json
-          ..write(
-            _randomSongsBody(<Song>[
-              _song('song-1'),
-              _song('song-3'),
-              _song('song-1'),
+  group(
+    'DailyRecommendCacheCoordinator - DB write serialization, Queueing & Isolation',
+    () {
+      test(
+        'newer generation overwrites older generation on same date',
+        () async {
+          const date = '2026-10-09';
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: date,
+            generation: 1,
+            songsJson: jsonEncode([
+              {'id': 'gen-1', 'title': 'Gen 1'},
             ]),
           );
-        await request.response.close();
-      });
-      addTearDown(() => httpServer.close(force: true));
 
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
-
-      final server = await _insertServer(database, baseUrl);
-      await _seedTodayCache(database, server.id, <Song>[
-        _song('song-1'),
-        _song('song-2'),
-      ]);
-
-      final container = _containerFor(database, server, baseUrl);
-      addTearDown(container.dispose);
-      await container.read(dailyRecommendSongsProvider.future);
-
-      await container.read(dailyRecommendSongsProvider.notifier).shuffle();
-
-      final shown = container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toList();
-      expect(shown.first, isNot('song-1'));
-      expect(shown.first, 'song-3');
-      // Only the picked entry moved; the duplicate of the displayed song stays.
-      expect(shown, hasLength(3));
-      expect(shown.where((id) => id == 'song-1'), hasLength(2));
-      expect(await _cachedSongIds(database, server.id), shown);
-      expect(requests, hasLength(1));
-    },
-  );
-
-  test(
-    'the displayed song appearing later in the batch still rotates the card',
-    () async {
-      // First entry is already new, so the batch order is shown as-is; the
-      // displayed song simply not being first is enough. This pins the case
-      // where the repeated song is NOT at index 0.
-      final requests = <Uri>[];
-      final (httpServer, baseUrl) = await _startServer((request) async {
-        requests.add(request.uri);
-        request.response
-          ..headers.contentType = ContentType.json
-          ..write(
-            _randomSongsBody(<Song>[
-              _song('song-9'),
-              _song('song-1'),
-              _song('song-8'),
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: date,
+            generation: 2,
+            songsJson: jsonEncode([
+              {'id': 'gen-2', 'title': 'Gen 2'},
             ]),
           );
-        await request.response.close();
-      });
-      addTearDown(() => httpServer.close(force: true));
 
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
+          final cached = await database.getDailyRecommend(server1.id, date);
+          expect(cached?.songsJson, contains('gen-2'));
+          final state = DailyRecommendCacheCoordinator.getCommittedState(
+            server1.id,
+            database: database,
+          );
+          expect(state?.generation, 2);
+        },
+      );
 
-      final server = await _insertServer(database, baseUrl);
-      await _seedTodayCache(database, server.id, <Song>[
-        _song('song-1'),
-        _song('song-2'),
-      ]);
+      test(
+        'older generation does NOT overwrite newer generation on same date',
+        () async {
+          const date = '2026-10-09';
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: date,
+            generation: 5,
+            songsJson: jsonEncode([
+              {'id': 'gen-5', 'title': 'Gen 5'},
+            ]),
+          );
 
-      final container = _containerFor(database, server, baseUrl);
-      addTearDown(container.dispose);
-      await container.read(dailyRecommendSongsProvider.future);
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: date,
+            generation: 3,
+            songsJson: jsonEncode([
+              {'id': 'gen-3', 'title': 'Gen 3'},
+            ]),
+          );
 
-      await container.read(dailyRecommendSongsProvider.notifier).shuffle();
+          final cached = await database.getDailyRecommend(server1.id, date);
+          expect(cached?.songsJson, contains('gen-5'));
+          expect(cached?.songsJson, isNot(contains('gen-3')));
+          final state = DailyRecommendCacheCoordinator.getCommittedState(
+            server1.id,
+            database: database,
+          );
+          expect(state?.generation, 5);
+        },
+      );
 
-      final shown = container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toList();
-      expect(shown, <String>['song-9', 'song-1', 'song-8']);
-      expect(await _cachedSongIds(database, server.id), shown);
-      expect(requests, hasLength(1));
+      test(
+        'newer date supersedes older date regardless of generation',
+        () async {
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: '2026-10-09',
+            generation: 10,
+            songsJson: jsonEncode([
+              {'id': 'day1', 'title': 'Day 1'},
+            ]),
+          );
+
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: '2026-10-10',
+            generation: 1,
+            songsJson: jsonEncode([
+              {'id': 'day2', 'title': 'Day 2'},
+            ]),
+          );
+
+          final cached = await database.getDailyRecommend(
+            server1.id,
+            '2026-10-10',
+          );
+          expect(cached?.songsJson, contains('day2'));
+
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: '2026-10-08',
+            generation: 99,
+            songsJson: jsonEncode([
+              {'id': 'stale-day', 'title': 'Stale Day'},
+            ]),
+          );
+
+          final staleCached = await database.getDailyRecommend(
+            server1.id,
+            '2026-10-08',
+          );
+          expect(staleCached, isNull);
+        },
+      );
+
+      test(
+        'cache coordinator isolates writes across different serverIds',
+        () async {
+          const date = '2026-10-09';
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: date,
+            generation: 2,
+            songsJson: jsonEncode([
+              {'id': 's1-song', 'title': 'Server 1 Song'},
+            ]),
+          );
+
+          await DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server2.id,
+            date: date,
+            generation: 1,
+            songsJson: jsonEncode([
+              {'id': 's2-song', 'title': 'Server 2 Song'},
+            ]),
+          );
+
+          final s1 = await database.getDailyRecommend(server1.id, date);
+          final s2 = await database.getDailyRecommend(server2.id, date);
+          expect(s1?.songsJson, contains('s1-song'));
+          expect(s2?.songsJson, contains('s2-song'));
+        },
+      );
+
+      test(
+        'cache coordinator isolates state across different AppDatabase instances',
+        () async {
+          driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+          final dbA = AppDatabase(NativeDatabase.memory());
+          final dbB = AppDatabase(NativeDatabase.memory());
+          addTearDown(dbA.close);
+          addTearDown(dbB.close);
+
+          const date = '2026-10-09';
+          await DailyRecommendCacheCoordinator.upsert(
+            database: dbA,
+            serverId: 1,
+            date: date,
+            generation: 10,
+            songsJson: jsonEncode([
+              {'id': 'dbA-song', 'title': 'DbA Song'},
+            ]),
+          );
+
+          await DailyRecommendCacheCoordinator.upsert(
+            database: dbB,
+            serverId: 1,
+            date: date,
+            generation: 2,
+            songsJson: jsonEncode([
+              {'id': 'dbB-song', 'title': 'DbB Song'},
+            ]),
+          );
+
+          final stateA = DailyRecommendCacheCoordinator.getCommittedState(
+            1,
+            database: dbA,
+          );
+          final stateB = DailyRecommendCacheCoordinator.getCommittedState(
+            1,
+            database: dbB,
+          );
+
+          expect(stateA?.generation, 10);
+          expect(stateB?.generation, 2);
+
+          final rowA = await dbA.getDailyRecommend(1, date);
+          final rowB = await dbB.getDailyRecommend(1, date);
+          expect(rowA?.songsJson, contains('dbA-song'));
+          expect(rowB?.songsJson, contains('dbB-song'));
+        },
+      );
+
+      test(
+        'readCache waits for in-flight DB write queue before reading',
+        () async {
+          const date = '2026-10-09';
+
+          // Enqueue a slow write by chaining through coordinator queue
+          final writeFuture = DailyRecommendCacheCoordinator.upsert(
+            database: database,
+            serverId: server1.id,
+            date: date,
+            generation: 1,
+            songsJson: jsonEncode([
+              {'id': 'queued-write', 'title': 'Queued Write Song'},
+            ]),
+          );
+
+          // readCache should await the in-flight upsert and see the written row
+          final readFuture = DailyRecommendCacheCoordinator.readCache(
+            database: database,
+            serverId: server1.id,
+            date: date,
+          );
+
+          await writeFuture;
+          final readResult = await readFuture;
+          expect(readResult?.songsJson, contains('queued-write'));
+        },
+      );
     },
   );
 
-  test(
-    'a rebuild of the same library mid-flight keeps the new state and cache',
-    () async {
-      // A rebuild (not a library switch) bumps the generation too: the late
-      // response must not decide what the rebuilt provider shows, and must not
-      // release a newer request's mutex.
-      final gated = await _GatedServer.start();
-      addTearDown(() => gated.server.close(force: true));
+  group('DailyRecommendSongsNotifier - Server switching & Disposal isolation', () {
+    test(
+      'switching active server drops pending responses from previous server on UI but caches to original DB key',
+      () async {
+        final completerServer1 = Completer<List<Song>>();
+        var clientCalls = 0;
 
-      final database = AppDatabase(NativeDatabase.memory());
-      addTearDown(database.close);
+        final client = _FakeSubsonicClient(
+          getRandomSongsHandler:
+              ({fromYear, genre, musicFolderId, size, toYear}) async {
+                clientCalls++;
+                if (clientCalls == 1) {
+                  return const <Song>[Song(id: 's1-init', title: 'S1 Init')];
+                } else if (clientCalls == 2) {
+                  return completerServer1.future;
+                } else {
+                  return const <Song>[Song(id: 's2-init', title: 'S2 Init')];
+                }
+              },
+        );
 
-      final server = await _insertServer(database, gated.baseUrl);
-      await _seedTodayCache(database, server.id, <Song>[
-        _song('song-1'),
-        _song('song-2'),
-      ]);
+        final serverNotifier = NotifierProvider<_TestServerNotifier, Server?>(
+          () => _TestServerNotifier(server1),
+        );
 
-      final container = _containerFor(database, server, gated.baseUrl);
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            activeServerProvider.overrideWith(
+              (ref) => ref.watch(serverNotifier),
+            ),
+            activeSubsonicClientProvider.overrideWith((ref) => client),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final notifier = container.read(dailyRecommendSongsProvider.notifier);
-      await container.read(dailyRecommendSongsProvider.future);
+        final s1Initial = await container.read(
+          dailyRecommendSongsProvider.future,
+        );
+        expect(s1Initial.first.id, 's1-init');
 
-      // Hold one shuffle in flight, then force a rebuild of the provider.
-      final staleShuffle = notifier.shuffle();
-      await gated.requestArrived(0);
-      container.invalidate(dailyRecommendSongsProvider);
-      expect(
-        (await container.read(dailyRecommendSongsProvider.future))
-            .map((song) => song.id)
-            .toList(),
-        <String>['song-1', 'song-2'],
-      );
+        // Start slow shuffle for server 1
+        final shuffleFuture = container
+            .read(dailyRecommendSongsProvider.notifier)
+            .shuffle();
 
-      // A fresh shuffle for the rebuilt provider must not be blocked.
-      final fresh = container
-          .read(dailyRecommendSongsProvider.notifier)
-          .shuffle();
-      await gated.requestArrived(1);
-      gated.release(1, <Song>[_song('song-7'), _song('song-8')]);
-      await fresh;
-      final afterFresh = container
-          .read(dailyRecommendSongsProvider)
-          .value!
-          .map((song) => song.id)
-          .toList();
-      expect(afterFresh, <String>['song-7', 'song-8']);
+        // Switch active server to Server 2
+        container.read(serverNotifier.notifier).setServer(server2);
 
-      // The stale response lands last and must change nothing.
-      gated.release(0, <Song>[_song('song-1'), _song('song-2'), _song('song-3')]);
-      await staleShuffle;
-      expect(
-        container
-            .read(dailyRecommendSongsProvider)
-            .value!
-            .map((song) => song.id)
-            .toList(),
-        afterFresh,
-        reason: 'a response from before the rebuild must not win',
-      );
-      expect(await _cachedSongIds(database, server.id), afterFresh);
-    },
-  );
+        // Re-read provider for server 2
+        final s2Initial = await container.read(
+          dailyRecommendSongsProvider.future,
+        );
+        expect(s2Initial.first.id, 's2-init');
+
+        // Complete server 1's slow shuffle
+        completerServer1.complete(const <Song>[
+          Song(id: 's1-delayed', title: 'S1 Delayed'),
+        ]);
+        await shuffleFuture;
+
+        // State must still be Server 2's data!
+        expect(
+          container.read(dailyRecommendSongsProvider).value?.first.id,
+          's2-init',
+        );
+
+        // But Server 1's DB cache must have received the write
+        final now = DateTime.now();
+        final date =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        final s1Cache = await database.getDailyRecommend(server1.id, date);
+        expect(s1Cache?.songsJson, contains('s1-delayed'));
+      },
+    );
+
+    test(
+      'disposing container while shuffle is in-flight does not crash and does not update state',
+      () async {
+        final completer = Completer<List<Song>>();
+        final client = _FakeSubsonicClient(
+          getRandomSongsHandler:
+              ({fromYear, genre, musicFolderId, size, toYear}) async {
+                return completer.future;
+              },
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(database),
+            activeServerProvider.overrideWith((ref) => server1),
+            activeSubsonicClientProvider.overrideWith((ref) => client),
+          ],
+        );
+
+        final future = container
+            .read(dailyRecommendSongsProvider.notifier)
+            .shuffle();
+
+        container.dispose();
+
+        completer.complete(const <Song>[
+          Song(id: 'disposed-song', title: 'Disposed Song'),
+        ]);
+
+        await expectLater(future, completes);
+      },
+    );
+  });
 }
