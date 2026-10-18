@@ -268,6 +268,8 @@
   "pictureInPicture": "画中画",
   "play": "播放",
   "playAll": "播放全部",
+  "webdavFolders": "文件夹",
+  "webdavSongs": "歌曲",
   "playInOrder": "顺序播放",
   "playNext": "下一首播放",
   "playbackFailed": "播放失败：{error}",

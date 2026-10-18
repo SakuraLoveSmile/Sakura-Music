@@ -4469,6 +4469,255 @@ class DailyRecommendsCompanion extends UpdateCompanion<DailyRecommend> {
   }
 }
 
+class $WebDavPathsTable extends WebDavPaths
+    with TableInfo<$WebDavPathsTable, WebDavPath> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WebDavPathsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _serverIdMeta = const VerificationMeta(
+    'serverId',
+  );
+  @override
+  late final GeneratedColumn<int> serverId = GeneratedColumn<int>(
+    'server_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastPathMeta = const VerificationMeta(
+    'lastPath',
+  );
+  @override
+  late final GeneratedColumn<String> lastPath = GeneratedColumn<String>(
+    'last_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [serverId, lastPath, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'web_dav_paths';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WebDavPath> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('server_id')) {
+      context.handle(
+        _serverIdMeta,
+        serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    }
+    if (data.containsKey('last_path')) {
+      context.handle(
+        _lastPathMeta,
+        lastPath.isAcceptableOrUnknown(data['last_path']!, _lastPathMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {serverId};
+  @override
+  WebDavPath map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WebDavPath(
+      serverId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_id'],
+      )!,
+      lastPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_path'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WebDavPathsTable createAlias(String alias) {
+    return $WebDavPathsTable(attachedDatabase, alias);
+  }
+}
+
+class WebDavPath extends DataClass implements Insertable<WebDavPath> {
+  final int serverId;
+  final String lastPath;
+  final DateTime updatedAt;
+  const WebDavPath({
+    required this.serverId,
+    required this.lastPath,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['server_id'] = Variable<int>(serverId);
+    map['last_path'] = Variable<String>(lastPath);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  WebDavPathsCompanion toCompanion(bool nullToAbsent) {
+    return WebDavPathsCompanion(
+      serverId: Value(serverId),
+      lastPath: Value(lastPath),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory WebDavPath.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WebDavPath(
+      serverId: serializer.fromJson<int>(json['serverId']),
+      lastPath: serializer.fromJson<String>(json['lastPath']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'serverId': serializer.toJson<int>(serverId),
+      'lastPath': serializer.toJson<String>(lastPath),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  WebDavPath copyWith({int? serverId, String? lastPath, DateTime? updatedAt}) =>
+      WebDavPath(
+        serverId: serverId ?? this.serverId,
+        lastPath: lastPath ?? this.lastPath,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  WebDavPath copyWithCompanion(WebDavPathsCompanion data) {
+    return WebDavPath(
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      lastPath: data.lastPath.present ? data.lastPath.value : this.lastPath,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WebDavPath(')
+          ..write('serverId: $serverId, ')
+          ..write('lastPath: $lastPath, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(serverId, lastPath, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WebDavPath &&
+          other.serverId == this.serverId &&
+          other.lastPath == this.lastPath &&
+          other.updatedAt == this.updatedAt);
+}
+
+class WebDavPathsCompanion extends UpdateCompanion<WebDavPath> {
+  final Value<int> serverId;
+  final Value<String> lastPath;
+  final Value<DateTime> updatedAt;
+  const WebDavPathsCompanion({
+    this.serverId = const Value.absent(),
+    this.lastPath = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  WebDavPathsCompanion.insert({
+    this.serverId = const Value.absent(),
+    this.lastPath = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  static Insertable<WebDavPath> custom({
+    Expression<int>? serverId,
+    Expression<String>? lastPath,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (serverId != null) 'server_id': serverId,
+      if (lastPath != null) 'last_path': lastPath,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  WebDavPathsCompanion copyWith({
+    Value<int>? serverId,
+    Value<String>? lastPath,
+    Value<DateTime>? updatedAt,
+  }) {
+    return WebDavPathsCompanion(
+      serverId: serverId ?? this.serverId,
+      lastPath: lastPath ?? this.lastPath,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (serverId.present) {
+      map['server_id'] = Variable<int>(serverId.value);
+    }
+    if (lastPath.present) {
+      map['last_path'] = Variable<String>(lastPath.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WebDavPathsCompanion(')
+          ..write('serverId: $serverId, ')
+          ..write('lastPath: $lastPath, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4483,6 +4732,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DailyRecommendsTable dailyRecommends = $DailyRecommendsTable(
     this,
   );
+  late final $WebDavPathsTable webDavPaths = $WebDavPathsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4497,6 +4747,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedAlbums,
     cachedArtists,
     dailyRecommends,
+    webDavPaths,
   ];
 }
 
@@ -6755,6 +7006,162 @@ typedef $$DailyRecommendsTableProcessedTableManager =
       DailyRecommend,
       PrefetchHooks Function()
     >;
+typedef $$WebDavPathsTableCreateCompanionBuilder =
+    WebDavPathsCompanion Function({
+      Value<int> serverId,
+      Value<String> lastPath,
+      Value<DateTime> updatedAt,
+    });
+typedef $$WebDavPathsTableUpdateCompanionBuilder =
+    WebDavPathsCompanion Function({
+      Value<int> serverId,
+      Value<String> lastPath,
+      Value<DateTime> updatedAt,
+    });
+
+class $$WebDavPathsTableFilterComposer
+    extends Composer<_$AppDatabase, $WebDavPathsTable> {
+  $$WebDavPathsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastPath => $composableBuilder(
+    column: $table.lastPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WebDavPathsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WebDavPathsTable> {
+  $$WebDavPathsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastPath => $composableBuilder(
+    column: $table.lastPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WebDavPathsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WebDavPathsTable> {
+  $$WebDavPathsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get lastPath =>
+      $composableBuilder(column: $table.lastPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$WebDavPathsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WebDavPathsTable,
+          WebDavPath,
+          $$WebDavPathsTableFilterComposer,
+          $$WebDavPathsTableOrderingComposer,
+          $$WebDavPathsTableAnnotationComposer,
+          $$WebDavPathsTableCreateCompanionBuilder,
+          $$WebDavPathsTableUpdateCompanionBuilder,
+          (
+            WebDavPath,
+            BaseReferences<_$AppDatabase, $WebDavPathsTable, WebDavPath>,
+          ),
+          WebDavPath,
+          PrefetchHooks Function()
+        > {
+  $$WebDavPathsTableTableManager(_$AppDatabase db, $WebDavPathsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WebDavPathsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WebDavPathsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WebDavPathsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> serverId = const Value.absent(),
+                Value<String> lastPath = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => WebDavPathsCompanion(
+                serverId: serverId,
+                lastPath: lastPath,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> serverId = const Value.absent(),
+                Value<String> lastPath = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => WebDavPathsCompanion.insert(
+                serverId: serverId,
+                lastPath: lastPath,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WebDavPathsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WebDavPathsTable,
+      WebDavPath,
+      $$WebDavPathsTableFilterComposer,
+      $$WebDavPathsTableOrderingComposer,
+      $$WebDavPathsTableAnnotationComposer,
+      $$WebDavPathsTableCreateCompanionBuilder,
+      $$WebDavPathsTableUpdateCompanionBuilder,
+      (
+        WebDavPath,
+        BaseReferences<_$AppDatabase, $WebDavPathsTable, WebDavPath>,
+      ),
+      WebDavPath,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6777,4 +7184,6 @@ class $AppDatabaseManager {
       $$CachedArtistsTableTableManager(_db, _db.cachedArtists);
   $$DailyRecommendsTableTableManager get dailyRecommends =>
       $$DailyRecommendsTableTableManager(_db, _db.dailyRecommends);
+  $$WebDavPathsTableTableManager get webDavPaths =>
+      $$WebDavPathsTableTableManager(_db, _db.webDavPaths);
 }

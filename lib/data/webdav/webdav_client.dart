@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
@@ -164,5 +165,52 @@ class WebDavClient {
 
     visit(root);
     return result;
+  }
+
+  /// Fetches at most [maxBytes] leading bytes of [href] (a `Range` request
+  /// when the server honours it). Used for bounded tag probes.
+  ///
+  /// The body is consumed as a stream and abandoned as soon as the cap is
+  /// reached, so a server that ignores `Range` still never transfers or
+  /// buffers more than the window the caller asked for: the connection is
+  /// dropped early instead of the whole file being read into memory.
+  Future<Uint8List> fetchBytes(String href, {int maxBytes = 512 * 1024}) async {
+    final limit = maxBytes <= 0 ? 512 * 1024 : maxBytes;
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 30),
+        responseType: ResponseType.stream,
+      ),
+    );
+    final response = await dio.request<ResponseBody>(
+      Uri.parse(baseUrl).resolve(href).toString(),
+      options: Options(
+        method: 'GET',
+        headers: <String, String>{
+          'Authorization': authHeader,
+          'Range': 'bytes=0-${limit - 1}',
+        },
+      ),
+    );
+    final stream = response.data?.stream;
+    if (stream == null) {
+      return Uint8List(0);
+    }
+    // Leaving the `await for` loop cancels the subscription, which closes the
+    // connection: the server stops sending once the cap is reached instead of
+    // the whole body being drained into memory first.
+    final builder = BytesBuilder();
+    await for (final chunk in stream) {
+      builder.add(chunk);
+      if (builder.length >= limit) {
+        break;
+      }
+    }
+    final bytes = builder.takeBytes();
+    // A single chunk can push the builder past the cap.
+    return bytes.length > limit
+        ? Uint8List.sublistView(bytes, 0, limit)
+        : bytes;
   }
 }
