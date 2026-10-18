@@ -168,18 +168,22 @@ class WebDavClient {
   }
 
   /// Fetches at most [maxBytes] leading bytes of [href] (a `Range` request
-  /// when the server honours it). Used for bounded tag probes so a large
-  /// audio file is never downloaded in full for its metadata.
+  /// when the server honours it). Used for bounded tag probes.
+  ///
+  /// The body is consumed as a stream and abandoned as soon as the cap is
+  /// reached, so a server that ignores `Range` still never transfers or
+  /// buffers more than the window the caller asked for: the connection is
+  /// dropped early instead of the whole file being read into memory.
   Future<Uint8List> fetchBytes(String href, {int maxBytes = 512 * 1024}) async {
     final limit = maxBytes <= 0 ? 512 * 1024 : maxBytes;
     final dio = Dio(
       BaseOptions(
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
-        responseType: ResponseType.bytes,
+        responseType: ResponseType.stream,
       ),
     );
-    final response = await dio.request<List<int>>(
+    final response = await dio.request<ResponseBody>(
       Uri.parse(baseUrl).resolve(href).toString(),
       options: Options(
         method: 'GET',
@@ -189,13 +193,22 @@ class WebDavClient {
         },
       ),
     );
-    final data = response.data;
-    if (data == null) {
+    final stream = response.data?.stream;
+    if (stream == null) {
       return Uint8List(0);
     }
-    final bytes = data is Uint8List ? data : Uint8List.fromList(data);
-    // A server that ignores `Range` answers 200 with the whole file: the
-    // caller must never receive more than the window it asked for.
+    // Leaving the `await for` loop cancels the subscription, which closes the
+    // connection: the server stops sending once the cap is reached instead of
+    // the whole body being drained into memory first.
+    final builder = BytesBuilder();
+    await for (final chunk in stream) {
+      builder.add(chunk);
+      if (builder.length >= limit) {
+        break;
+      }
+    }
+    final bytes = builder.takeBytes();
+    // A single chunk can push the builder past the cap.
     return bytes.length > limit
         ? Uint8List.sublistView(bytes, 0, limit)
         : bytes;

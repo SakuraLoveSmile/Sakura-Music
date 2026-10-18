@@ -280,7 +280,8 @@ AudioTags? _parseVorbisComment(Uint8List bytes, int start, int end) {
   }
   final vendorLength = _u32le(bytes, offset);
   offset += 4;
-  if (vendorLength <= 0 || offset + vendorLength > end) {
+  // An empty vendor string is legal, so only the out-of-range check rejects.
+  if (offset + vendorLength > end) {
     return null;
   }
   offset += vendorLength;
