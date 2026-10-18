@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -24,16 +25,18 @@ class WebDavEntry {
 
 /// Minimal WebDAV client used for directory-style music sources.
 ///
-/// Only the `PROPFIND` verb is used: `Depth: 0` for a connection test and
-/// `Depth: 1` for a directory listing. Basic-auth credentials are attached
-/// both here and to the audio backend (via `PlayableItem.headers`) so the
-/// player can stream protected files.
+/// `PROPFIND` drives browsing (`Depth: 0` for a connection test, `Depth: 1`
+/// for a directory listing) and a ranged `GET` feeds bounded tag probes.
+/// Basic-auth credentials are attached both here and to the audio backend
+/// (via `PlayableItem.headers`) so the player can stream protected files.
 class WebDavClient {
   WebDavClient({
     required this.baseUrl,
     required this.username,
     required this.password,
-  }) : authHeader = 'Basic ${base64Encode(utf8.encode('$username:$password'))}';
+    Dio? dio,
+  }) : _dio = dio,
+       authHeader = 'Basic ${base64Encode(utf8.encode('$username:$password'))}';
 
   /// Collection the client is rooted at, as entered by the user.
   final String baseUrl;
@@ -42,6 +45,10 @@ class WebDavClient {
 
   /// Authorization header shared with the audio backend.
   final String authHeader;
+
+  /// Transport override. `null` builds a fresh [Dio] per call with the
+  /// defaults below; tests may inject one.
+  final Dio? _dio;
 
   Map<String, String> _headers({String depth = '0'}) => <String, String>{
     'Authorization': authHeader,
@@ -167,37 +174,112 @@ class WebDavClient {
     return result;
   }
 
-  /// Fetches at most [maxBytes] leading bytes of [href] (a `Range` request
-  /// when the server honours it). Used for bounded tag probes so a large
-  /// audio file is never downloaded in full for its metadata.
+  /// Fetches at most [maxBytes] leading bytes of [href] for a tag probe.
+  ///
+  /// The body is streamed rather than collected. A `Range` request is sent
+  /// first, and a server that ignores it and answers `200` with the whole
+  /// file is still safe: only the first [maxBytes] bytes are ever held in
+  /// memory, and reading stops — cancelling the transfer — as soon as that
+  /// window is full, so a large audio file is never downloaded in full.
+  ///
+  /// Network and HTTP failures raised *before* the window fills propagate to
+  /// the caller; an error caused by our own cancellation does not, and the
+  /// bytes collected so far are returned. The result is never longer than the
+  /// window.
   Future<Uint8List> fetchBytes(String href, {int maxBytes = 512 * 1024}) async {
     final limit = maxBytes <= 0 ? 512 * 1024 : maxBytes;
-    final dio = Dio(
-      BaseOptions(
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 30),
-        responseType: ResponseType.bytes,
-      ),
-    );
-    final response = await dio.request<List<int>>(
+    final dio =
+        _dio ??
+        Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 30),
+            responseType: ResponseType.stream,
+          ),
+        );
+    final cancelToken = CancelToken();
+    final response = await dio.request<ResponseBody>(
       Uri.parse(baseUrl).resolve(href).toString(),
       options: Options(
         method: 'GET',
+        responseType: ResponseType.stream,
         headers: <String, String>{
           'Authorization': authHeader,
           'Range': 'bytes=0-${limit - 1}',
         },
       ),
+      cancelToken: cancelToken,
     );
-    final data = response.data;
-    if (data == null) {
+    final body = response.data;
+    if (body == null) {
       return Uint8List(0);
     }
-    final bytes = data is Uint8List ? data : Uint8List.fromList(data);
-    // A server that ignores `Range` answers 200 with the whole file: the
-    // caller must never receive more than the window it asked for.
-    return bytes.length > limit
-        ? Uint8List.sublistView(bytes, 0, limit)
-        : bytes;
+
+    final builder = BytesBuilder(copy: false);
+    final finished = Completer<void>();
+    // Flipped synchronously the moment the window fills, so the teardown
+    // error Dio reports for an aborted transfer is never mistaken for a real
+    // network failure.
+    var aborted = false;
+    late StreamSubscription<Uint8List> subscription;
+    subscription = body.stream.listen(
+      (chunk) {
+        if (aborted) {
+          return;
+        }
+        final remaining = limit - builder.length;
+        if (remaining <= 0) {
+          return;
+        }
+        if (chunk.length >= remaining) {
+          builder.add(Uint8List.sublistView(chunk, 0, remaining));
+          aborted = true;
+          // Stop reading and drop the connection instead of draining the
+          // rest of the file. Returning only after the cancellation settled
+          // means no probe leaves a request running in the background.
+          subscription.cancel().whenComplete(() {
+            cancelToken.cancel('tag probe window full');
+            if (!finished.isCompleted) {
+              finished.complete();
+            }
+          });
+          return;
+        }
+        builder.add(chunk);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (aborted) {
+          // Raised by our own cancellation: keep what was read.
+          if (!finished.isCompleted) {
+            finished.complete();
+          }
+          return;
+        }
+        if (!finished.isCompleted) {
+          finished.completeError(error, stackTrace);
+        }
+      },
+      onDone: () {
+        if (!finished.isCompleted) {
+          finished.complete();
+        }
+      },
+      cancelOnError: true,
+    );
+
+    try {
+      await finished.future;
+    } on DioException catch (error) {
+      if (!aborted && !CancelToken.isCancel(error)) {
+        rethrow;
+      }
+    } on StateError {
+      // Tearing down an aborted transfer can surface a late state error; the
+      // bytes read before the abort are still valid.
+      if (!aborted) {
+        rethrow;
+      }
+    }
+    return builder.takeBytes();
   }
 }
