@@ -130,7 +130,13 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
   /// Every directory jump (folder tap, up, breadcrumb) goes through here so
   /// the new folder is shown immediately and remembered in the background.
   void _navigateTo(String path) {
-    setState(() => _path = path);
+    setState(() {
+      _path = path;
+      // The tag cache belongs to the folder that was on screen: a new folder
+      // starts empty so a stale href can never be enqueued with the wrong
+      // title.
+      _resolvedTags.clear();
+    });
     final serverId = ref.read(activeServerProvider)?.id;
     if (serverId == null) {
       return;
@@ -413,7 +419,14 @@ class _SongTile extends ConsumerWidget {
     // fails, so the row falls back to the file name without blocking the list.
     final tags = ref.watch(webdavTagProvider(entry.href)).value;
     if (tags != null) {
-      onTags(entry.href, tags);
+      // Reporting upwards is a side effect, so it must not run inside
+      // `build`. Scheduling it for after the frame keeps the current
+      // behaviour — a row that already resolved its tags still reports them,
+      // including when the row is recycled — without touching the build
+      // phase. The write is idempotent, so repeated rebuilds are harmless.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onTags(entry.href, tags);
+      });
     }
     final service = ref.watch(audioPlayerProvider);
     return StreamBuilder<PlayerSnapshot>(
