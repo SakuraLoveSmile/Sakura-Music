@@ -48,7 +48,7 @@ Song _song(String id, {String suffix = 'flac'}) =>
 AppDatabase _memoryDb() => AppDatabase(NativeDatabase.memory());
 
 void main() {
-  group('v13 -> v15 migration', () {
+  group('v13 -> v16 migration', () {
     late Directory tempDir;
 
     setUp(() async {
@@ -119,7 +119,7 @@ void main() {
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 15);
+        expect(database.schemaVersion, 16);
 
         final recent = await database.getRecentPlays(serverId: 1);
         expect(recent.single.coverArtId, isNull);
@@ -211,7 +211,7 @@ void main() {
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 15);
+        expect(database.schemaVersion, 16);
         expect((await database.getRecentPlays(serverId: 2)), isEmpty);
         expect(
           (await database.getDownload('v14-song', serverId: 2))!.filePath,

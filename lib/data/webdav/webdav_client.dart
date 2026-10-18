@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
@@ -164,5 +165,39 @@ class WebDavClient {
 
     visit(root);
     return result;
+  }
+
+  /// Fetches at most [maxBytes] leading bytes of [href] (a `Range` request
+  /// when the server honours it). Used for bounded tag probes so a large
+  /// audio file is never downloaded in full for its metadata.
+  Future<Uint8List> fetchBytes(String href, {int maxBytes = 512 * 1024}) async {
+    final limit = maxBytes <= 0 ? 512 * 1024 : maxBytes;
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 30),
+        responseType: ResponseType.bytes,
+      ),
+    );
+    final response = await dio.request<List<int>>(
+      Uri.parse(baseUrl).resolve(href).toString(),
+      options: Options(
+        method: 'GET',
+        headers: <String, String>{
+          'Authorization': authHeader,
+          'Range': 'bytes=0-${limit - 1}',
+        },
+      ),
+    );
+    final data = response.data;
+    if (data == null) {
+      return Uint8List(0);
+    }
+    final bytes = data is Uint8List ? data : Uint8List.fromList(data);
+    // A server that ignores `Range` answers 200 with the whole file: the
+    // caller must never receive more than the window it asked for.
+    return bytes.length > limit
+        ? Uint8List.sublistView(bytes, 0, limit)
+        : bytes;
   }
 }

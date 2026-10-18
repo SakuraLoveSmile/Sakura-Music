@@ -774,6 +774,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get playAll => '播放全部';
 
   @override
+  String get webdavFolders => '文件夹';
+
+  @override
+  String get webdavSongs => '歌曲';
+
+  @override
   String get playInOrder => '顺序播放';
 
   @override
