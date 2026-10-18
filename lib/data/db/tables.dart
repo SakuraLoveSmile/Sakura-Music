@@ -193,3 +193,14 @@ class DailyRecommends extends Table {
   @override
   Set<Column> get primaryKey => {serverId};
 }
+
+/// Per-server memory of the folder the WebDAV browser last visited. One row
+/// keyed by `serverId` keeps the browse screen from resetting to the root
+/// every time the page is reopened.
+class WebDavPaths extends Table {
+  IntColumn get serverId => integer()();
+  TextColumn get lastPath => text().withDefault(const Constant(''))();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  @override
+  Set<Column> get primaryKey => {serverId};
+}

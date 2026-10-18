@@ -1544,6 +1544,18 @@ abstract class AppLocalizations {
   /// **'播放全部'**
   String get playAll;
 
+  /// No description provided for @webdavFolders.
+  ///
+  /// In zh, this message translates to:
+  /// **'文件夹'**
+  String get webdavFolders;
+
+  /// No description provided for @webdavSongs.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌曲'**
+  String get webdavSongs;
+
   /// No description provided for @playInOrder.
   ///
   /// In zh, this message translates to:

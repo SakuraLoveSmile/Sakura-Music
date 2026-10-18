@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../server_repository.dart';
 import 'webdav_client.dart';
+import 'webdav_tag_reader.dart';
+import 'webdav_tags.dart';
 
 /// Builds a [WebDavClient] for the active server, or `null` when no WebDAV
 /// server is active. The password comes from the credential store mirror; the
@@ -35,4 +37,18 @@ final webdavListingProvider = FutureProvider.family<List<WebDavEntry>, String>((
     return const <WebDavEntry>[];
   }
   return client.list(path);
+});
+
+/// Tag metadata for one WebDAV [href], cached per href by Riverpod's family
+/// cache. Never surfaces an error: a failed probe or a non-audio file resolves
+/// to `null` and the row falls back to the cleaned file name.
+final webdavTagProvider = FutureProvider.family<AudioTags?, String>((
+  ref,
+  href,
+) async {
+  final client = ref.watch(webdavClientProvider);
+  if (client == null) {
+    return null;
+  }
+  return readWebDavTags(href: href, load: client.fetchBytes);
 });

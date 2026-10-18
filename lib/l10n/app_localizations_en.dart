@@ -819,6 +819,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playAll => 'Play all';
 
   @override
+  String get webdavFolders => 'Folders';
+
+  @override
+  String get webdavSongs => 'Songs';
+
+  @override
   String get playInOrder => 'Play in order';
 
   @override
