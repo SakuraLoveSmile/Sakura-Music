@@ -16,6 +16,7 @@ part 'app_database.g.dart';
     CachedAlbums,
     CachedArtists,
     DailyRecommends,
+    WebDavPaths,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -23,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -124,6 +125,10 @@ class AppDatabase extends _$AppDatabase {
         );
         await customStatement('DROP TABLE downloads_legacy');
       }
+      if (from < 16) {
+        // V16: remembers the last folder browsed per WebDAV server.
+        await m.createTable(webDavPaths);
+      }
     },
     beforeOpen: (details) async {
       // A 'downloading' row can only be produced by a live transfer. Anything
@@ -170,8 +175,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Removes every per-server derived row when a server is deleted: album /
-  /// artist caches, the daily recommendation and the saved playback state.
-  /// Download records and their files are intentionally kept.
+  /// artist caches, the daily recommendation, the saved playback state, and
+  /// the last browsed WebDAV path. Download records and their files are
+  /// intentionally kept.
   Future<void> clearServerData(int serverId) {
     return transaction(() async {
       await (delete(
@@ -186,7 +192,31 @@ class AppDatabase extends _$AppDatabase {
       await (delete(
         playbackStates,
       )..where((table) => table.serverId.equals(serverId))).go();
+      await (delete(
+        webDavPaths,
+      )..where((table) => table.serverId.equals(serverId))).go();
     });
+  }
+
+  /// Returns the folder path [serverId] last browsed in the WebDAV screen, or
+  /// an empty string (root) when nothing was stored yet.
+  Future<String> getWebDavLastPath(int serverId) async {
+    final row = await (select(
+      webDavPaths,
+    )..where((table) => table.serverId.equals(serverId))).getSingleOrNull();
+    return row?.lastPath ?? '';
+  }
+
+  /// Stores the folder path [serverId] last browsed. Repeated calls overwrite
+  /// the single row for that server.
+  Future<void> setWebDavLastPath(int serverId, String path) async {
+    await into(webDavPaths).insertOnConflictUpdate(
+      WebDavPathsCompanion(
+        serverId: Value(serverId),
+        lastPath: Value(path),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<int> addRecentPlay({

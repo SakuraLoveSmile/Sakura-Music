@@ -241,6 +241,8 @@
   "pictureInPicture": "Picture in picture",
   "play": "Play",
   "playAll": "Play all",
+  "webdavFolders": "Folders",
+  "webdavSongs": "Songs",
   "playInOrder": "Play in order",
   "playNext": "Play next",
   "playbackFailed": "Playback failed: {error}",
