@@ -127,6 +127,21 @@ void main() {
       expect(tags.artist, isNull);
     });
 
+    test('A7 - resolves tags when the FLAC Vorbis vendor string is empty', () {
+      final bytes = _flac('', <String>['TITLE=空供应商', 'ARTIST=未知歌手']);
+
+      final tags = parseAudioTags(bytes);
+
+      expect(
+        tags,
+        isNotNull,
+        reason: 'vendorLength 0 is a legal empty vendor and keeps the block',
+      );
+      expect(tags!.title, '空供应商');
+      expect(tags.artist, '未知歌手');
+      expect(tags.album, isNull, reason: 'the block carries no ALBUM entry');
+    });
+
     test('A6 - decodes MP4 ilst ©nam/©ART/©alb atoms', () {
       final bytes = _mp4(title: '夜曲', artist: '周杰伦', album: '十一月的萧邦');
 

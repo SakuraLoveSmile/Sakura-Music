@@ -280,7 +280,7 @@ AudioTags? _parseVorbisComment(Uint8List bytes, int start, int end) {
   }
   final vendorLength = _u32le(bytes, offset);
   offset += 4;
-  if (vendorLength <= 0 || offset + vendorLength > end) {
+  if (offset + vendorLength > end) {
     return null;
   }
   offset += vendorLength;
