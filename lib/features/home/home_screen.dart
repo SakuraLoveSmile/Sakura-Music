@@ -608,21 +608,37 @@ class _FeaturedHeroCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Pulse Wave / Play Button
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
+                  // Shuffle button: fetches a fresh random batch without
+                  // starting playback.
+                  // Stable handle for tests and semantics, independent of the
+                  // icon/size used by the section's other refresh button.
+                  Material(
+                    key: const Key('daily-recommend-shuffle-button'),
+                    color: Colors.transparent,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => ref
+                          .read(dailyRecommendSongsProvider.notifier)
+                          .shuffle(),
+                      child: Tooltip(
+                        message: context.l10n.refreshBatch,
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.refresh_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.graphic_eq_rounded,
-                      color: Colors.white,
-                      size: 20,
                     ),
                   ),
                 ],
