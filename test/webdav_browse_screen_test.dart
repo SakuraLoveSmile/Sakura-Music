@@ -25,6 +25,9 @@ import 'package:sakuramusic/l10n/app_localizations.dart';
 ///   tags and otherwise falls back to the cleaned-up file name.
 /// * AC10 — tapping a row enqueues the whole folder starting at that row
 ///   (zero-based), so the queue order and the row order agree.
+/// * Row state reuse — `ListView.builder` reuses one row state per index, so a
+///   row that is handed a different href (leaving a folder and coming back)
+///   must report its tags again instead of falling back to the file name.
 ///
 /// `WebDavClient` and `AudioPlayerService` are replaced by hand-written fakes:
 /// no HTTP request and no platform player is involved, only the fake client's
@@ -332,6 +335,365 @@ void main() {
       expect(player.queues.single[1].title, 'Plain Song');
       expect(player.queues.single[1].artist, isNull);
       expect(player.queues.single[1].album, isNull);
+      expect(player.startIndexes, <int>[0]);
+      expect(player.playCalls, 1);
+    },
+  );
+
+  // Regression: `ListView.builder` reuses one row state per index. Browsing
+  // into a folder and back hands a different href to a row state that already
+  // reported the sub folder's tags, so the upward report has to be remembered
+  // per href instead of being latched off for the lifetime of the state.
+  testWidgets(
+    'keeps tag metadata when returning to the parent folder (regression)',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final client = _FakeWebDavClient()
+        // One folder plus one song: the root song row sits on index 3, the same
+        // index the sub folder's third song row occupies.
+        ..listings[''] = const <WebDavEntry>[
+          WebDavEntry(href: '/Sub/', name: 'Sub', isDirectory: true),
+          WebDavEntry(
+            href: '/tagged-root.mp3',
+            name: '01 - Root Song.mp3',
+            isDirectory: false,
+          ),
+        ]
+        ..listings['/Sub/'] = const <WebDavEntry>[
+          WebDavEntry(href: '/Sub/s1.mp3', name: 's1.mp3', isDirectory: false),
+          WebDavEntry(href: '/Sub/s2.mp3', name: 's2.mp3', isDirectory: false),
+          WebDavEntry(href: '/Sub/s3.mp3', name: 's3.mp3', isDirectory: false),
+        ]
+        // Every row that can land on the reused index carries tags, so its row
+        // state is latched before the parent folder is shown again.
+        ..tagBytes['/tagged-root.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Root Tag Title',
+          'TPE1': 'Root Artist',
+          'TALB': 'Root Album',
+        })
+        ..tagBytes['/Sub/s1.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Sub Tag 1',
+          'TPE1': 'Sub Artist',
+          'TALB': 'Sub Album',
+        })
+        ..tagBytes['/Sub/s2.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Sub Tag 2',
+          'TPE1': 'Sub Artist',
+          'TALB': 'Sub Album',
+        })
+        ..tagBytes['/Sub/s3.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Sub Tag 3',
+          'TPE1': 'Sub Artist',
+          'TALB': 'Sub Album',
+        });
+      final player = _FakePlayerService();
+
+      await _pumpBrowse(
+        tester,
+        database: database,
+        client: client,
+        player: player,
+      );
+
+      // The root row resolves its tags before the folder is opened.
+      expect(find.text('Root Tag Title'), findsOneWidget);
+
+      await tester.tap(find.text('Sub'));
+      await tester.pumpAndSettle();
+      expect(find.text('Sub Tag 3'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
+      await tester.pumpAndSettle();
+
+      // The parent listing shows the tag title again ...
+      expect(find.text('Root Tag Title'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Root Tag Title'));
+      await tester.pumpAndSettle();
+
+      // ... and enqueueing still uses the tags, not the cleaned file name.
+      expect(player.queues, hasLength(1));
+      expect(player.queues.single, hasLength(1));
+      expect(player.queues.single.first.title, 'Root Tag Title');
+      expect(player.queues.single.first.artist, 'Root Artist');
+      expect(player.queues.single.first.album, 'Root Album');
+      expect(player.startIndexes, <int>[0]);
+      expect(player.playCalls, 1);
+    },
+  );
+
+  // Regression: the same round trip with two folder levels
+  // (root -> A -> B -> root), where the reused row state is the one created for
+  // B's listing and survives both steps back up.
+  testWidgets(
+    'keeps tag metadata on a root -> A -> B -> root round trip (regression)',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final client = _FakeWebDavClient()
+        ..listings[''] = const <WebDavEntry>[
+          WebDavEntry(href: '/A/', name: 'A', isDirectory: true),
+          WebDavEntry(
+            href: '/tagged-root.mp3',
+            name: '01 - Root Song.mp3',
+            isDirectory: false,
+          ),
+        ]
+        // One folder plus three songs: index 3 is a song row here too.
+        ..listings['/A/'] = const <WebDavEntry>[
+          WebDavEntry(href: '/A/B/', name: 'B', isDirectory: true),
+          WebDavEntry(href: '/A/a1.mp3', name: 'a1.mp3', isDirectory: false),
+          WebDavEntry(href: '/A/a2.mp3', name: 'a2.mp3', isDirectory: false),
+          WebDavEntry(href: '/A/a3.mp3', name: 'a3.mp3', isDirectory: false),
+        ]
+        ..listings['/A/B/'] = const <WebDavEntry>[
+          WebDavEntry(
+            href: '/A/B/b1.mp3',
+            name: 'b1.mp3',
+            isDirectory: false,
+          ),
+          WebDavEntry(
+            href: '/A/B/b2.mp3',
+            name: 'b2.mp3',
+            isDirectory: false,
+          ),
+          WebDavEntry(
+            href: '/A/B/b3.mp3',
+            name: 'b3.mp3',
+            isDirectory: false,
+          ),
+        ]
+        ..tagBytes['/tagged-root.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Root Tag Title',
+          'TPE1': 'Root Artist',
+          'TALB': 'Root Album',
+        })
+        ..tagBytes['/A/a1.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'A Tag 1',
+          'TPE1': 'A Artist',
+          'TALB': 'A Album',
+        })
+        ..tagBytes['/A/a2.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'A Tag 2',
+          'TPE1': 'A Artist',
+          'TALB': 'A Album',
+        })
+        ..tagBytes['/A/a3.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'A Tag 3',
+          'TPE1': 'A Artist',
+          'TALB': 'A Album',
+        })
+        ..tagBytes['/A/B/b1.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'B Tag 1',
+          'TPE1': 'B Artist',
+          'TALB': 'B Album',
+        })
+        ..tagBytes['/A/B/b2.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'B Tag 2',
+          'TPE1': 'B Artist',
+          'TALB': 'B Album',
+        })
+        ..tagBytes['/A/B/b3.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'B Tag 3',
+          'TPE1': 'B Artist',
+          'TALB': 'B Album',
+        });
+      final player = _FakePlayerService();
+
+      await _pumpBrowse(
+        tester,
+        database: database,
+        client: client,
+        player: player,
+      );
+
+      expect(find.text('Root Tag Title'), findsOneWidget);
+
+      await tester.tap(find.text('A'));
+      await tester.pumpAndSettle();
+      expect(find.text('A Tag 1'), findsOneWidget);
+
+      await tester.tap(find.text('B'));
+      await tester.pumpAndSettle();
+      expect(find.text('B Tag 3'), findsOneWidget);
+
+      // Back to `/A/`, then back to the root: both listings come from the
+      // provider cache, so the row state at index 3 is reused, not rebuilt.
+      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('A Tag 1'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Root Tag Title'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Root Tag Title'));
+      await tester.pumpAndSettle();
+
+      expect(player.queues, hasLength(1));
+      expect(player.queues.single, hasLength(1));
+      expect(player.queues.single.first.title, 'Root Tag Title');
+      expect(player.queues.single.first.artist, 'Root Artist');
+      expect(player.queues.single.first.album, 'Root Album');
+      expect(player.startIndexes, <int>[0]);
+      expect(player.playCalls, 1);
+    },
+  );
+
+  // Regression: the crumb of the folder that is already on screen carries the
+  // path the screen is showing, so tapping it re-enters the *same* path. The
+  // listing provider is cached and every row keeps its href, so
+  // `ListView.builder` reuses the row states and a row that already reported
+  // its tags never reports again. Emptying the parent tag cache on such a
+  // no-op navigation therefore leaves it empty for good, and enqueueing
+  // silently falls back to the cleaned file name.
+  testWidgets(
+    'keeps tag metadata after re-tapping the current folder crumb (regression)',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final client = _FakeWebDavClient()
+        ..listings[''] = const <WebDavEntry>[
+          WebDavEntry(href: '/Sub/', name: 'Sub', isDirectory: true),
+        ]
+        ..listings['/Sub/'] = const <WebDavEntry>[
+          WebDavEntry(
+            href: '/Sub/s1.mp3',
+            name: '01 - Sub One.mp3',
+            isDirectory: false,
+          ),
+          WebDavEntry(
+            href: '/Sub/s2.mp3',
+            name: '02 - Sub Two.mp3',
+            isDirectory: false,
+          ),
+        ]
+        ..tagBytes['/Sub/s1.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Sub Tag 1',
+          'TPE1': 'Sub Artist',
+          'TALB': 'Sub Album',
+        })
+        ..tagBytes['/Sub/s2.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Sub Tag 2',
+          'TPE1': 'Sub Artist',
+          'TALB': 'Sub Album',
+        });
+      final player = _FakePlayerService();
+
+      await _pumpBrowse(
+        tester,
+        database: database,
+        client: client,
+        player: player,
+      );
+
+      await tester.tap(find.text('Sub'));
+      await tester.pumpAndSettle();
+      // Both rows resolved their tags in this listing.
+      expect(find.text('Sub Tag 1'), findsOneWidget);
+
+      // The current folder's own crumb: the same path, so the row states (and
+      // their "already reported this href" memory) survive the rebuild.
+      final crumb = find.descendant(
+        of: find.byType(SingleChildScrollView),
+        matching: find.text('Sub'),
+      );
+      expect(crumb, findsOneWidget);
+      await tester.tap(crumb);
+      await tester.pumpAndSettle();
+
+      // The listing is unchanged, so the rows are still the same rows.
+      expect(find.text('Sub Tag 1'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Sub Tag 1'));
+      await tester.pumpAndSettle();
+
+      expect(player.queues, hasLength(1));
+      expect(player.queues.single, hasLength(2));
+      // Tag values, never `cleanTrackTitle('01 - Sub One.mp3')`, and never a
+      // null artist/album.
+      expect(player.queues.single[0].title, 'Sub Tag 1');
+      expect(player.queues.single[0].artist, 'Sub Artist');
+      expect(player.queues.single[0].album, 'Sub Album');
+      expect(player.queues.single[1].title, 'Sub Tag 2');
+      expect(player.queues.single[1].artist, 'Sub Artist');
+      expect(player.queues.single[1].album, 'Sub Album');
+      expect(player.startIndexes, <int>[0]);
+      expect(player.playCalls, 1);
+    },
+  );
+
+  // Regression: at the root the `/` crumb is the current crumb, so tapping it
+  // re-enters the root it is already showing. The same crumb text also appears
+  // in the app bar (`webdavPathLabel('')` is `/`), so the finder is scoped to
+  // the breadcrumb subtree to keep the tap unambiguous.
+  testWidgets(
+    'keeps tag metadata after re-tapping the root crumb (regression)',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      final client = _FakeWebDavClient()
+        ..listings[''] = const <WebDavEntry>[
+          WebDavEntry(
+            href: '/root-one.mp3',
+            name: '01 - Root One.mp3',
+            isDirectory: false,
+          ),
+          WebDavEntry(
+            href: '/root-two.mp3',
+            name: '02 - Root Two.mp3',
+            isDirectory: false,
+          ),
+        ]
+        ..tagBytes['/root-one.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Root Tag Title',
+          'TPE1': 'Root Artist',
+          'TALB': 'Root Album',
+        })
+        ..tagBytes['/root-two.mp3'] = _id3v23(<String, String>{
+          'TIT2': 'Root Tag Two',
+          'TPE1': 'Root Artist',
+          'TALB': 'Root Album',
+        });
+      final player = _FakePlayerService();
+
+      await _pumpBrowse(
+        tester,
+        database: database,
+        client: client,
+        player: player,
+      );
+
+      // No folder was remembered, so the root is already on screen.
+      expect(client.listCalls, <String>['']);
+      expect(find.text('Root Tag Title'), findsOneWidget);
+
+      final rootCrumb = find.descendant(
+        of: find.byType(SingleChildScrollView),
+        matching: find.text('/'),
+      );
+      expect(rootCrumb, findsOneWidget);
+      await tester.tap(rootCrumb);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Root Tag Title'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(ListTile, 'Root Tag Title'));
+      await tester.pumpAndSettle();
+
+      expect(player.queues, hasLength(1));
+      expect(player.queues.single, hasLength(2));
+      expect(player.queues.single[0].title, 'Root Tag Title');
+      expect(player.queues.single[0].artist, 'Root Artist');
+      expect(player.queues.single[0].album, 'Root Album');
+      expect(player.queues.single[1].title, 'Root Tag Two');
+      expect(player.queues.single[1].artist, 'Root Artist');
+      expect(player.queues.single[1].album, 'Root Album');
       expect(player.startIndexes, <int>[0]);
       expect(player.playCalls, 1);
     },

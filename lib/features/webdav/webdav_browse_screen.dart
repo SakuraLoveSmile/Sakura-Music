@@ -88,6 +88,11 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
   /// first request would hit the root instead of the remembered folder.
   String? _path;
 
+  /// Server whose remembered folder [_path] currently belongs to. `null` until
+  /// the first restore lands, so an early switch cannot reuse another
+  /// server's path.
+  int? _loadedServerId;
+
   /// Tags the visible rows have resolved, keyed by href. Enqueueing reads this
   /// cache: `ref.read(webdavTagProvider(href))` would *create* one probe per
   /// file in the folder, turning a tap into a request storm.
@@ -119,23 +124,35 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
         path = '';
       }
     }
-    if (!mounted) {
+    // The active server can change while the database read is in flight;
+    // applying a stale result would show one server's folder under another.
+    if (!mounted || ref.read(activeServerProvider)?.id != serverId) {
       return;
     }
     setState(() {
       _path = path;
+      _loadedServerId = serverId;
     });
   }
 
   /// Every directory jump (folder tap, up, breadcrumb) goes through here so
   /// the new folder is shown immediately and remembered in the background.
   void _navigateTo(String path) {
+    // The tag cache belongs to the folder that was on screen. Only an actual
+    // directory change may drop it: re-entering the same folder (tapping the
+    // crumb of the folder already on screen, `/` included at the root)
+    // rebuilds the very same listing, so the rows keep their hrefs and their
+    // states are reused — those rows never report again, and clearing here
+    // would leave the cache empty for good, silently downgrading the enqueued
+    // title to the cleaned file name.
+    final previous = _path;
     setState(() {
       _path = path;
-      // The tag cache belongs to the folder that was on screen: a new folder
-      // starts empty so a stale href can never be enqueued with the wrong
-      // title.
-      _resolvedTags.clear();
+      if (previous != path) {
+        // A new folder starts empty so a stale href can never be enqueued with
+        // the wrong title.
+        _resolvedTags.clear();
+      }
     });
     final serverId = ref.read(activeServerProvider)?.id;
     if (serverId == null) {
@@ -203,9 +220,15 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
     // The shell keeps this screen alive while the active server changes, so a
     // switch must re-read that server's remembered folder.
     ref.listen(activeServerProvider, (previous, next) {
-      if (previous?.id != next?.id) {
-        unawaited(_restoreLastPath());
+      if (previous?.id == next?.id || _loadedServerId == next?.id) {
+        return;
       }
+      setState(() {
+        _path = null;
+        _loadedServerId = null;
+        _resolvedTags.clear();
+      });
+      unawaited(_restoreLastPath());
     });
     final client = ref.watch(webdavClientProvider);
     if (client == null) {
@@ -397,7 +420,7 @@ class _FolderTile extends StatelessWidget {
 
 /// One audio row of the playlist: position (or the play state of the current
 /// item) on the left, tag title over `artist · album` in the middle.
-class _SongTile extends ConsumerWidget {
+class _SongTile extends ConsumerStatefulWidget {
   const _SongTile({
     required this.entry,
     required this.index,
@@ -414,18 +437,32 @@ class _SongTile extends ConsumerWidget {
   final void Function(String href, AudioTags tags) onTags;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SongTile> createState() => _SongTileState();
+}
+
+class _SongTileState extends ConsumerState<_SongTile> {
+  /// href this row already reported upwards. Remembered per (state, href)
+  /// instead of as a one-shot latch: `ListView.builder` reuses one row state
+  /// per index, so leaving a folder and coming back hands this state another
+  /// file's href — and that file has to be reported too, otherwise the parent
+  /// cache stays empty after every navigation (it is cleared per folder).
+  String? _reportedHref;
+
+  @override
+  Widget build(BuildContext context) {
+    final href = widget.entry.href;
     // `value` never throws and is null while the tag probe runs or when it
     // fails, so the row falls back to the file name without blocking the list.
-    final tags = ref.watch(webdavTagProvider(entry.href)).value;
-    if (tags != null) {
-      // Reporting upwards is a side effect, so it must not run inside
-      // `build`. Scheduling it for after the frame keeps the current
-      // behaviour — a row that already resolved its tags still reports them,
-      // including when the row is recycled — without touching the build
-      // phase. The write is idempotent, so repeated rebuilds are harmless.
+    final tags = ref.watch(webdavTagProvider(href)).value;
+    if (tags != null && _reportedHref != href) {
+      _reportedHref = href;
+      // Reporting upwards mutates the parent, which must not happen while
+      // this row is building: hand it to the end of the current frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        onTags(entry.href, tags);
+        // The row may have been reused for another file before the callback
+        // runs; a stale report would be filed under the wrong cache entry.
+        if (!mounted || widget.entry.href != href) return;
+        widget.onTags(href, tags);
       });
     }
     final service = ref.watch(audioPlayerProvider);
@@ -434,7 +471,7 @@ class _SongTile extends ConsumerWidget {
       initialData: service.currentSnapshot,
       builder: (context, snapshot) {
         final current = snapshot.data?.currentItem;
-        final isCurrent = current != null && current.id == entry.href;
+        final isCurrent = current != null && current.id == widget.entry.href;
         final isPlaying = isCurrent && (snapshot.data?.playing ?? false);
         final subtitle = _trackSubtitle(tags);
         return ListTile(
@@ -450,7 +487,7 @@ class _SongTile extends ConsumerWidget {
                       size: 22,
                     )
                   : Text(
-                      '$index',
+                      '${widget.index}',
                       style: const TextStyle(
                         color: Colors.white38,
                         fontSize: 13,
@@ -459,7 +496,7 @@ class _SongTile extends ConsumerWidget {
             ),
           ),
           title: Text(
-            _trackTitle(tags, entry.name),
+            _trackTitle(tags, widget.entry.name),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -476,7 +513,7 @@ class _SongTile extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Colors.white38, fontSize: 12),
                 ),
-          onTap: onTap,
+          onTap: widget.onTap,
         );
       },
     );
