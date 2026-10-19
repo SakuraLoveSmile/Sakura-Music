@@ -432,22 +432,28 @@ class _SongTile extends ConsumerStatefulWidget {
 }
 
 class _SongTileState extends ConsumerState<_SongTile> {
-  /// One-shot latch: set before the report is scheduled, so a rebuild can
-  /// never enqueue a second one.
-  bool _reported = false;
+  /// href this row already reported upwards. Remembered per (state, href)
+  /// instead of as a one-shot latch: `ListView.builder` reuses one row state
+  /// per index, so leaving a folder and coming back hands this state another
+  /// file's href — and that file has to be reported too, otherwise the parent
+  /// cache stays empty after every navigation (it is cleared per folder).
+  String? _reportedHref;
 
   @override
   Widget build(BuildContext context) {
+    final href = widget.entry.href;
     // `value` never throws and is null while the tag probe runs or when it
     // fails, so the row falls back to the file name without blocking the list.
-    final tags = ref.watch(webdavTagProvider(widget.entry.href)).value;
-    if (tags != null && !_reported) {
-      _reported = true;
+    final tags = ref.watch(webdavTagProvider(href)).value;
+    if (tags != null && _reportedHref != href) {
+      _reportedHref = href;
       // Reporting upwards mutates the parent, which must not happen while
       // this row is building: hand it to the end of the current frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        widget.onTags(widget.entry.href, tags);
+        // The row may have been reused for another file before the callback
+        // runs; a stale report would be filed under the wrong cache entry.
+        if (!mounted || widget.entry.href != href) return;
+        widget.onTags(href, tags);
       });
     }
     final service = ref.watch(audioPlayerProvider);
