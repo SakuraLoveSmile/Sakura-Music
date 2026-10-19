@@ -1,0 +1,100 @@
+name: Pilot Build & Release
+run-name: pilot-release-${{ inputs.release_batch_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Immutable full commit SHA to build
+        type: string
+        required: true
+      release_batch_id:
+        description: Frozen Pilot release batch identity
+        type: string
+        required: true
+      task_manifest_json:
+        description: Canonical UTF-8 task manifest
+        type: string
+        required: true
+      task_manifest_sha256:
+        description: SHA-256 of the exact manifest bytes
+        type: string
+        required: true
+      tag_name:
+        description: Frozen version tag
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+# Pilot persists dispatch identity; do not use a concurrency group here.
+# GitHub replaces pending runs even with cancel-in-progress=false.
+jobs:
+  validate:
+    name: Validate Pilot Contract
+    runs-on: ubuntu-latest
+    outputs:
+      target_sha: ${{ steps.contract.outputs.target_sha }}
+      version: ${{ steps.contract.outputs.version }}
+      build_number: ${{ steps.contract.outputs.build_number }}
+      channel: ${{ steps.contract.outputs.channel }}
+      tag: ${{ steps.contract.outputs.tag }}
+    steps:
+      # Tooling comes from the immutable workflow commit, never target_sha,
+      # which may predate this integration. Build jobs use target_sha instead.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          path: pilot-tools
+      - name: Validate frozen dispatch contract
+        id: contract
+        run: python3 pilot-tools/.github/scripts/pilot_release.py validate
+
+  packages:
+    name: Build packages
+    needs: validate
+    uses: ./.github/workflows/release-build.yml
+    with:
+      target_sha: ${{ needs.validate.outputs.target_sha }}
+      version: ${{ needs.validate.outputs.version }}
+      build_number: ${{ needs.validate.outputs.build_number }}
+    secrets:
+      FEEDBACK_DEPLOY_KEY: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+  publish:
+    name: Publish Pilot Release
+    needs: [validate, packages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: pilot-tools
+          persist-credentials: true
+      - name: Download this run's platform assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-release'
+          path: release-files
+      - name: Freeze this attempt's exact provenance before any release writes
+        run: python3 pilot-tools/.github/scripts/pilot_release.py prepare release-files
+      - name: Preserve exact release provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaneopilot-provenance
+          path: release-files/kaneopilot-release.json
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: true
+      - name: Validate assets, recover owned draft, and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 pilot-tools/.github/scripts/pilot_release.py publish release-files
+      - name: Update stable updater manifest
+        if: ${{ needs.validate.outputs.channel == 'stable' }}
+        run: python3 pilot-tools/.github/scripts/pilot_release.py update-latest pilot-tools release-files/latest.json
