@@ -138,12 +138,21 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
   /// Every directory jump (folder tap, up, breadcrumb) goes through here so
   /// the new folder is shown immediately and remembered in the background.
   void _navigateTo(String path) {
+    // The tag cache belongs to the folder that was on screen. Only an actual
+    // directory change may drop it: re-entering the same folder (tapping the
+    // crumb of the folder already on screen, `/` included at the root)
+    // rebuilds the very same listing, so the rows keep their hrefs and their
+    // states are reused — those rows never report again, and clearing here
+    // would leave the cache empty for good, silently downgrading the enqueued
+    // title to the cleaned file name.
+    final previous = _path;
     setState(() {
       _path = path;
-      // The tag cache belongs to the folder that was on screen: a new folder
-      // starts empty so a stale href can never be enqueued with the wrong
-      // title.
-      _resolvedTags.clear();
+      if (previous != path) {
+        // A new folder starts empty so a stale href can never be enqueued with
+        // the wrong title.
+        _resolvedTags.clear();
+      }
     });
     final serverId = ref.read(activeServerProvider)?.id;
     if (serverId == null) {
