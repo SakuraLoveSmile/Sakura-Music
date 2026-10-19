@@ -2791,6 +2791,42 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'暂无更多推荐曲目'**
   String get noRecommendations;
+
+  /// No description provided for @updateChannel.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新渠道'**
+  String get updateChannel;
+
+  /// No description provided for @updateChannelStable.
+  ///
+  /// In zh, this message translates to:
+  /// **'正式版'**
+  String get updateChannelStable;
+
+  /// No description provided for @updateChannelPrerelease.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试版'**
+  String get updateChannelPrerelease;
+
+  /// No description provided for @updateChannelStableDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅接收稳定版本'**
+  String get updateChannelStableDescription;
+
+  /// No description provided for @updateChannelPrereleaseDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'接收正式版和测试版本'**
+  String get updateChannelPrereleaseDescription;
+
+  /// No description provided for @updateChannelSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新渠道保存失败，请重试'**
+  String get updateChannelSaveFailed;
 }
 
 class _AppLocalizationsDelegate

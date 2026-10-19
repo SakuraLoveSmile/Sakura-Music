@@ -38,6 +38,10 @@ class SettingsRepository {
     return database.saveSettings(localeCode: localeCode);
   }
 
+  Future<void> updateUpdateChannel({required String updateChannel}) {
+    return database.saveSettings(updateChannel: updateChannel);
+  }
+
   Future<void> updateMembership({
     required bool active,
     required String? method,

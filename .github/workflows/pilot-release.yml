@@ -95,6 +95,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 pilot-tools/.github/scripts/pilot_release.py publish release-files
-      - name: Update stable updater manifest
-        if: ${{ needs.validate.outputs.channel == 'stable' }}
-        run: python3 pilot-tools/.github/scripts/pilot_release.py update-latest pilot-tools release-files/latest.json
+      - name: Advance eligible updater channels
+        run: python3 pilot-tools/.github/scripts/pilot_release.py update-channels pilot-tools release-files/candidate.json

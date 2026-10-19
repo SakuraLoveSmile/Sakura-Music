@@ -2137,6 +2137,18 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updateChannelMeta = const VerificationMeta(
+    'updateChannel',
+  );
+  @override
+  late final GeneratedColumn<String> updateChannel = GeneratedColumn<String>(
+    'update_channel',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('stable'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2153,6 +2165,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     localeCode,
     membershipActive,
     membershipMethod,
+    updateChannel,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2280,6 +2293,15 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
       );
     }
+    if (data.containsKey('update_channel')) {
+      context.handle(
+        _updateChannelMeta,
+        updateChannel.isAcceptableOrUnknown(
+          data['update_channel']!,
+          _updateChannelMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2345,6 +2367,10 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.string,
         data['${effectivePrefix}membership_method'],
       ),
+      updateChannel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}update_channel'],
+      )!,
     );
   }
 
@@ -2379,6 +2405,7 @@ class Setting extends DataClass implements Insertable<Setting> {
   final String localeCode;
   final bool membershipActive;
   final String? membershipMethod;
+  final String updateChannel;
   const Setting({
     required this.id,
     required this.themeMode,
@@ -2394,6 +2421,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     required this.localeCode,
     required this.membershipActive,
     this.membershipMethod,
+    required this.updateChannel,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2416,6 +2444,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     if (!nullToAbsent || membershipMethod != null) {
       map['membership_method'] = Variable<String>(membershipMethod);
     }
+    map['update_channel'] = Variable<String>(updateChannel);
     return map;
   }
 
@@ -2439,6 +2468,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       membershipMethod: membershipMethod == null && nullToAbsent
           ? const Value.absent()
           : Value(membershipMethod),
+      updateChannel: Value(updateChannel),
     );
   }
 
@@ -2472,6 +2502,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       localeCode: serializer.fromJson<String>(json['localeCode']),
       membershipActive: serializer.fromJson<bool>(json['membershipActive']),
       membershipMethod: serializer.fromJson<String?>(json['membershipMethod']),
+      updateChannel: serializer.fromJson<String>(json['updateChannel']),
     );
   }
   @override
@@ -2492,6 +2523,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       'localeCode': serializer.toJson<String>(localeCode),
       'membershipActive': serializer.toJson<bool>(membershipActive),
       'membershipMethod': serializer.toJson<String?>(membershipMethod),
+      'updateChannel': serializer.toJson<String>(updateChannel),
     };
   }
 
@@ -2510,6 +2542,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     String? localeCode,
     bool? membershipActive,
     Value<String?> membershipMethod = const Value.absent(),
+    String? updateChannel,
   }) => Setting(
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
@@ -2530,6 +2563,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     membershipMethod: membershipMethod.present
         ? membershipMethod.value
         : this.membershipMethod,
+    updateChannel: updateChannel ?? this.updateChannel,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2571,6 +2605,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       membershipMethod: data.membershipMethod.present
           ? data.membershipMethod.value
           : this.membershipMethod,
+      updateChannel: data.updateChannel.present
+          ? data.updateChannel.value
+          : this.updateChannel,
     );
   }
 
@@ -2590,7 +2627,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
-          ..write('membershipMethod: $membershipMethod')
+          ..write('membershipMethod: $membershipMethod, ')
+          ..write('updateChannel: $updateChannel')
           ..write(')'))
         .toString();
   }
@@ -2611,6 +2649,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     localeCode,
     membershipActive,
     membershipMethod,
+    updateChannel,
   );
   @override
   bool operator ==(Object other) =>
@@ -2629,7 +2668,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.safeAudioMode == this.safeAudioMode &&
           other.localeCode == this.localeCode &&
           other.membershipActive == this.membershipActive &&
-          other.membershipMethod == this.membershipMethod);
+          other.membershipMethod == this.membershipMethod &&
+          other.updateChannel == this.updateChannel);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2647,6 +2687,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<String> localeCode;
   final Value<bool> membershipActive;
   final Value<String?> membershipMethod;
+  final Value<String> updateChannel;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
@@ -2662,6 +2703,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.localeCode = const Value.absent(),
     this.membershipActive = const Value.absent(),
     this.membershipMethod = const Value.absent(),
+    this.updateChannel = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2678,6 +2720,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.localeCode = const Value.absent(),
     this.membershipActive = const Value.absent(),
     this.membershipMethod = const Value.absent(),
+    this.updateChannel = const Value.absent(),
   });
   static Insertable<Setting> custom({
     Expression<int>? id,
@@ -2694,6 +2737,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<String>? localeCode,
     Expression<bool>? membershipActive,
     Expression<String>? membershipMethod,
+    Expression<String>? updateChannel,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2714,6 +2758,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (localeCode != null) 'locale_code': localeCode,
       if (membershipActive != null) 'membership_active': membershipActive,
       if (membershipMethod != null) 'membership_method': membershipMethod,
+      if (updateChannel != null) 'update_channel': updateChannel,
     });
   }
 
@@ -2732,6 +2777,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<String>? localeCode,
     Value<bool>? membershipActive,
     Value<String?>? membershipMethod,
+    Value<String>? updateChannel,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
@@ -2749,6 +2795,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       localeCode: localeCode ?? this.localeCode,
       membershipActive: membershipActive ?? this.membershipActive,
       membershipMethod: membershipMethod ?? this.membershipMethod,
+      updateChannel: updateChannel ?? this.updateChannel,
     );
   }
 
@@ -2801,6 +2848,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (membershipMethod.present) {
       map['membership_method'] = Variable<String>(membershipMethod.value);
     }
+    if (updateChannel.present) {
+      map['update_channel'] = Variable<String>(updateChannel.value);
+    }
     return map;
   }
 
@@ -2820,7 +2870,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('safeAudioMode: $safeAudioMode, ')
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
-          ..write('membershipMethod: $membershipMethod')
+          ..write('membershipMethod: $membershipMethod, ')
+          ..write('updateChannel: $updateChannel')
           ..write(')'))
         .toString();
   }
@@ -5760,6 +5811,7 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<String> localeCode,
       Value<bool> membershipActive,
       Value<String?> membershipMethod,
+      Value<String> updateChannel,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
@@ -5777,6 +5829,7 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<String> localeCode,
       Value<bool> membershipActive,
       Value<String?> membershipMethod,
+      Value<String> updateChannel,
     });
 
 class $$SettingsTableFilterComposer
@@ -5855,6 +5908,11 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<String> get membershipMethod => $composableBuilder(
     column: $table.membershipMethod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updateChannel => $composableBuilder(
+    column: $table.updateChannel,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5937,6 +5995,11 @@ class $$SettingsTableOrderingComposer
     column: $table.membershipMethod,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get updateChannel => $composableBuilder(
+    column: $table.updateChannel,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SettingsTableAnnotationComposer
@@ -6013,6 +6076,11 @@ class $$SettingsTableAnnotationComposer
     column: $table.membershipMethod,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get updateChannel => $composableBuilder(
+    column: $table.updateChannel,
+    builder: (column) => column,
+  );
 }
 
 class $$SettingsTableTableManager
@@ -6057,6 +6125,7 @@ class $$SettingsTableTableManager
                 Value<String> localeCode = const Value.absent(),
                 Value<bool> membershipActive = const Value.absent(),
                 Value<String?> membershipMethod = const Value.absent(),
+                Value<String> updateChannel = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 themeMode: themeMode,
@@ -6072,6 +6141,7 @@ class $$SettingsTableTableManager
                 localeCode: localeCode,
                 membershipActive: membershipActive,
                 membershipMethod: membershipMethod,
+                updateChannel: updateChannel,
               ),
           createCompanionCallback:
               ({
@@ -6089,6 +6159,7 @@ class $$SettingsTableTableManager
                 Value<String> localeCode = const Value.absent(),
                 Value<bool> membershipActive = const Value.absent(),
                 Value<String?> membershipMethod = const Value.absent(),
+                Value<String> updateChannel = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 themeMode: themeMode,
@@ -6104,6 +6175,7 @@ class $$SettingsTableTableManager
                 localeCode: localeCode,
                 membershipActive: membershipActive,
                 membershipMethod: membershipMethod,
+                updateChannel: updateChannel,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

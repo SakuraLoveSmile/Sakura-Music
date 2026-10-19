@@ -123,6 +123,9 @@ class Settings extends Table {
 
   // null = 未激活；'code' = 激活码；'star' = Star 诚信开关
   TextColumn get membershipMethod => text().nullable()();
+
+  TextColumn get updateChannel =>
+      text().withDefault(const Constant('stable'))();
 }
 
 class Downloads extends Table {

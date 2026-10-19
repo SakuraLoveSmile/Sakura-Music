@@ -27,6 +27,15 @@ def fixture():
                          GITHUB_RUN_ID='123', GITHUB_RUN_ATTEMPT='1')
 
 
+
+def channel_fixture(version):
+    tag = 'v' + version
+    return dict(version=version, build_number=7, prerelease=False, draft=False, tag_name=tag,
+                html_url='https://github.com/owner/repo/releases/tag/' + tag,
+                assets=[dict(name=name, size=1, digest='sha256:' + 'a' * 64,
+                             browser_download_url='https://github.com/owner/repo/releases/download/' + tag + '/' + name)
+                        for name in pilot.ASSETS])
+
 class ContractTests(unittest.TestCase):
     def test_valid_manifest(self):
         m, env = fixture()
@@ -148,7 +157,9 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(self.remote.release['make_latest'], 'false')
         self.assertEqual(self.remote.assets['kaneopilot-release.json']['_body'], (self.root / 'kaneopilot-release.json').read_bytes())
         self.assertEqual(result['assets'], json.loads(self.remote.assets['kaneopilot-release.json']['_body'])['assets'])
-        self.assertFalse((self.root / 'latest.json').exists())
+        candidate = json.loads((self.root / 'candidate.json').read_bytes())
+        self.assertTrue(candidate['prerelease'])
+        self.assertEqual(candidate['build_number'], self.manifest['build_number'])
 
     def test_all_remote_write_failure_boundaries_recover(self):
         # Annotated tag, ref, draft, each of 10 assets, and publish response.
@@ -227,7 +238,7 @@ class RecoveryTests(unittest.TestCase):
         self.remote.releases = [dict(tag_name='v0.3.2', draft=False, prerelease=False)]
         self.publish()
         self.assertEqual(self.remote.release['make_latest'], 'false')
-        self.assertEqual(json.loads((self.root / 'latest.json').read_bytes())['tag_name'], 'v0.3.1')
+        self.assertEqual(json.loads((self.root / 'candidate.json').read_bytes())['tag_name'], 'v0.3.1')
         self.remote.releases = []
         self.publish(dict(self.env, GITHUB_RUN_ATTEMPT='2'))
         self.assertEqual(self.remote.release['make_latest'], 'legacy')
@@ -291,25 +302,36 @@ class LegacyManifestTests(unittest.TestCase):
         release = dict(id=42, tag_name=tag, draft=False, prerelease=False, body='notes',
                        html_url='https://github.com/' + repository + '/releases/tag/' + tag,
                        published_at='2026-10-19T00:00:00Z')
-        assets = [dict(id=i + 1, name=name, size=10, digest='sha256:' + 'a' * 64,
+        assets = [dict(id=i + 1, name=name, size=len(b'local-package'), digest='sha256:' + hashlib.sha256(b'local-package').hexdigest(),
                        browser_download_url='https://github.com/' + repository + '/releases/download/' + tag + '/' + name)
                   for i, name in enumerate(pilot.ASSETS)]
         def request(method, path, **kwargs):
             self.assertEqual(method, 'GET')
+            if '/git/ref/tags/' in path:
+                return dict(object=dict(type='commit', sha='a' * 40))
             return copy.deepcopy(assets if '/assets?' in path else release)
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name) / 'packages'
+        self.root.mkdir()
+        self.source = Path(temp.name) / 'source.yaml'
+        self.source.write_text('version: 1.2.3+7\n')
+        for name in pilot.ASSETS:
+            (self.root / name).write_bytes(b'local-package')
         return repository, tag, release, assets, request
 
     def test_same_tag_rerun_uses_retained_remote_assets(self):
         repository, tag, release, assets, request = self.remote()
-        manifest = pilot.legacy_manifest(repository, tag, request)
+        manifest = pilot.legacy_manifest(repository, tag, request, source=self.source, root=self.root, target_sha='a' * 40)
         self.assertEqual(manifest['assets'], [{k: asset[k] for k in ('name', 'size', 'digest', 'browser_download_url')}
                                              for asset in sorted(assets, key=lambda a: a['name'])])
-        self.assertTrue(all(asset['digest'] == 'sha256:' + 'a' * 64 for asset in manifest['assets']))
+        self.assertTrue(all(asset['digest'] == 'sha256:' + hashlib.sha256(b'local-package').hexdigest() for asset in manifest['assets']))
         # Local rebuilt bytes are deliberately unrelated; none enter the manifest.
         self.assertNotEqual(manifest['assets'][0]['digest'], 'sha256:' + hashlib.sha256(b'new build').hexdigest())
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); (root / 'release').mkdir()
             current = root / 'release/latest.json'; current.write_bytes(pilot.canonical(manifest))
+            (root / 'release/preview.json').write_bytes(pilot.canonical(manifest))
             candidate = root / 'candidate.json'; candidate.write_bytes(pilot.canonical(manifest))
             commands = []
             def git(cmd, **kwargs):
@@ -326,14 +348,15 @@ class LegacyManifestTests(unittest.TestCase):
             self.assertFalse(any('commit' in cmd or 'push' in cmd for cmd in commands))
 
     def test_missing_digest_wrong_url_duplicate_and_nonpositive_remote_assets_fail(self):
-        for mutate in ('missing_digest', 'wrong_url', 'duplicate', 'empty'):
+        for mutate in ('missing_digest', 'wrong_url', 'duplicate', 'empty', 'different_package'):
             with self.subTest(mutate=mutate):
                 repository, tag, release, assets, request = self.remote()
                 if mutate == 'missing_digest': assets[0].pop('digest')
                 elif mutate == 'wrong_url': assets[0]['browser_download_url'] = 'https://example.invalid/package'
                 elif mutate == 'duplicate': assets.append(copy.deepcopy(assets[0]))
+                elif mutate == 'different_package': assets[0]['digest'] = 'sha256:' + 'b' * 64
                 else: assets[0]['size'] = 0
-                with self.assertRaises(ValueError): pilot.legacy_manifest(repository, tag, request)
+                with self.assertRaises(ValueError): pilot.legacy_manifest(repository, tag, request, source=self.source, root=self.root, target_sha='a' * 40)
 
 
 class StableGitTests(unittest.TestCase):
@@ -348,22 +371,22 @@ class StableGitTests(unittest.TestCase):
             git(root, 'clone', str(bare), str(clone))
             git(clone, 'checkout', '-b', 'main')
             git(clone, 'config', 'user.name', 'test'); git(clone, 'config', 'user.email', 'test@example.invalid')
-            (clone / 'release').mkdir(); (clone / 'release/latest.json').write_bytes(pilot.canonical(dict(tag_name='v0.3.0')))
+            (clone / 'release').mkdir(); (clone / 'release/latest.json').write_bytes(pilot.canonical(channel_fixture('0.3.0')))
             git(clone, 'add', '.'); git(clone, 'commit', '-m', 'initial'); git(clone, 'push', 'origin', 'main')
             git(root, 'clone', '-b', 'main', str(bare), str(other))
-            candidate = root / 'candidate.json'; candidate.write_bytes(pilot.canonical(dict(tag_name='v0.3.1')))
+            candidate = root / 'candidate.json'; candidate.write_bytes(pilot.canonical(channel_fixture('0.3.1')))
             raced = []
             def race(cmd, **kwargs):
                 if 'push' in cmd and not raced:
                     raced.append(True)
                     git(other, 'config', 'user.name', 'other'); git(other, 'config', 'user.email', 'other@example.invalid')
-                    (other / 'release/latest.json').write_bytes(pilot.canonical(dict(tag_name='v0.3.2')))
+                    (other / 'release/latest.json').write_bytes(pilot.canonical(channel_fixture('0.3.2')))
                     git(other, 'add', '.'); git(other, 'commit', '-m', 'newer stable'); git(other, 'push', 'origin', 'main')
                 return subprocess.run(cmd, **kwargs)
-            self.assertEqual(pilot.update_latest(clone, candidate, run=race), 'unchanged')
+            self.assertEqual(pilot.update_latest(clone, candidate, run=race), 'updated')
             self.assertEqual(json.loads(git(bare, 'show', 'main:release/latest.json').stdout)['tag_name'], 'v0.3.2')
             self.assertEqual(pilot.update_latest(clone, candidate), 'unchanged')
-            candidate.write_bytes(pilot.canonical(dict(tag_name='v0.3.3')))
+            candidate.write_bytes(pilot.canonical(channel_fixture('0.3.3')))
             self.assertEqual(pilot.update_latest(clone, candidate), 'updated')
             self.assertEqual(json.loads(git(bare, 'show', 'main:release/latest.json').stdout)['tag_name'], 'v0.3.3')
 
