@@ -126,6 +126,16 @@ void main() {
       expect(tags.album, '专题专辑');
       expect(tags.artist, isNull);
     });
+    test('A7 - accepts a Vorbis comment whose vendor string is empty', () {
+      // An empty vendor string is legal; only an out-of-range length is not.
+      final flac = _flac('', <String>['TITLE=空厂商', 'ARTIST=歌手']);
+      final ogg = _ogg('', <String>['TITLE=空厂商', 'ARTIST=歌手']);
+
+      expect(parseAudioTags(flac)?.title, '空厂商');
+      expect(parseAudioTags(flac)?.artist, '歌手');
+      expect(parseAudioTags(ogg)?.title, '空厂商');
+      expect(parseAudioTags(ogg)?.artist, '歌手');
+    });
 
     test('A7 - resolves tags when the FLAC Vorbis vendor string is empty', () {
       final bytes = _flac('', <String>['TITLE=空供应商', 'ARTIST=未知歌手']);

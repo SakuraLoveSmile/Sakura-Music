@@ -140,6 +140,9 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
   void _navigateTo(String path) {
     setState(() {
       _path = path;
+      // The tag cache belongs to the folder that was on screen: a new folder
+      // starts empty so a stale href can never be enqueued with the wrong
+      // title.
       _resolvedTags.clear();
     });
     final serverId = ref.read(activeServerProvider)?.id;
