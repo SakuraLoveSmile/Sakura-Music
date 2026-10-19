@@ -67,12 +67,19 @@ class UpdateDialog extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                release.version,
+                release.tagName,
                 style: const TextStyle(
                   color: Color(0xFF6EA8FF),
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                release.isPrerelease
+                    ? context.l10n.updateChannelPrerelease
+                    : context.l10n.updateChannelStable,
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
               ),
               const SizedBox(height: 14),
               if (release.notes.trim().isNotEmpty) ...[
