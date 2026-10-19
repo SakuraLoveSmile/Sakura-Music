@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart' as crypto;
@@ -27,6 +28,8 @@ class UpdateService {
     TemporaryDirectoryLoader? temporaryDirectoryLoader,
     this.latestReleaseUrl = defaultLatestReleaseUrl,
     this.manifestMirrorUrls = defaultManifestMirrorUrls,
+    this.previewReleaseUrl = defaultPreviewReleaseUrl,
+    this.previewManifestMirrorUrls = defaultPreviewManifestMirrorUrls,
   }) : _dio =
            dio ??
            Dio(
@@ -40,19 +43,18 @@ class UpdateService {
        _temporaryDirectoryLoader =
            temporaryDirectoryLoader ?? getTemporaryDirectory;
 
-  /// GitHub Releases API endpoint for the latest published release.
+  /// Same-repository manifests. Mirrors always retain the selected path.
   static const defaultLatestReleaseUrl =
-      'https://api.github.com/repos/SakuraLoveSmile/Sakura-Music/releases/latest';
-
-  /// Mirror manifest URLs used as fallbacks when the GitHub API is rate
-  /// limited (HTTP 403/429) or unreachable. Each URL must serve a
-  /// `release/latest.json` manifest whose JSON shape matches the GitHub
-  /// Releases API (see [AppRelease.fromJson]). jsDelivr caches `@main`
-  /// references for up to ~12h, so these mirror the latest *published* release
-  /// with a bounded lag and are only consulted after the primary source fails.
+      'https://raw.githubusercontent.com/SakuraLoveSmile/Sakura-Music/main/release/latest.json';
+  static const defaultPreviewReleaseUrl =
+      'https://raw.githubusercontent.com/SakuraLoveSmile/Sakura-Music/main/release/preview.json';
   static const defaultManifestMirrorUrls = <String>[
     'https://cdn.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/latest.json',
     'https://fastly.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/latest.json',
+  ];
+  static const defaultPreviewManifestMirrorUrls = <String>[
+    'https://cdn.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/preview.json',
+    'https://fastly.jsdelivr.net/gh/SakuraLoveSmile/Sakura-Music@main/release/preview.json',
   ];
 
   /// The request client. Visible for tests so the default timeout
@@ -65,59 +67,134 @@ class UpdateService {
   final TemporaryDirectoryLoader _temporaryDirectoryLoader;
   final String latestReleaseUrl;
   final List<String> manifestMirrorUrls;
+  final String previewReleaseUrl;
+  final List<String> previewManifestMirrorUrls;
 
-  Future<AppRelease?> checkForUpdate() async {
+  Future<AppRelease?> checkForUpdate({
+    UpdateChannel channel = UpdateChannel.stable,
+    String? platform,
+    String? androidAbi,
+  }) async {
     final packageInfo = await _packageInfoLoader();
-    final userAgent = 'SakuraMusic/${packageInfo.version}';
-
-    AppRelease? parseRelease(Response<Object?> response) {
-      final data = response.data;
-      if (data is! Map) {
-        throw const UpdateException('GitHub 返回的版本信息格式无效');
-      }
-      final release = AppRelease.fromJson(
-        data.map((key, value) => MapEntry(key.toString(), value)),
-      );
-      return compareVersions(packageInfo.version, release.version) < 0
-          ? release
-          : null;
-    }
-
-    Future<Response<Object?>> fetch(String url, Map<String, String> headers) =>
-        _dio.get<Object?>(url, options: Options(headers: headers));
-
-    const primaryHeaders = <String, String>{
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'User-Agent': 'SakuraMusic/${packageInfo.version}',
     };
 
-    // 1. Primary: GitHub API. A missing User-Agent triggers GitHub's
-    //    60 req/h/IP anonymous limit, which returns HTTP 403 on shared/NAT
-    //    egress IPs, so we always send one.
-    try {
-      return parseRelease(
-        await fetch(latestReleaseUrl, <String, String>{
-          ...primaryHeaders,
-          'User-Agent': userAgent,
-        }),
-      );
-    } on DioException {
-      // Fall through to the mirror manifests.
+    Future<AppRelease> fetchManifest(
+      String primary,
+      List<String> mirrors, {
+      required bool stable,
+    }) async {
+      Object lastError = const UpdateException('无法获取版本更新信息');
+      for (final url in <String>[primary, ...mirrors]) {
+        try {
+          final response = await _dio.get<Object?>(
+            url,
+            options: Options(headers: headers),
+          );
+          final responseData = response.data;
+          final data = responseData is String
+              ? jsonDecode(responseData)
+              : responseData;
+          if (data is! Map) {
+            throw const UpdateException('版本更新信息格式无效');
+          }
+          final release = AppRelease.fromJson(
+            data.map((key, value) => MapEntry(key.toString(), value)),
+          );
+          if (stable && release.isPrerelease) {
+            throw const UpdateException('正式版清单包含测试版本');
+          }
+          return release;
+        } on FormatException {
+          lastError = const UpdateException('版本更新信息格式无效');
+        } on TypeError {
+          lastError = const UpdateException('版本更新信息格式无效');
+        } on Object catch (error) {
+          lastError = error;
+        }
+      }
+      throw lastError;
     }
 
-    // 2. Mirrors: take the first successful manifest response.
-    Object? lastError = const UpdateException('无法获取版本更新信息');
-    for (final url in manifestMirrorUrls) {
-      try {
-        final response = await fetch(url, <String, String>{
-          'User-Agent': userAgent,
-        });
-        return parseRelease(response);
-      } on Object catch (error) {
-        lastError = error;
+    // Both manifests are needed for a trustworthy preview-channel result.
+    // A failed preview request must never become a stable-only "up to date".
+    final releases = await Future.wait(<Future<AppRelease>>[
+      fetchManifest(latestReleaseUrl, manifestMirrorUrls, stable: true),
+      if (channel == UpdateChannel.prerelease)
+        fetchManifest(
+          previewReleaseUrl,
+          previewManifestMirrorUrls,
+          stable: false,
+        ),
+    ]);
+    final currentBuild = int.tryParse(packageInfo.buildNumber);
+    final normalizedPlatform = platform?.toLowerCase();
+    AppRelease? newest;
+    int? newestBuild;
+    for (final release in releases) {
+      ReleaseAsset? asset;
+      if (const <String>[
+        'android',
+        'windows',
+        'macos',
+        'macosx',
+      ].contains(normalizedPlatform)) {
+        asset = pickAsset(
+          release.assets,
+          platform: normalizedPlatform!,
+          androidAbi: androidAbi,
+        );
+        if (asset == null || asset.sha256 == null) continue;
+      }
+      // PackageInfo reports the installed APK versionCode, including Flutter's
+      // split-per-ABI offset. Never infer the installed package's base build.
+      final candidateBuild =
+          normalizedPlatform == 'android' &&
+              release.buildNumber != null &&
+              asset != null
+          ? _androidVersionCode(release.buildNumber!, asset)
+          : release.buildNumber;
+      final versionOrder = compareVersions(
+        release.version,
+        packageInfo.version,
+      );
+      if (versionOrder < 0 ||
+          (versionOrder == 0 &&
+              (candidateBuild == null ||
+                  currentBuild == null ||
+                  candidateBuild <= currentBuild))) {
+        continue;
+      }
+      if (normalizedPlatform == 'android' &&
+          candidateBuild != null &&
+          (currentBuild == null ||
+              candidateBuild <= currentBuild ||
+              candidateBuild > 2147483647)) {
+        continue;
+      }
+      final newestVersionOrder = newest == null
+          ? 1
+          : compareVersions(release.version, newest.version);
+      if (newestVersionOrder > 0 ||
+          (newestVersionOrder == 0 &&
+              (candidateBuild ?? 0) > (newestBuild ?? 0))) {
+        newest = release;
+        newestBuild = candidateBuild;
       }
     }
-    throw lastError!;
+    return newest;
+  }
+
+  int _androidVersionCode(int build, ReleaseAsset asset) {
+    final offset = switch (asset.name) {
+      'SakuraMusic-android-armeabi-v7a.apk' => 1000,
+      'SakuraMusic-android-arm64-v8a.apk' => 2000,
+      'SakuraMusic-android-x86_64.apk' => 4000,
+      _ => 0,
+    };
+    return build + offset;
   }
 
   Future<File> downloadUpdate(
@@ -137,12 +214,12 @@ class UpdateService {
     await updatesDirectory.create(recursive: true);
 
     final fileName = _safeFileName(asset.name);
+    // A cancelled transfer may still be unwinding when the user retries.
+    // Give each operation its own directory so its cleanup cannot touch a retry.
+    final downloadDirectory = await updatesDirectory.createTemp('download-');
     final file = File(
-      '${updatesDirectory.path}${Platform.pathSeparator}$fileName',
+      '${downloadDirectory.path}${Platform.pathSeparator}$fileName',
     );
-    if (await file.exists()) {
-      await file.delete();
-    }
 
     var completed = false;
     try {
@@ -158,6 +235,9 @@ class UpdateService {
       );
 
       final digest = await crypto.sha256.bind(file.openRead()).first;
+      // Dio has finished its transfer here; cancellation during the hash must
+      // still reject the package and run this operation's cleanup.
+      if (cancelToken?.isCancelled == true) throw cancelToken!.cancelError!;
       final actualSha256 = digest.toString().toLowerCase();
       if (actualSha256 != asset.sha256!.toLowerCase()) {
         throw const UpdateException('安装包完整性校验失败，文件已删除');
@@ -165,8 +245,8 @@ class UpdateService {
       completed = true;
       return file;
     } finally {
-      if (!completed && await file.exists()) {
-        await file.delete();
+      if (!completed && await downloadDirectory.exists()) {
+        await downloadDirectory.delete(recursive: true);
       }
     }
   }

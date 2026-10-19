@@ -1432,4 +1432,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noRecommendations => '暂无更多推荐曲目';
+
+  @override
+  String get updateChannel => '更新渠道';
+
+  @override
+  String get updateChannelStable => '正式版';
+
+  @override
+  String get updateChannelPrerelease => '测试版';
+
+  @override
+  String get updateChannelStableDescription => '仅接收稳定版本';
+
+  @override
+  String get updateChannelPrereleaseDescription => '接收正式版和测试版本';
+
+  @override
+  String get updateChannelSaveFailed => '更新渠道保存失败，请重试';
 }

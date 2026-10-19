@@ -636,5 +636,11 @@
   "moreByArtist": "More by this artist",
   "fromAlbum": "Tracks from this album",
   "similarSongs": "Similar Tracks",
-  "noRecommendations": "No more recommendations"
+  "noRecommendations": "No more recommendations",
+  "updateChannel": "Update Channel",
+  "updateChannelStable": "Stable",
+  "updateChannelPrerelease": "Preview",
+  "updateChannelStableDescription": "Receive stable releases only",
+  "updateChannelPrereleaseDescription": "Receive stable and preview releases",
+  "updateChannelSaveFailed": "Could not save the update channel. Please try again."
 }

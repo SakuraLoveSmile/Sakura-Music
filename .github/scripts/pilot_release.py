@@ -4,7 +4,6 @@
 Read workflow_dispatch fields from the event JSON; never interpolate them into
 shell source. Recovery requires this exact batch/run/target owner; installers are never replaced.
 """
-import datetime
 import hashlib
 import json
 import os
@@ -91,7 +90,7 @@ def collect_assets(root):
         require(not path.is_symlink(), 'Symlink artifact forbidden')
         if not path.is_file():
             continue
-        if path.parent == root and path.name in ('kaneopilot-release.json', 'latest.json'):
+        if path.parent == root and path.name in ('kaneopilot-release.json', 'latest.json', 'candidate.json'):
             continue
         require(path.name in ASSETS, 'Unexpected build artifact: ' + path.name)
         require(path.name not in files, 'Duplicate build artifact: ' + path.name)
@@ -308,23 +307,62 @@ def publish(manifest, env, root, request=api):
     final_ref = request('GET', prefix + '/git/ref/tags/' + tag)
     require(final_ref == ref if ref is not None else final_ref.get('object', {}).get('sha') == annotation['sha'],
             'Tag changed during publication')
-    if not prerelease:
-        latest = dict(tag_name=manifest['tag'], html_url='https://github.com/' + repository + '/releases/tag/' + manifest['tag'],
-                      body='', published_at=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-                      assets=[dict(name=a['name'], size=a['size'], digest='sha256:' + a['sha256'],
-                      browser_download_url='https://github.com/' + repository + '/releases/download/' + manifest['tag'] + '/' + a['name']) for a in provenance['assets']])
-        (root / 'latest.json').write_bytes(canonical(latest))
+    candidate = dict(tag_name=manifest['tag'], version=manifest['version'],
+                     build_number=manifest['build_number'], prerelease=prerelease, draft=False,
+                     html_url='https://github.com/' + repository + '/releases/tag/' + manifest['tag'],
+                     body=final.get('body') or '', published_at=final.get('published_at'),
+                     assets=[dict(name=a['name'], size=a['size'], digest='sha256:' + a['sha256'],
+                     browser_download_url='https://github.com/' + repository + '/releases/download/' + manifest['tag'] + '/' + a['name']) for a in provenance['assets']])
+    (root / 'candidate.json').write_bytes(canonical(candidate))
     return provenance
 
 
-def legacy_manifest(repository, tag, request=api):
+def source_version(path, tag):
+    """The no-override shared build uses this exact source pubspec identity."""
+    values = re.findall(r'^version:\s*([^\s#]+)', Path(path).read_text(encoding='utf-8'), re.MULTILINE)
+    require(len(values) == 1, 'Source must have exactly one pubspec version')
+    value = values[0]
+    match = re.fullmatch(r'((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?\+([1-9][0-9]*)', value)
+    require(match is not None and tag == 'v' + value.split('+')[0], 'Tag/source version mismatch or unsupported pubspec version')
+    number = int(match[3])
+    require(number <= 2147483647, 'Invalid source build number')
+    return dict(version=match[1], build_number=number, prerelease=bool(match[2]), draft=False)
+
+
+
+def require_remote_tag(repository, tag, target_sha, request=api):
+    """Resolve lightweight/nested annotated tags with a bounded, read-only check."""
+    require(matches(SHA, target_sha), 'Invalid frozen tag target SHA')
+    prefix = '/repos/' + repository
+    ref_path = prefix + '/git/ref/tags/' + urllib.parse.quote(tag, safe='')
+    ref = request('GET', ref_path)
+    require(isinstance(ref, dict), 'Remote tag is missing; refusing publication')
+    obj = ref.get('object')
+    seen = set()
+    for _ in range(16):
+        require(isinstance(obj, dict) and matches(SHA, obj.get('sha')), 'Invalid remote tag object')
+        sha = obj['sha']
+        require(sha not in seen, 'Remote tag object cycle')
+        seen.add(sha)
+        if obj.get('type') == 'commit':
+            require(sha == target_sha, 'Remote tag no longer points to the frozen source SHA')
+            require(request('GET', ref_path) == ref, 'Remote tag changed while resolving its target')
+            return
+        require(obj.get('type') == 'tag', 'Remote tag does not resolve to a commit')
+        annotation = request('GET', prefix + '/git/tags/' + sha)
+        require(isinstance(annotation, dict) and annotation.get('sha') == sha, 'Remote annotated tag is missing or changed')
+        obj = annotation.get('object')
+    raise ValueError('Remote tag exceeds the bounded annotation depth')
+
+def legacy_manifest(repository, tag, request=api, *, source, root, target_sha):
     """Describe retained GitHub packages, never this rerun's rebuilt files."""
-    stable_version(tag)
+    metadata = source_version(source, tag)
+    files = collect_assets(Path(root))
     prefix = '/repos/' + repository
     release = request('GET', prefix + '/releases/tags/' + urllib.parse.quote(tag, safe=''))
     require(isinstance(release, dict) and release.get('tag_name') == tag and
-            release.get('draft') is False and release.get('prerelease') is False,
-            'Stable release is not published')
+            release.get('draft') is False and release.get('prerelease') is metadata['prerelease'],
+            'Release is not published in the expected channel')
     page_url = 'https://github.com/' + repository + '/releases/tag/' + tag
     require(release.get('html_url') == page_url, 'Unexpected stable Release URL')
     assets = {}
@@ -347,7 +385,12 @@ def legacy_manifest(repository, tag, request=api):
     else:
         raise ValueError('Stable asset list is incomplete')
     require(set(assets) == set(ASSETS), 'Stable release is missing a platform package')
-    return dict(tag_name=tag, html_url=page_url, body=release.get('body') or '',
+    for name, path in files.items():
+        require((assets[name]['size'], assets[name]['digest']) ==
+                (path.stat().st_size, 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest()),
+                'Retained installer differs from this exact source build; cannot infer package metadata')
+    require_remote_tag(repository, tag, target_sha, request)
+    return dict(metadata, tag_name=tag, html_url=page_url, body=release.get('body') or '',
                 published_at=release.get('published_at'), assets=[assets[name] for name in sorted(assets)])
 
 
@@ -360,46 +403,93 @@ def stable_manifest_identity(manifest):
         require(isinstance(asset, dict), 'Invalid stable manifest asset')
         name = asset.get('name')
         require(name in ASSETS and name not in values, 'Ambiguous stable manifest asset')
-        require(all(key in asset for key in ('size', 'digest', 'browser_download_url')), 'Incomplete stable manifest asset')
+        require(type(asset.get('size')) is int and asset['size'] > 0 and
+                isinstance(asset.get('digest'), str) and asset['digest'].startswith('sha256:') and
+                matches(HASH, asset['digest'][7:]) and isinstance(asset.get('browser_download_url'), str),
+                'Incomplete package manifest asset identity')
         values[name] = {key: asset[key] for key in ('name', 'size', 'digest', 'browser_download_url')}
     require(set(values) == set(ASSETS), 'Existing stable manifest is missing package identities')
     return manifest.get('html_url'), [values[name] for name in sorted(values)]
 
 
-def update_latest(repository, candidate_path, run=None):
-    """Optimistic git CAS: a rejected push re-fetches and re-compares versions."""
+def manifest_order(manifest, *, legacy=False):
+    version = manifest.get('version')
+    if version is None and legacy:
+        require(not any(key in manifest for key in ('build_number', 'prerelease', 'draft')),
+                'Incomplete existing channel metadata')
+        stable_manifest_identity(manifest)
+        return stable_version(manifest.get('tag_name')), None
+    require(matches(VERSION, version), 'Manifest lacks a numeric version')
+    number = manifest.get('build_number')
+    require(type(number) is int and 0 < number <= 2147483647, 'Manifest lacks a valid package build number')
+    require(type(manifest.get('prerelease')) is bool and manifest.get('draft') is False,
+            'Manifest channel/publication state is invalid')
+    tag = manifest.get('tag_name')
+    require(isinstance(tag, str) and (tag == 'v' + version if not manifest['prerelease'] else tag.startswith('v' + version + '-')),
+            'Manifest tag/version/channel mismatch')
+    stable_manifest_identity(manifest)
+    return tuple(int(x) for x in version.split('.')), number
+
+
+def channel_should_advance(current, candidate):
+    version, number = manifest_order(candidate)
+    old_version, old_number = manifest_order(current, legacy=True)
+    same_tag = current.get('tag_name') == candidate['tag_name']
+    if same_tag:
+        require(old_version == version and old_number == number,
+                'Same-tag package build identity is missing or differs; reconciliation required')
+        require(stable_manifest_identity(current) == stable_manifest_identity(candidate),
+                'Same-tag manifest differs from retained GitHub packages; reconciliation required')
+        return False
+    if old_version != version:
+        return version > old_version
+    require(old_number is not None, 'Cannot compare same-version legacy manifest without package build identity')
+    if old_number == number:
+        require(stable_manifest_identity(current) == stable_manifest_identity(candidate),
+                'Same version/build identifies different packages; reconciliation required')
+        return False
+    return number > old_number
+
+
+def update_channels(repository, candidate_path, run=None):
+    """Optimistic git CAS, independently advancing eligible feeds after each fetch."""
     import subprocess
     if run is None:
         run = subprocess.run
     candidate = json.loads(Path(candidate_path).read_bytes())
-    version = stable_version(candidate.get('tag_name'))
+    manifest_order(candidate)
+    feeds = ('preview',) if candidate['prerelease'] else ('latest', 'preview')
     repository = Path(repository).resolve()
     def git(*args, check=True):
         result = run(['git', '-C', str(repository), *args], text=True, capture_output=True)
-        require(not check or result.returncode == 0, 'Stable manifest git operation failed: ' + args[0])
+        require(not check or result.returncode == 0, 'Channel manifest git operation failed: ' + args[0])
         return result
     git('config', 'user.name', 'github-actions[bot]')
     git('config', 'user.email', 'github-actions[bot]@users.noreply.github.com')
     for _ in range(3):
         git('fetch', 'origin', 'main')
-        git('checkout', '-B', 'pilot-stable-manifest', 'FETCH_HEAD')
-        path = repository / 'release/latest.json'
-        if path.exists():
-            current = json.loads(path.read_bytes())
-            current_version = stable_version(current.get('tag_name'))
-            if current_version > version:
-                return 'unchanged'
-            if current_version == version:
-                require(stable_manifest_identity(current) == stable_manifest_identity(candidate),
-                        'Same-tag stable manifest differs from retained GitHub packages; reconciliation required')
-                return 'unchanged'
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(canonical(candidate))
-        git('add', 'release/latest.json')
-        git('commit', '-m', '[skip ci] chore: update latest.json manifest for ' + candidate['tag_name'])
+        git('checkout', '-B', 'pilot-channel-manifests', 'FETCH_HEAD')
+        paths = []
+        # Compare all feeds before writing any; one identity conflict blocks the batch.
+        for feed in feeds:
+            path = repository / ('release/' + feed + '.json')
+            if not path.exists() or channel_should_advance(json.loads(path.read_bytes()), candidate):
+                paths.append(path)
+        if not paths:
+            return 'unchanged'
+        for path in paths:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(canonical(candidate))
+        git('add', *[str(path.relative_to(repository)) for path in paths])
+        git('commit', '-m', '[skip ci] chore: update channel manifests for ' + candidate['tag_name'])
         if git('push', 'origin', 'HEAD:main', check=False).returncode == 0:
             return 'updated'
-    raise ValueError('Stable manifest push conflicted repeatedly; rerun to reconcile')
+    raise ValueError('Channel manifest push conflicted repeatedly; rerun to reconcile')
+
+
+def update_latest(repository, candidate_path, run=None):
+    # Kept for existing callers; all candidates now use the frozen two-feed contract.
+    return update_channels(repository, candidate_path, run)
 
 def event_env():
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
@@ -412,14 +502,39 @@ def event_env():
 
 
 def main():
-    if sys.argv[1] == 'legacy-manifest':
-        path = Path(sys.argv[3])
-        result = legacy_manifest(os.environ['GITHUB_REPOSITORY'], sys.argv[2])
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(canonical(result))
+    if sys.argv[1] == 'collect-legacy':
+        import shutil
+        files = collect_assets(Path(sys.argv[2]))
+        root = Path(sys.argv[3])
+        require(not root.exists(), 'Legacy package staging directory already exists')
+        root.mkdir(parents=True)
+        for name, path in files.items():
+            shutil.copyfile(path, root / name)
         return
-    if sys.argv[1] == 'update-latest':
-        update_latest(sys.argv[2], sys.argv[3])
+    if sys.argv[1] == 'source-version':
+        metadata = source_version(sys.argv[2], sys.argv[3])
+        with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+            for key, value in metadata.items():
+                output.write('%s=%s\n' % (key, str(value).lower() if type(value) is bool else value))
+        return
+    if sys.argv[1] in ('legacy-manifest', 'legacy-preflight'):
+        tag, source, root = sys.argv[2:5]
+        source_version(source, tag)
+        repository = os.environ['GITHUB_REPOSITORY']
+        target_sha = sys.argv[5] if sys.argv[1] == 'legacy-preflight' else sys.argv[6]
+        require_remote_tag(repository, tag, target_sha, api)
+        if sys.argv[1] == 'legacy-preflight':
+            existing = api('GET', '/repos/' + repository + '/releases/tags/' + urllib.parse.quote(tag, safe=''))
+            if existing is None:
+                return
+        result = legacy_manifest(repository, tag, api, source=source, root=root, target_sha=target_sha)
+        if sys.argv[1] == 'legacy-manifest':
+            path = Path(sys.argv[5])
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(canonical(result))
+        return
+    if sys.argv[1] in ('update-latest', 'update-channels'):
+        update_channels(sys.argv[2], sys.argv[3])
         return
     env = event_env()
     manifest = validate(env)

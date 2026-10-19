@@ -51,32 +51,52 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(release['with']['prerelease'], '${{ needs.validate-release.outputs.prerelease }}')
         self.assertIn('packages', publish['needs'])
 
-    def test_legacy_validates_channel_before_publication(self):
+    def test_legacy_freezes_tag_source_before_build_and_preflights_before_write(self):
+        w = workflow('release.yml')
+        validation = w['jobs']['validate-release']
+        source = validation['steps'][1]
+        self.assertEqual(source['with']['ref'], '${{ inputs.tag_name || github.ref }}')
+        self.assertEqual(w['jobs']['packages']['with'],
+                         {'target_sha': '${{ needs.validate-release.outputs.target_sha }}'})
+        scripts = '\n'.join(step.get('run', '') for step in validation['steps'])
+        self.assertIn('source-version release-source/pubspec.yaml', scripts)
+        self.assertIn('refs/tags/$RELEASE_TAG^{commit}', scripts)
+        publish = w['jobs']['publish-release']['steps']
+        preflight = next(i for i, step in enumerate(publish) if ' legacy-preflight ' in step.get('run', ''))
+        release = next(i for i, step in enumerate(publish) if step.get('uses', '').startswith('softprops/'))
+        self.assertLess(preflight, release)
+        for step in (publish[preflight], publish[-2]):
+            self.assertEqual(step['env']['FROZEN_TARGET_SHA'], '${{ needs.validate-release.outputs.target_sha }}')
+            self.assertIn(chr(34) + '$FROZEN_TARGET_SHA' + chr(34), step['run'])
+        self.assertEqual(publish[release]['with']['overwrite_files'], 'false')
+        self.assertEqual(publish[release]['with']['make_latest'], '${{ needs.validate-release.outputs.make_latest }}')
+        self.assertNotIn('if', publish[-1])
+        self.assertNotIn('if', publish[-2])
+        self.assertIn('legacy-manifest', publish[-2]['run'])
+        self.assertIn('release-source/pubspec.yaml release-files', publish[-2]['run'])
+
+    def test_legacy_source_freeze_shell_rejects_head_that_is_not_the_tag(self):
         import os
         import tempfile
         w = workflow('release.yml')
-        validation = w['jobs']['validate-release']
-        script = next(step['run'] for step in validation['steps'] if step.get('id') == 'validate')
-        for tag, channel in [('v1.2.3', 'stable'), ('v1.2.3-beta.1', 'prerelease'),
-                             ('v1.2.3.1', 'prerelease'), ('v01.2.3', 'prerelease')]:
-            with self.subTest(tag=tag), tempfile.TemporaryDirectory() as directory:
-                root = Path(directory)
-                (root / 'pubspec.yaml').write_text('version: ' + tag[1:] + '+7\n')
-                output = root / 'output'
-                env = dict(os.environ, EVENT_NAME='workflow_dispatch', INPUT_TAG_NAME=tag, GITHUB_OUTPUT=str(output))
-                result = subprocess.run(['bash', '-c', script], cwd=root, env=env, text=True, capture_output=True)
-                self.assertEqual(result.returncode, 0, result.stderr)
-                values = dict(line.split('=', 1) for line in output.read_text().splitlines())
-                self.assertEqual(values['release_channel'], channel)
-                self.assertEqual(values['prerelease'], 'false' if channel == 'stable' else 'true')
-                self.assertEqual(values['make_latest'], 'legacy' if channel == 'stable' else 'false')
-        publish = w['jobs']['publish-release']['steps']
-        for step in publish:
-            if step.get('name', '').startswith(('Generate version manifest', 'Commit manifest')):
-                self.assertEqual(step['if'], "${{ needs.validate-release.outputs.release_channel == 'stable' }}")
-        release = next(step for step in publish if step.get('uses', '').startswith('softprops/'))
-        self.assertEqual(release['with']['prerelease'], '${{ needs.validate-release.outputs.prerelease }}')
-        self.assertEqual(release['with']['make_latest'], '${{ needs.validate-release.outputs.make_latest }}')
+        script = next(step['run'] for step in w['jobs']['validate-release']['steps'] if step.get('id') == 'validate')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'release-source'
+            source.mkdir()
+            def git(*args):
+                return subprocess.run(['git', '-C', str(source), *args], check=True, text=True, capture_output=True)
+            git('init'); git('config', 'user.name', 'test'); git('config', 'user.email', 'test@example.invalid')
+            (source / 'pubspec.yaml').write_text('version: 1.2.3+7\n')
+            git('add', '.'); git('commit', '-m', 'tagged'); git('tag', '--no-sign', 'v1.2.3')
+            env = dict(os.environ, EVENT_NAME='workflow_dispatch', INPUT_TAG_NAME='v1.2.3',
+                       GITHUB_REF_NAME='main', IS_PRERELEASE='false', GITHUB_OUTPUT=str(root / 'output'))
+            result = subprocess.run(['bash', '-c', script], cwd=root, env=env, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('target_sha=' + git('rev-parse', 'HEAD').stdout.strip(), (root / 'output').read_text())
+            git('commit', '--allow-empty', '-m', 'untagged')
+            result = subprocess.run(['bash', '-c', script], cwd=root, env=env, text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
 
     def test_provenance_and_stable_guard(self):
         steps = workflow('pilot-release.yml')['jobs']['publish']['steps']
@@ -84,8 +104,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(artifact['with']['name'], 'kaneopilot-provenance')
         self.assertEqual(artifact['with']['path'], 'release-files/kaneopilot-release.json')
         latest = steps[-1]
-        self.assertEqual(latest['if'], "${{ needs.validate.outputs.channel == 'stable' }}")
-        self.assertIn('update-latest pilot-tools release-files/latest.json', latest['run'])
+        self.assertNotIn('if', latest)
+        self.assertIn('update-channels pilot-tools release-files/candidate.json', latest['run'])
         self.assertEqual(artifact['with']['overwrite'], 'true')
         prepare = next(i for i, step in enumerate(steps) if ' prepare release-files' in step.get('run', ''))
         upload = next(i for i, step in enumerate(steps) if step.get('uses', '').startswith('actions/upload-artifact'))
@@ -99,9 +119,9 @@ class WorkflowTests(unittest.TestCase):
         legacy = workflow('release.yml')['jobs']['publish-release']['steps']
         release = next(step for step in legacy if step.get('uses', '').startswith('softprops/'))
         self.assertEqual(release['with']['make_latest'], '${{ needs.validate-release.outputs.make_latest }}')
-        self.assertIn('update-latest', legacy[-1]['run'])
+        self.assertIn('update-channels', legacy[-1]['run'])
         self.assertEqual(release['with']['overwrite_files'], 'false')
-        generation = next(step for step in legacy if step.get('name') == 'Generate version manifest')
+        generation = next(step for step in legacy if step.get('name', '').startswith('Generate version manifest'))
         self.assertIn('legacy-manifest', generation['run'])
         self.assertNotIn('sha256sum', generation['run'])
 

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+enum UpdateChannel { stable, prerelease }
+
 /// A release asset exposed by the GitHub Releases API.
 class ReleaseAsset {
   const ReleaseAsset({
@@ -23,10 +25,16 @@ class ReleaseAsset {
       );
     }
 
+    final url = Uri.tryParse(downloadUrl);
+    if (url == null ||
+        !url.hasAuthority ||
+        (url.scheme != 'https' && url.scheme != 'http')) {
+      throw const FormatException('Release asset URL is invalid');
+    }
     final digest = json['digest'] as String?;
     return ReleaseAsset(
       name: name,
-      downloadUrl: Uri.parse(downloadUrl),
+      downloadUrl: url,
       sizeBytes: (json['size'] as num?)?.toInt() ?? 0,
       sha256: _parseSha256(digest),
     );
@@ -53,6 +61,8 @@ class AppRelease {
     required this.pageUrl,
     required this.publishedAt,
     required this.assets,
+    this.buildNumber,
+    this.isPrerelease = false,
   });
 
   final String version;
@@ -61,6 +71,8 @@ class AppRelease {
   final Uri pageUrl;
   final DateTime? publishedAt;
   final List<ReleaseAsset> assets;
+  final int? buildNumber;
+  final bool isPrerelease;
 
   factory AppRelease.fromJson(Map<String, dynamic> json) {
     final tagName = json['tag_name'] as String?;
@@ -71,25 +83,50 @@ class AppRelease {
       );
     }
 
+    final rawVersion = json['version'];
+    final rawBuild = json['build_number'];
+    final version = rawVersion ?? tagName;
+    if (version is! String ||
+        !_SemVer.isValid(version) ||
+        (rawVersion != null && !RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version)) ||
+        (rawVersion != null && rawBuild == null) ||
+        (rawBuild != null && rawVersion == null) ||
+        (rawBuild != null &&
+            (rawBuild is! int || rawBuild <= 0 || rawBuild > 2147483647)) ||
+        (json['prerelease'] != null && json['prerelease'] is! bool) ||
+        (json['draft'] != null && json['draft'] is! bool) ||
+        json['draft'] == true) {
+      throw const FormatException('Release identity is invalid or unpublished');
+    }
+    final uri = Uri.tryParse(pageUrl);
+    if (uri == null ||
+        !uri.hasAuthority ||
+        (uri.scheme != 'https' && uri.scheme != 'http')) {
+      throw const FormatException('Release page URL is invalid');
+    }
+
     final rawAssets = json['assets'];
-    final assets = rawAssets is List
-        ? rawAssets
-              .whereType<Map>()
-              .map(
-                (asset) => ReleaseAsset.fromJson(
-                  asset.map((key, value) => MapEntry(key.toString(), value)),
-                ),
-              )
-              .toList(growable: false)
-        : const <ReleaseAsset>[];
+    if (rawAssets is! List || rawAssets.any((asset) => asset is! Map)) {
+      throw const FormatException('Release assets are invalid');
+    }
+    final assets = rawAssets
+        .cast<Map>()
+        .map(
+          (asset) => ReleaseAsset.fromJson(
+            asset.map((key, value) => MapEntry(key.toString(), value)),
+          ),
+        )
+        .toList(growable: false);
 
     return AppRelease(
-      version: tagName,
+      version: version,
       tagName: tagName,
       notes: json['body'] as String? ?? '',
-      pageUrl: Uri.parse(pageUrl),
+      pageUrl: uri,
       publishedAt: DateTime.tryParse(json['published_at'] as String? ?? ''),
       assets: assets,
+      buildNumber: rawBuild as int?,
+      isPrerelease: json['prerelease'] as bool? ?? false,
     );
   }
 }
@@ -112,6 +149,10 @@ class _SemVer implements Comparable<_SemVer> {
   final int minor;
   final int patch;
   final List<String> prerelease;
+
+  static bool isValid(String value) => RegExp(
+    r'^[vV]?\d+(?:\.\d+)?(?:\.\d+)?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$',
+  ).hasMatch(value.trim());
 
   factory _SemVer.parse(String value) {
     var normalized = value.trim();
@@ -209,7 +250,7 @@ ReleaseAsset? pickAsset(
 
   for (final name in names) {
     for (final asset in assets) {
-      if (asset.name == name) return asset;
+      if (asset.name == name && asset.sha256 != null) return asset;
     }
   }
   return null;
