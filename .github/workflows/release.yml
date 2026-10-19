@@ -29,61 +29,54 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_tag: ${{ steps.validate.outputs.release_tag }}
-      release_channel: ${{ steps.validate.outputs.release_channel }}
-      prerelease: ${{ steps.validate.outputs.prerelease }}
+      target_sha: ${{ steps.validate.outputs.target_sha }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
       make_latest: ${{ steps.validate.outputs.make_latest }}
     steps:
-      - name: Checkout repository
+      - name: Checkout release tooling
         uses: actions/checkout@v4
-
-      - name: Validate release tag and pubspec version
-        id: validate
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Checkout immutable tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
+          path: release-source
+          persist-credentials: false
+      - name: Read the actual no-override package version
+        id: metadata
         env:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_TAG_NAME: ${{ inputs.tag_name }}
         run: |
           set -euo pipefail
-
+          RELEASE_TAG="$GITHUB_REF_NAME"
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             RELEASE_TAG="$INPUT_TAG_NAME"
-            if [[ -z "$RELEASE_TAG" ]]; then
-              echo "workflow_dispatch requires a non-empty tag_name" >&2
-              exit 1
-            fi
-          else
-            RELEASE_TAG="$GITHUB_REF_NAME"
+            [[ -n "$RELEASE_TAG" ]]
           fi
-
-          if [[ "$RELEASE_TAG" != v* ]]; then
-            echo "Release tag must start with v: $RELEASE_TAG" >&2
-            exit 1
+          python3 .github/scripts/pilot_release.py source-version release-source/pubspec.yaml "$RELEASE_TAG"
+      - name: Freeze tag and source identity
+        id: validate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG_NAME: ${{ inputs.tag_name }}
+          IS_PRERELEASE: ${{ steps.metadata.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          RELEASE_TAG="$GITHUB_REF_NAME"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            RELEASE_TAG="$INPUT_TAG_NAME"
           fi
-
-          RELEASE_VERSION="${RELEASE_TAG#v}"
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Release tag is not a valid app version: $RELEASE_TAG" >&2
-            exit 1
-          fi
-
-          PUBSPEC_VERSION="$(sed -nE 's/^version:[[:space:]]*([^[:space:]]+).*$/\1/p' pubspec.yaml | head -n 1)"
-          PUBSPEC_BASE_VERSION="${PUBSPEC_VERSION%%+*}"
-          if [[ -z "$PUBSPEC_VERSION" || "$PUBSPEC_BASE_VERSION" != "$RELEASE_VERSION" ]]; then
-            echo "Release tag $RELEASE_TAG does not match pubspec.yaml version $PUBSPEC_VERSION" >&2
-            exit 1
-          fi
-
-          echo "Release tag: $RELEASE_TAG"
-          echo "pubspec version: $PUBSPEC_VERSION"
+          SOURCE_SHA="$(git -C release-source rev-parse HEAD)"
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git -C release-source rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$SOURCE_SHA"
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          # Keep every previously accepted tag publishable. Only canonical
-          # numeric stable tags may advance the stable updater channel.
-          if [[ "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "release_channel=stable" >> "$GITHUB_OUTPUT"
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          echo "target_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          if [[ "$IS_PRERELEASE" == "false" ]]; then
             echo "make_latest=legacy" >> "$GITHUB_OUTPUT"
           else
-            echo "release_channel=prerelease" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
             echo "make_latest=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -92,7 +85,7 @@ jobs:
     needs: validate-release
     uses: ./.github/workflows/release-build.yml
     with:
-      target_sha: ${{ github.sha }}
+      target_sha: ${{ needs.validate-release.outputs.target_sha }}
     secrets:
       FEEDBACK_DEPLOY_KEY: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -102,25 +95,36 @@ jobs:
     needs: [validate-release, packages]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout release tooling
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+      - name: Checkout exact package source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.target_sha }}
+          path: release-source
+          persist-credentials: false
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Prepare Release Assets
-        run: |
-          mkdir -p release-files
-          find artifacts -type f \( -name "*.apk" -o -name "*.zip" -o -name "*.dmg" -o -name "*.ipa" \) -exec cp {} release-files/ \;
-          ls -lh release-files/
+      - name: Prepare unique complete release assets
+        run: python3 .github/scripts/pilot_release.py collect-legacy artifacts release-files
 
       - name: Determine Release Tag
         env:
           RELEASE_TAG: ${{ needs.validate-release.outputs.release_tag }}
         run: |
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+
+      - name: Reject retained packages with a different build identity
+        env:
+          FROZEN_TARGET_SHA: ${{ needs.validate-release.outputs.target_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/pilot_release.py legacy-preflight "$RELEASE_TAG" release-source/pubspec.yaml release-files "$FROZEN_TARGET_SHA"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -133,12 +137,11 @@ jobs:
           prerelease: ${{ needs.validate-release.outputs.prerelease }}
           make_latest: ${{ needs.validate-release.outputs.make_latest }}
 
-      - name: Generate version manifest
-        if: ${{ needs.validate-release.outputs.release_channel == 'stable' }}
+      - name: Generate version manifest from verified retained packages
         env:
+          FROZEN_TARGET_SHA: ${{ needs.validate-release.outputs.target_sha }}
           GH_TOKEN: ${{ github.token }}
-        run: python3 .github/scripts/pilot_release.py legacy-manifest "$RELEASE_TAG" "$RUNNER_TEMP/lyricon_manifest/latest.json"
+        run: python3 .github/scripts/pilot_release.py legacy-manifest "$RELEASE_TAG" release-source/pubspec.yaml release-files "$RUNNER_TEMP/lyricon_manifest/candidate.json" "$FROZEN_TARGET_SHA"
 
-      - name: Commit manifest to main without regressing a newer stable version
-        if: ${{ needs.validate-release.outputs.release_channel == 'stable' }}
-        run: python3 .github/scripts/pilot_release.py update-latest . "$RUNNER_TEMP/lyricon_manifest/latest.json"
+      - name: Advance eligible updater channels without regressing concurrent releases
+        run: python3 .github/scripts/pilot_release.py update-channels . "$RUNNER_TEMP/lyricon_manifest/candidate.json"

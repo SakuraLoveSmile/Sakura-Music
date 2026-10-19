@@ -9,6 +9,8 @@ import '../../core/locale.dart';
 import '../../core/feedback/feedback_config.dart';
 import '../../l10n/l10n.dart';
 import '../../core/update/update_providers.dart';
+import '../../core/update/update_channel.dart';
+import '../../core/update/update_models.dart';
 import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
 import '../../data/settings_repository.dart';
@@ -36,6 +38,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final serversAsync = ref.watch(serversProvider);
     final appVersion = ref.watch(appVersionProvider);
     final updateState = ref.watch(updateControllerProvider);
+    final updateChannel = ref.watch(updateChannelProvider);
+    final channelLocked =
+        updateChannel.isLoading ||
+        updateState.status == UpdateStatus.downloading ||
+        updateState.status == UpdateStatus.installing;
     final localeCode = ref.watch(localeCodeProvider);
     // Only offer the in-app feedback entry when the layer is actually mounted.
     final feedbackEnabled = ref.watch(feedbackServiceConfigProvider) != null;
@@ -311,6 +318,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _buildDivider(),
                 _buildActionTile(
+                  icon: Icons.tune_rounded,
+                  iconColor: const Color(0xFF1E7BF6),
+                  title: context.l10n.updateChannel,
+                  trailingText: updateChannel.hasError
+                      ? context.l10n.retry
+                      : _channelLabel(
+                          updateChannel.value ?? UpdateChannel.stable,
+                        ),
+                  trailingWidget: updateChannel.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : null,
+                  onTap: channelLocked
+                      ? null
+                      : updateChannel.hasError
+                      ? () => ref.invalidate(updateChannelProvider)
+                      : _showUpdateChannelDialog,
+                ),
+                _buildDivider(),
+                _buildActionTile(
                   icon: Icons.system_update_alt_rounded,
                   iconColor: const Color(0xFF1E7BF6),
                   title: context.l10n.checkUpdates,
@@ -491,7 +521,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required String title,
     String? trailingText,
     Widget? trailingWidget,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return Material(
       color: Colors.transparent,
@@ -500,39 +530,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: <Widget>[
-              _squircleIcon(icon, iconColor),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              children: <Widget>[
+                _squircleIcon(icon, iconColor),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-              if (trailingWidget != null) ...[
-                trailingWidget,
-                const SizedBox(width: 8),
-              ] else if (trailingText != null) ...[
-                Text(
-                  trailingText,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 13,
+                if (trailingWidget != null) ...[
+                  trailingWidget,
+                  const SizedBox(width: 8),
+                ] else if (trailingText != null) ...[
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth * 0.5,
+                    ),
+                    child: Text(
+                      trailingText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 4),
+                ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Colors.white.withValues(alpha: 0.35),
                 ),
-                const SizedBox(width: 4),
               ],
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -582,6 +621,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _checkForUpdates() async {
     await ref.read(updateControllerProvider.notifier).check();
+    _showUpdateCheckFeedback();
+  }
+
+  void _showUpdateCheckFeedback() {
     if (!mounted) return;
     final state = ref.read(updateControllerProvider);
     if (state.status == UpdateStatus.idle) {
@@ -593,6 +636,84 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SnackBar(
           content: Text(state.errorMessage ?? context.l10n.updateCheckFailed),
         ),
+      );
+    }
+  }
+
+  String _channelLabel(UpdateChannel channel) => switch (channel) {
+    UpdateChannel.stable => context.l10n.updateChannelStable,
+    UpdateChannel.prerelease => context.l10n.updateChannelPrerelease,
+  };
+
+  void _showUpdateChannelDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Consumer(
+        builder: (context, ref, _) {
+          final channel = ref.watch(updateChannelProvider);
+          final status = ref.watch(updateControllerProvider).status;
+          final enabled =
+              !channel.isLoading &&
+              status != UpdateStatus.downloading &&
+              status != UpdateStatus.installing;
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E2028),
+            title: Text(
+              context.l10n.updateChannel,
+              style: const TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final option in UpdateChannel.values)
+                  ListTile(
+                    title: Text(
+                      _channelLabel(option),
+                      style: TextStyle(
+                        color: channel.value == option
+                            ? Colors.white
+                            : Colors.white70,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    subtitle: Text(
+                      option == UpdateChannel.stable
+                          ? context.l10n.updateChannelStableDescription
+                          : context.l10n.updateChannelPrereleaseDescription,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: channel.value == option
+                        ? const Icon(Icons.check, color: Color(0xFF1E7BF6))
+                        : null,
+                    enabled: enabled,
+                    onTap: enabled
+                        ? () {
+                            Navigator.of(dialogContext).pop();
+                            if (option != channel.value) {
+                              _setUpdateChannel(option);
+                            }
+                          }
+                        : null,
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _setUpdateChannel(UpdateChannel channel) async {
+    try {
+      await ref.read(updateControllerProvider.notifier).setChannel(channel);
+      _showUpdateCheckFeedback();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.updateChannelSaveFailed)),
       );
     }
   }

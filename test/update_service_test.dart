@@ -108,6 +108,31 @@ void main() {
     expect(release.assets.single.sha256, equals('b' * 64));
   });
 
+  test('reads numeric release identity instead of its display tag', () {
+    final release = AppRelease.fromJson(<String, dynamic>{
+      'tag_name': 'pilot-build-preview',
+      'version': '1.2.3',
+      'build_number': 42,
+      'prerelease': true,
+      'draft': false,
+      'html_url': 'https://example.com/release',
+      'assets': <Object>[],
+    });
+    expect(release.version, '1.2.3');
+    expect(release.tagName, 'pilot-build-preview');
+  });
+
+  test('rejects damaged release identity instead of treating it as old', () {
+    expect(
+      () => AppRelease.fromJson(<String, dynamic>{
+        'tag_name': 'broken',
+        'html_url': 'https://example.com/release',
+        'assets': <Object>[],
+      }),
+      throwsFormatException,
+    );
+  });
+
   test('downloads an asset and verifies its SHA-256 digest', () async {
     final bytes = utf8.encode('sakuramusic update fixture');
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -194,11 +219,10 @@ void main() {
       throwsA(isA<UpdateException>()),
     );
     expect(
-      await File(
-        '${temporaryDirectory.path}${Platform.pathSeparator}updates'
-        '${Platform.pathSeparator}${asset.name}',
-      ).exists(),
-      isFalse,
+      await Directory(
+        '${temporaryDirectory.path}${Platform.pathSeparator}updates',
+      ).list().toList(),
+      isEmpty,
     );
   });
 

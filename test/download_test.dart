@@ -48,7 +48,7 @@ Song _song(String id, {String suffix = 'flac'}) =>
 AppDatabase _memoryDb() => AppDatabase(NativeDatabase.memory());
 
 void main() {
-  group('v13 -> v16 migration', () {
+  group('v13 -> v17 migration', () {
     late Directory tempDir;
 
     setUp(() async {
@@ -113,13 +113,14 @@ void main() {
           ('song-3', 1, 'Three', NULL, NULL, '/legacy/song-3.flac', NULL,
            'flac', 10, 'downloading', 0.1, ${now + 2})
       ''');
+        fixture.execute('CREATE TABLE settings (id INTEGER PRIMARY KEY)');
         fixture.execute('PRAGMA user_version = 13');
         fixture.dispose();
 
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 16);
+        expect(database.schemaVersion, 17);
 
         final recent = await database.getRecentPlays(serverId: 1);
         expect(recent.single.coverArtId, isNull);
@@ -205,13 +206,14 @@ void main() {
           (song_id, server_id, title, file_path, created_at)
         VALUES ('v14-song', 2, 'V14', '/v14/song.mp3', 1756000000)
       ''');
+        fixture.execute('CREATE TABLE settings (id INTEGER PRIMARY KEY)');
         fixture.execute('PRAGMA user_version = 14');
         fixture.dispose();
 
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 16);
+        expect(database.schemaVersion, 17);
         expect((await database.getRecentPlays(serverId: 2)), isEmpty);
         expect(
           (await database.getDownload('v14-song', serverId: 2))!.filePath,

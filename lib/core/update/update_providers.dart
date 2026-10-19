@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../audio/audio_player_provider.dart';
+import 'update_channel.dart';
 import 'update_installer.dart';
 import 'update_models.dart';
 import 'update_service.dart';
@@ -61,34 +62,103 @@ final updateInstallerProvider = Provider<UpdateInstaller>(
 
 class UpdateController extends Notifier<UpdateState> {
   CancelToken? _cancelToken;
+  int _generation = 0;
+  bool _savingChannel = false;
 
   @override
   UpdateState build() {
-    ref.onDispose(() => _cancelToken?.cancel());
+    ref.onDispose(() {
+      _generation++;
+      _cancelToken?.cancel();
+    });
     return const UpdateState();
   }
 
+  Future<void> setChannel(UpdateChannel channel) async {
+    if (_savingChannel ||
+        state.status == UpdateStatus.downloading ||
+        state.status == UpdateStatus.installing) {
+      throw const UpdateException('下载或安装期间无法切换更新渠道');
+    }
+    final previous = state;
+    _savingChannel = true;
+    final generation = ++_generation;
+    try {
+      await ref.read(updateChannelProvider.notifier).setChannel(channel);
+    } catch (_) {
+      if (_isCurrent(generation)) {
+        state = previous.status == UpdateStatus.checking
+            ? const UpdateState()
+            : previous;
+      }
+      rethrow;
+    } finally {
+      _savingChannel = false;
+    }
+    if (!_isCurrent(generation)) return;
+    state = const UpdateState();
+    try {
+      final file = previous.file;
+      if (file != null && await file.exists()) await file.delete();
+    } on FileSystemException catch (error) {
+      if (_isCurrent(generation)) {
+        state = UpdateState(
+          status: UpdateStatus.error,
+          errorMessage: _errorMessage(error),
+        );
+      }
+      return;
+    }
+    if (!_isCurrent(generation)) return;
+    await check();
+  }
+
   Future<void> check({bool silent = false}) async {
-    if (state.status == UpdateStatus.checking ||
+    if (_savingChannel ||
+        state.status == UpdateStatus.checking ||
         state.status == UpdateStatus.downloading ||
         state.status == UpdateStatus.installing) {
       return;
     }
 
+    final generation = ++_generation;
     state = const UpdateState(status: UpdateStatus.checking);
     try {
-      final release = await ref.read(updateServiceProvider).checkForUpdate();
+      final channel = await ref.read(updateChannelProvider.future);
+      if (!_isCurrent(generation)) return;
+      final platform = Platform.operatingSystem;
+      String? androidAbi;
+      if (Platform.isAndroid) {
+        final info = await DeviceInfoPlugin().androidInfo;
+        if (!_isCurrent(generation)) return;
+        androidAbi = info.supportedAbis.isEmpty
+            ? null
+            : info.supportedAbis.first;
+      }
+      final release = await ref
+          .read(updateServiceProvider)
+          .checkForUpdate(
+            channel: channel,
+            platform: platform,
+            androidAbi: androidAbi,
+          );
+      if (!_isCurrent(generation)) return;
       if (release == null) {
         state = const UpdateState();
         return;
       }
-      final asset = await _assetFor(release);
+      final asset = pickAsset(
+        release.assets,
+        platform: platform,
+        androidAbi: androidAbi,
+      );
       state = UpdateState(
         status: UpdateStatus.available,
         release: release,
         asset: asset,
       );
     } catch (error) {
+      if (!_isCurrent(generation)) return;
       state = silent
           ? const UpdateState()
           : UpdateState(
@@ -98,7 +168,10 @@ class UpdateController extends Notifier<UpdateState> {
     }
   }
 
+  bool _isCurrent(int generation) => ref.mounted && generation == _generation;
+
   Future<void> startDownload() async {
+    if (_savingChannel) return;
     final current = state;
     if (current.status != UpdateStatus.available ||
         current.release == null ||
@@ -113,6 +186,7 @@ class UpdateController extends Notifier<UpdateState> {
       return;
     }
 
+    final generation = ++_generation;
     final release = current.release!;
     final asset = current.asset!;
     final cancelToken = CancelToken();
@@ -132,7 +206,7 @@ class UpdateController extends Notifier<UpdateState> {
             asset,
             cancelToken: cancelToken,
             onProgress: (received, total) {
-              if (cancelToken.isCancelled) return;
+              if (cancelToken.isCancelled || !_isCurrent(generation)) return;
               final effectiveTotal = total > 0 ? total : asset.sizeBytes;
               state = UpdateState(
                 status: UpdateStatus.downloading,
@@ -144,6 +218,10 @@ class UpdateController extends Notifier<UpdateState> {
               );
             },
           );
+      if (!_isCurrent(generation)) {
+        if (await file.exists()) await file.delete();
+        return;
+      }
       state = UpdateState(
         status: UpdateStatus.downloaded,
         release: release,
@@ -154,6 +232,7 @@ class UpdateController extends Notifier<UpdateState> {
         totalBytes: asset.sizeBytes,
       );
     } catch (error) {
+      if (!_isCurrent(generation)) return;
       if (cancelToken.isCancelled) {
         state = UpdateState(
           status: UpdateStatus.available,
@@ -177,6 +256,7 @@ class UpdateController extends Notifier<UpdateState> {
 
   void cancelDownload() {
     if (state.status != UpdateStatus.downloading) return;
+    _generation++;
     _cancelToken?.cancel('用户取消下载');
     state = UpdateState(
       status: UpdateStatus.available,
@@ -199,6 +279,8 @@ class UpdateController extends Notifier<UpdateState> {
   }
 
   Future<void> install() async {
+    if (_savingChannel) return;
+    final generation = ++_generation;
     final current = state;
     final release = current.release;
     if (release == null) return;
@@ -216,13 +298,16 @@ class UpdateController extends Notifier<UpdateState> {
     );
     try {
       await ref.read(audioPlayerProvider).pause();
+      if (!_isCurrent(generation)) return;
       await ref
           .read(updateInstallerProvider)
           .installUpdate(current.file!, release);
+      if (!_isCurrent(generation)) return;
       if (Platform.isAndroid) {
         state = const UpdateState();
       }
     } catch (error) {
+      if (!_isCurrent(generation)) return;
       state = UpdateState(
         status: UpdateStatus.error,
         release: release,
@@ -240,6 +325,8 @@ class UpdateController extends Notifier<UpdateState> {
   }
 
   void dismiss() {
+    _generation++;
+    _cancelToken?.cancel();
     final file = state.file;
     if (file != null) {
       unawaited(
@@ -249,21 +336,6 @@ class UpdateController extends Notifier<UpdateState> {
       );
     }
     state = const UpdateState();
-  }
-
-  Future<ReleaseAsset?> _assetFor(AppRelease release) async {
-    if (Platform.isAndroid) {
-      final info = await DeviceInfoPlugin().androidInfo;
-      final abi = info.supportedAbis.isEmpty ? null : info.supportedAbis.first;
-      return pickAsset(release.assets, platform: 'android', androidAbi: abi);
-    }
-    if (Platform.isWindows) {
-      return pickAsset(release.assets, platform: 'windows');
-    }
-    if (Platform.isMacOS) {
-      return pickAsset(release.assets, platform: 'macos');
-    }
-    return null;
   }
 
   String _errorMessage(Object error) {

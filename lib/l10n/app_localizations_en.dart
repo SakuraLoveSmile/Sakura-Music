@@ -1508,4 +1508,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noRecommendations => 'No more recommendations';
+
+  @override
+  String get updateChannel => 'Update Channel';
+
+  @override
+  String get updateChannelStable => 'Stable';
+
+  @override
+  String get updateChannelPrerelease => 'Preview';
+
+  @override
+  String get updateChannelStableDescription => 'Receive stable releases only';
+
+  @override
+  String get updateChannelPrereleaseDescription =>
+      'Receive stable and preview releases';
+
+  @override
+  String get updateChannelSaveFailed =>
+      'Could not save the update channel. Please try again.';
 }

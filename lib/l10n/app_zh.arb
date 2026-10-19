@@ -658,5 +658,11 @@
   "moreByArtist": "该艺术家的其他作品",
   "fromAlbum": "所属专辑曲目",
   "similarSongs": "相似单曲推荐",
-  "noRecommendations": "暂无更多推荐曲目"
+  "noRecommendations": "暂无更多推荐曲目",
+  "updateChannel": "更新渠道",
+  "updateChannelStable": "正式版",
+  "updateChannelPrerelease": "测试版",
+  "updateChannelStableDescription": "仅接收稳定版本",
+  "updateChannelPrereleaseDescription": "接收正式版和测试版本",
+  "updateChannelSaveFailed": "更新渠道保存失败，请重试"
 }

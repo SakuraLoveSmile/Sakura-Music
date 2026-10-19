@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -128,6 +128,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 16) {
         // V16: remembers the last folder browsed per WebDAV server.
         await m.createTable(webDavPaths);
+      }
+      if (from >= 4 && from < 17) {
+        // Settings created while upgrading pre-v4 databases already include it.
+        await m.addColumn(settings, settings.updateChannel);
       }
     },
     beforeOpen: (details) async {
@@ -422,6 +426,7 @@ class AppDatabase extends _$AppDatabase {
     bool? membershipActive,
     String? membershipMethod,
     bool clearMembershipMethod = false,
+    String? updateChannel,
   }) async {
     final current = await getSettings();
     await into(settings).insertOnConflictUpdate(
@@ -465,6 +470,9 @@ class AppDatabase extends _$AppDatabase {
           clearMembershipMethod
               ? null
               : membershipMethod ?? current?.membershipMethod,
+        ),
+        updateChannel: Value(
+          updateChannel ?? current?.updateChannel ?? 'stable',
         ),
       ),
     );

@@ -21,8 +21,8 @@ void main() {
 
     tearDown(() => database.close());
 
-    test('schema version is 16 and the table is created', () async {
-      expect(database.schemaVersion, 16);
+    test('schema version is 17 and the table is created', () async {
+      expect(database.schemaVersion, 17);
       expect(await database.select(database.webDavPaths).get(), isEmpty);
     });
 
@@ -95,9 +95,12 @@ void main() {
       });
       final file = File('${directory.path}/app.sqlite');
 
-      // Open once at V16, then rewind to the shape a V15 build left behind:
-      // the table does not exist and `user_version` still says 15.
+      // Open the current schema, then rewind to the shape a V15 build left:
+      // neither the path table nor the channel column exists yet.
       final seeded = AppDatabase(NativeDatabase(file));
+      await seeded.customStatement(
+        'ALTER TABLE settings DROP COLUMN update_channel',
+      );
       await seeded.customStatement(
         'DROP TABLE ${seeded.webDavPaths.actualTableName}',
       );
