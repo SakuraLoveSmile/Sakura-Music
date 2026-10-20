@@ -8,6 +8,28 @@ permissions:
   contents: read
 
 jobs:
+  release-workflows:
+    name: Release workflow checks (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install workflow test parser
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Run isolated release workflow tests with the runner Bash
+        run: python -m unittest discover -s .github/scripts/tests -v
+
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
