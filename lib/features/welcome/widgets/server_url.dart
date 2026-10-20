@@ -96,3 +96,28 @@ String? inferServerType(String baseUrl) {
     _ => null,
   };
 }
+
+/// Identity of the connection settings that a successful connection test
+/// covered. Comparing a freshly composed signature against the one stored when
+/// the test passed tells the form whether that test is still trustworthy:
+/// changing the protocol, scheme, host, port, username or password invalidates
+/// it. The server name is deliberately absent — renaming does not change the
+/// endpoint being tested.
+///
+/// [username] is trimmed like the request builders do; [password] is kept
+/// verbatim because leading or trailing spaces can be significant there.
+String serverConnectionSignature({
+  required String protocolId,
+  required String scheme,
+  required String host,
+  String? port,
+  required String username,
+  required String password,
+}) {
+  return <String>[
+    protocolId,
+    composeBaseUrl(scheme: scheme, host: host, port: port),
+    username.trim(),
+    password,
+  ].join('\u0000');
+}

@@ -101,6 +101,10 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
   int _selectedProtocolIndex = 0;
   String _scheme = 'https';
 
+  /// Signature of the settings a completed connection test covered, or null
+  /// when no test passed for the current settings.
+  String? _passedTestSignature;
+
   @override
   void initState() {
     super.initState();
@@ -156,6 +160,29 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
     port: _portController.text,
   );
 
+  /// True while adding a new server: saving stays locked until a connection
+  /// test passes for exactly these settings. Editing an existing server is
+  /// never gated — the user is already connected to it.
+  bool get _requiresPassingTest => widget.serverToEdit == null;
+
+  /// Fingerprint of everything a connection test covers. The server name is
+  /// excluded so renaming alone never invalidates a passed test.
+  String get _connectionSignature => serverConnectionSignature(
+    protocolId: _selectedProtocol.id,
+    scheme: _scheme,
+    host: _hostController.text,
+    port: _portController.text,
+    username: _usernameController.text,
+    password: _passwordController.text,
+  );
+
+  /// Whether saving may proceed: always true in edit mode, otherwise only when
+  /// the last successful test ran against the current settings.
+  bool get _testStillValid =>
+      !_requiresPassingTest ||
+      (_passedTestSignature != null &&
+          _passedTestSignature == _connectionSignature);
+
   void _selectProtocol(int index) {
     setState(() {
       final previousDefault =
@@ -185,12 +212,20 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
             offset: parts.host.length,
           );
         });
+        return;
       }
     }
+    // A plain hostname edit still changes the signature, so the save button has
+    // to re-evaluate whether the last successful test still applies.
+    setState(() {});
   }
 
   Future<bool> _testConnection({bool silentSuccess = false}) async {
     if (!_formKey.currentState!.validate()) {
+      // Invalid fields mean nothing was tested, so any earlier pass is stale.
+      if (_passedTestSignature != null) {
+        setState(() => _passedTestSignature = null);
+      }
       return false;
     }
     setState(() {
@@ -217,12 +252,15 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
         await client.ping();
       }
       if (mounted) {
-        if (!silentSuccess) {
-          setState(() {
+        setState(() {
+          // Remember which settings just proved reachable: any later edit to a
+          // connection field invalidates this signature and re-locks saving.
+          _passedTestSignature = _connectionSignature;
+          if (!silentSuccess) {
             _statusMessage = context.l10n.connectSuccess;
             _statusIsError = false;
-          });
-        }
+          }
+        });
       }
       return true;
     } on SubsonicException catch (error) {
@@ -230,6 +268,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
         setState(() {
           _statusMessage = context.l10n.connectFailed(error.message);
           _statusIsError = true;
+          _passedTestSignature = null;
         });
       }
       return false;
@@ -238,6 +277,8 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
         setState(() {
           _statusMessage = context.l10n.connectFailed(error.toString());
           _statusIsError = true;
+          // A failed test never unlocks the add-mode save button.
+          _passedTestSignature = null;
         });
       }
       return false;
@@ -250,6 +291,11 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
 
   Future<void> _saveServer() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    // Belt and braces: the button is already disabled in add mode, but a
+    // programmatic caller must never persist untested settings either.
+    if (!_testStillValid) {
       return;
     }
     setState(() {
@@ -480,6 +526,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(5),
                   ],
+                  onChanged: (_) => setState(() {}),
                   validator: (value) {
                     final text = value?.trim() ?? '';
                     if (text.isEmpty) {
@@ -501,6 +548,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
             labelText: context.l10n.username,
             prefixIcon: Icons.person_outline_rounded,
             sensitive: true,
+            onChanged: (_) => setState(() {}),
             validator: (v) => v == null || v.trim().isEmpty
                 ? context.l10n.pleaseInputUsername
                 : null,
@@ -512,6 +560,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
             prefixIcon: Icons.lock_outline_rounded,
             obscureText: true,
             sensitive: true,
+            onChanged: (_) => setState(() {}),
             validator: (v) => v == null || v.trim().isEmpty
                 ? context.l10n.pleaseInputPassword
                 : null,
@@ -591,7 +640,9 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: _testing || _saving ? null : _saveServer,
+                  onPressed: _testing || _saving || !_testStillValid
+                      ? null
+                      : _saveServer,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF0A84FF),
                     foregroundColor: Colors.white,
