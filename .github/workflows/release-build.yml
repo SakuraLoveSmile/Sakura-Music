@@ -141,16 +141,16 @@ jobs:
       - name: Build Android Split APKs
         run: |
           set -euo pipefail
-          args=()
-          if [[ -n "$PILOT_BUILD_VERSION" ]]; then args+=(--build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"); fi
-          flutter build apk --release --split-per-abi --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "${args[@]}"
+          set --
+          if [[ -n "$PILOT_BUILD_VERSION" ]]; then set -- --build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"; fi
+          flutter build apk --release --split-per-abi --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "$@"
 
       - name: Build Android Universal APK
         run: |
           set -euo pipefail
-          args=()
-          if [[ -n "$PILOT_BUILD_VERSION" ]]; then args+=(--build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"); fi
-          flutter build apk --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "${args[@]}"
+          set --
+          if [[ -n "$PILOT_BUILD_VERSION" ]]; then set -- --build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"; fi
+          flutter build apk --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "$@"
 
       - name: Collect Android Assets
         run: |
@@ -223,9 +223,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          args=()
-          if [[ -n "$PILOT_BUILD_VERSION" ]]; then args+=(--build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"); fi
-          flutter build windows --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "${args[@]}"
+          set --
+          if [[ -n "$PILOT_BUILD_VERSION" ]]; then set -- --build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"; fi
+          flutter build windows --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "$@"
 
       - name: Package Windows Zip
         shell: pwsh
@@ -277,9 +277,9 @@ jobs:
       - name: Build macOS
         run: |
           set -euo pipefail
-          args=()
-          if [[ -n "$PILOT_BUILD_VERSION" ]]; then args+=(--build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"); fi
-          flutter build macos --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "${args[@]}"
+          set --
+          if [[ -n "$PILOT_BUILD_VERSION" ]]; then set -- --build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"; fi
+          flutter build macos --release --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "$@"
 
       - name: Package macOS App
         run: |
@@ -331,9 +331,9 @@ jobs:
       - name: Build iOS (unsigned)
         run: |
           set -euo pipefail
-          args=()
-          if [[ -n "$PILOT_BUILD_VERSION" ]]; then args+=(--build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"); fi
-          flutter build ios --release --no-codesign --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "${args[@]}"
+          set --
+          if [[ -n "$PILOT_BUILD_VERSION" ]]; then set -- --build-name "$PILOT_BUILD_VERSION" --build-number "$PILOT_BUILD_NUMBER"; fi
+          flutter build ios --release --no-codesign --dart-define=FEEDBACK_ENABLED=${{ env.FEEDBACK_ENABLED }} --dart-define=FEEDBACK_API_BASE=${{ env.FEEDBACK_API_BASE }} --dart-define=FEEDBACK_APP_ID=${{ env.FEEDBACK_APP_ID }} "$@"
 
       - name: Package iOS IPA & App
         run: |
