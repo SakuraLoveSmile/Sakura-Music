@@ -61,6 +61,47 @@ const List<ServerProtocolItem> serverProtocols = <ServerProtocolItem>[
   ),
 ];
 
+/// Probe used by the config form to find out whether the entered settings are
+/// reachable. The default implementation talks to the real server; tests inject
+/// a fake so success, failure and an in-flight request can be simulated
+/// deterministically instead of depending on the network.
+typedef ServerConnectionTester =
+    Future<void> Function({
+      required bool isWebDav,
+      required String baseUrl,
+      required String username,
+      required String password,
+    });
+
+/// The production probe: a WebDAV PROPFIND for the WebDAV protocol, otherwise a
+/// Subsonic `ping`. Throws when the server is unreachable, which the form
+/// reports as a failed connection test.
+Future<void> defaultServerConnectionTester({
+  required bool isWebDav,
+  required String baseUrl,
+  required String username,
+  required String password,
+}) async {
+  if (isWebDav) {
+    final client = WebDavClient(
+      baseUrl: baseUrl,
+      username: username,
+      password: password,
+    );
+    final reachable = await client.testConnection();
+    if (!reachable) {
+      throw Exception('WebDAV PROPFIND failed');
+    }
+    return;
+  }
+  final client = SubsonicClient(
+    baseUrl: baseUrl,
+    username: username,
+    password: password,
+  );
+  await client.ping();
+}
+
 /// Shared server-configuration form used by both the edit dialog (free mode,
 /// no fixed protocol) and the full-screen add-server config page (a fixed
 /// protocol that hides the type chips).
@@ -73,6 +114,7 @@ class ServerConfigForm extends ConsumerStatefulWidget {
     this.prefillHost,
     this.prefillPort,
     this.onSaved,
+    this.connectionTester = defaultServerConnectionTester,
   });
 
   final List<ServerProtocolItem> protocols;
@@ -81,6 +123,10 @@ class ServerConfigForm extends ConsumerStatefulWidget {
   final String? prefillHost;
   final String? prefillPort;
   final void Function(int serverId)? onSaved;
+
+  /// Executes the connection test. Defaults to the real WebDAV/Subsonic probe;
+  /// tests inject a fake to drive success, failure and pending states.
+  final ServerConnectionTester connectionTester;
 
   @override
   ConsumerState<ServerConfigForm> createState() => _ServerConfigFormState();
@@ -228,34 +274,27 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
       }
       return false;
     }
+    // Capture the settings this attempt actually tests *before* awaiting. The
+    // user can still edit a field while the probe is in flight, and the pass
+    // must be recorded against what was sent, not against whatever the form
+    // holds when the response arrives.
+    final attemptedSignature = _connectionSignature;
     setState(() {
       _testing = true;
       _statusMessage = null;
     });
     try {
-      if (_isWebDav) {
-        final client = WebDavClient(
-          baseUrl: _composedBaseUrl,
-          username: _usernameController.text.trim(),
-          password: _passwordController.text,
-        );
-        final reachable = await client.testConnection();
-        if (!reachable) {
-          throw Exception('WebDAV PROPFIND failed');
-        }
-      } else {
-        final client = SubsonicClient(
-          baseUrl: _composedBaseUrl,
-          username: _usernameController.text.trim(),
-          password: _passwordController.text,
-        );
-        await client.ping();
-      }
+      await widget.connectionTester(
+        isWebDav: _isWebDav,
+        baseUrl: _composedBaseUrl,
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+      );
       if (mounted) {
         setState(() {
           // Remember which settings just proved reachable: any later edit to a
           // connection field invalidates this signature and re-locks saving.
-          _passedTestSignature = _connectionSignature;
+          _passedTestSignature = attemptedSignature;
           if (!silentSuccess) {
             _statusMessage = context.l10n.connectSuccess;
             _statusIsError = false;
