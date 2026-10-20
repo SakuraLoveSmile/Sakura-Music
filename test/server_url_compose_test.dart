@@ -149,4 +149,51 @@ void main() {
       expect(inferServerType('https://example.com:8443'), isNull);
     });
   });
+
+  group('serverConnectionSignature', () {
+    String sign({
+      String protocolId = 'navidrome',
+      String scheme = 'https',
+      String host = 'music.example.com',
+      String? port = '4533',
+      String username = 'listener',
+      String password = 'secret',
+    }) => serverConnectionSignature(
+      protocolId: protocolId,
+      scheme: scheme,
+      host: host,
+      port: port,
+      username: username,
+      password: password,
+    );
+
+    test('is stable for identical inputs', () {
+      expect(sign(), sign());
+      expect(sign(host: ' music.example.com ', port: ' 4533 '), sign());
+      expect(sign(host: 'https://music.example.com/'), sign());
+    });
+
+    test('changes with protocol, scheme, host or port', () {
+      final base = sign();
+      expect(sign(protocolId: 'subsonic'), isNot(base));
+      expect(sign(scheme: 'http'), isNot(base));
+      expect(sign(host: 'other.example.com'), isNot(base));
+      expect(sign(host: 'music.example.com/music'), isNot(base));
+      expect(sign(port: '4040'), isNot(base));
+      expect(sign(port: null), isNot(base));
+    });
+
+    test('changes with username or password', () {
+      final base = sign();
+      expect(sign(username: 'other'), isNot(base));
+      expect(sign(password: 'other'), isNot(base));
+    });
+
+    test('trims the username but keeps the password verbatim', () {
+      expect(sign(username: '  listener  '), sign());
+      expect(sign(password: ' secret '), isNot(sign()));
+      expect(sign(password: 'secret '), isNot(sign()));
+      expect(sign(password: 'Secret'), isNot(sign()));
+    });
+  });
 }
