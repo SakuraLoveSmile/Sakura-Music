@@ -11,6 +11,10 @@ import '../../../data/server_repository.dart';
 import '../../../l10n/l10n.dart';
 import 'server_url.dart';
 
+/// Vertical gap between adjacent rows of input fields in the server config
+/// form. Keeps every field-to-field gap on the same rhythm.
+const double _fieldSpacing = 20;
+
 /// A selectable server protocol shown on the add-server grid and as a config
 /// form preset.
 class ServerProtocolItem {
@@ -401,6 +405,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
                 ? context.l10n.pleaseInputServerName
                 : null,
           ),
+          const SizedBox(height: _fieldSpacing),
           _InputField(
             controller: _hostController,
             labelText: context.l10n.serverAddress,
@@ -423,7 +428,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
               return null;
             },
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: _fieldSpacing),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -495,7 +500,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: _fieldSpacing),
           _InputField(
             controller: _usernameController,
             labelText: context.l10n.username,
@@ -505,7 +510,7 @@ class _ServerConfigFormState extends ConsumerState<ServerConfigForm> {
                 ? context.l10n.pleaseInputUsername
                 : null,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: _fieldSpacing),
           _InputField(
             controller: _passwordController,
             labelText: context.l10n.password,
