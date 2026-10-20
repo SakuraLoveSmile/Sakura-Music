@@ -1,7 +1,10 @@
 """Offline graph checks; YAML parser may be supplied by the caller's vendor path."""
 from pathlib import Path
+import json
+import os
 import re
 import subprocess
+import tempfile
 import unittest
 import yaml
 
@@ -14,6 +17,49 @@ def workflow(name):
 
 
 class WorkflowTests(unittest.TestCase):
+    def assert_build_invocations(self, version, build):
+        builds = workflow('release-build.yml')
+        invocations = []
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            capture = root / 'arguments.json'
+            # Execute the workflow's real shell block. Stub only the expensive
+            # compiler so argument construction runs under the runner's Bash.
+            flutter = root / 'flutter'
+            flutter.write_text(
+                '#!/usr/bin/env python3\n'
+                'import json, os, sys\n'
+                'from pathlib import Path\n'
+                'Path(os.environ["BUILD_ARGUMENTS"]).write_text(json.dumps(sys.argv[1:]))\n')
+            flutter.chmod(0o755)
+            env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ['PATH'],
+                       PILOT_BUILD_VERSION=version, PILOT_BUILD_NUMBER=build,
+                       BUILD_ARGUMENTS=str(capture))
+            for job in builds['jobs'].values():
+                for step in job.get('steps', []):
+                    script = step.get('run', '')
+                    if not re.search(r'^\s*flutter build ', script, re.M):
+                        continue
+                    script = re.sub(r'\$\{\{.*?\}\}', 'fixture', script)
+                    with self.subTest(step=step['name'], version=version):
+                        result = subprocess.run(['/bin/bash', '-c', script], env=env,
+                                                text=True, capture_output=True)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        actual = json.loads(capture.read_text())
+                        command = next(line.strip() for line in script.splitlines()
+                                       if line.strip().startswith('flutter build '))
+                        fixed_arguments = command.removeprefix('flutter ').rsplit(' ', 1)[0].split()
+                        overrides = ['--build-name', version, '--build-number', build] if version else []
+                        self.assertEqual(actual, fixed_arguments + overrides)
+                        invocations.append(step['name'])
+        self.assertEqual(len(invocations), 5)
+
+    def test_build_shell_without_version_overrides(self):
+        self.assert_build_invocations('', '')
+
+    def test_build_shell_with_version_overrides(self):
+        self.assert_build_invocations('0.3.2', '1792423078')
+
     def test_five_inputs_and_exact_run_marker(self):
         w = workflow('pilot-release.yml')
         self.assertEqual(set(w['on']['workflow_dispatch']['inputs']),
