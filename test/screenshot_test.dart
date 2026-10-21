@@ -19,15 +19,12 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
 
     await tester.runAsync(() async {
-      final iconFile = File(
-        '/Users/sakurasep/flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+      final iconBytes = await rootBundle.load(
+        'fonts/MaterialIcons-Regular.otf',
       );
-      if (await iconFile.exists()) {
-        final iconBytes = await iconFile.readAsBytes();
-        final iconLoader = FontLoader('MaterialIcons')
-          ..addFont(Future<ByteData>.value(ByteData.sublistView(iconBytes)));
-        await iconLoader.load();
-      }
+      final iconLoader = FontLoader('MaterialIcons')
+        ..addFont(Future<ByteData>.value(iconBytes));
+      await iconLoader.load();
 
       final fontFile = File('/System/Library/Fonts/Supplemental/NISC18030.ttf');
       if (await fontFile.exists()) {
@@ -75,15 +72,13 @@ void main() {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
-      // Machine-local preview capture: skip when the target directory does
-      // not exist (e.g. CI runners), and allow redirecting via env var.
+      // Keep preview captures local by default; callers may choose another path.
       final previewPath =
           Platform.environment['WELCOME_SCREEN_PREVIEW_PATH'] ??
-          '/Users/sakurasep/.gemini/antigravity/brain/9b0b0156-553f-4357-808e-a6fc7c6e5eb5/welcome_screen_preview.png';
+          'build/previews/welcome-screen.png';
       final file = File(previewPath);
-      if (await file.parent.exists()) {
-        await file.writeAsBytes(pngBytes);
-      }
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(pngBytes);
     });
   });
 }
