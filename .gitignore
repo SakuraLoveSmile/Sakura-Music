@@ -64,3 +64,7 @@ app.*.map.json
 .local/
 .qoder/
 .flutter
+
+# Agent team messages and membership are local runtime state.
+/.agent-teams/archive/
+/.agent-teams/retired-members.json
