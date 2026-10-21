@@ -90,4 +90,46 @@ void main() {
       }
     });
   });
+
+  group('isAudioHref', () {
+    test('accepts audio hrefs with encoded names and upper-case suffixes', () {
+      for (final href in <String>[
+        '/Music/01%20-%20One.mp3',
+        '/Music/SONG.MP3',
+        '/a/b/song.flac',
+        '/song.mp3',
+      ]) {
+        expect(isAudioHref(href), isTrue, reason: href);
+      }
+    });
+
+    test('rejects lyric, artwork and playlist hrefs', () {
+      for (final href in <String>[
+        '/Music/01%20-%20One.lrc',
+        '/Music/cover.jpg',
+        '/Music/list.m3u',
+        '/Music/notes.txt',
+        '/Music/noext',
+      ]) {
+        expect(isAudioHref(href), isFalse, reason: href);
+      }
+    });
+
+    test('rejects directory hrefs', () {
+      for (final href in <String>['/Music/', '/Music/Album/', '/', '']) {
+        expect(isAudioHref(href), isFalse, reason: href);
+      }
+    });
+
+    test('ignores query strings and fragments', () {
+      expect(isAudioHref('/Music/song.mp3?token=abc'), isTrue);
+      expect(isAudioHref('/Music/song.mp3#t=30'), isTrue);
+      expect(isAudioHref('/Music/cover.jpg?x=1'), isFalse);
+    });
+
+    test('recognises a percent-encoded file name', () {
+      // The name is decoded before the suffix is inspected.
+      expect(isAudioHref('/Music/%E5%A4%9C%E6%9B%B2.MP3'), isTrue);
+    });
+  });
 }

@@ -220,6 +220,7 @@ void main() {
 
       for (final href in <String>[
         '/Music/cover.jpg',
+        '/Music/01%20-%20Track.lrc',
         '/Music/playlist.m3u',
         '/Music/noext',
       ]) {

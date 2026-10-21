@@ -509,6 +509,62 @@ void main() {
       expect(items.single.streamUrl, startsWith('file:'));
     });
 
+    test('drops persisted webdav entries that are not audio', () async {
+      final serverId = await addServer(type: 'webdav');
+      final server = await database.getServer(serverId);
+      // Regression: non-audio files such as .lrc sidecars used to be restored
+      // as songs, so the queue came back with one "track" per lyric file.
+      final entries = const <PersistedPlayableItem>[
+        PersistedPlayableItem(
+          sourceType: 'webdav',
+          id: '/music/01%20-%20One.mp3',
+          title: 'One',
+          artistId: null,
+          albumId: null,
+        ),
+        PersistedPlayableItem(
+          sourceType: 'webdav',
+          id: '/music/01%20-%20One.lrc',
+          title: 'LRC',
+          artistId: null,
+          albumId: null,
+        ),
+      ];
+      await database.savePlaybackState(
+        serverId: serverId,
+        queueJson: jsonEncode(<Map<String, Object?>>[
+          for (final entry in entries) entry.toJson(),
+        ]),
+        currentIndex: 0,
+        positionMs: 0,
+        loopMode: 'off',
+        shuffle: false,
+        volume: 1,
+        speed: 1,
+      );
+
+      final service = _FakeAudioPlayerService();
+      final coordinator = PlaybackCoordinator(
+        service: service,
+        database: database,
+        server: server,
+        readPassword: (_) => 'server-password',
+      );
+      addTearDown(() => coordinator.dispose());
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(service.setQueueCalls, isNotEmpty);
+      for (final queue in service.setQueueCalls) {
+        expect(queue, hasLength(1));
+        expect(queue.single.id, '/music/01%20-%20One.mp3');
+        expect(
+          queue.single.streamUrl,
+          'https://music.example.test/music/01%20-%20One.mp3',
+        );
+      }
+    });
+
     test('does not restore a queue saved for a different server', () async {
       final serverId = await addServer();
       final server = await database.getServer(serverId);
