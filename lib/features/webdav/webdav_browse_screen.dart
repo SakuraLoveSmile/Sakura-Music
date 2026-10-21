@@ -103,8 +103,11 @@ class _WebDavBrowseScreenState extends ConsumerState<WebDavBrowseScreen> {
   List<WebDavEntry> get _folders =>
       _entries.where((e) => e.isDirectory).toList();
 
+  /// Real audio files only: a WebDAV folder also lists `.lrc`, `.jpg` or
+  /// `.m3u` sidecars, and those must never reach the songs section or the
+  /// playback queue.
   List<WebDavEntry> get _audioFiles =>
-      _entries.where((e) => !e.isDirectory).toList();
+      _entries.where((e) => !e.isDirectory && isAudioFileName(e.name)).toList();
 
   @override
   void initState() {

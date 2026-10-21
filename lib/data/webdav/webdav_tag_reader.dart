@@ -19,7 +19,7 @@ Future<AudioTags?> readWebDavTags({
   required WebDavByteLoader load,
   int maxBytes = kWebDavTagProbeBytes,
 }) async {
-  if (!isAudioFileName(_fileNameOf(href))) {
+  if (!isAudioHref(href)) {
     return null;
   }
   final limit = maxBytes <= 0 ? kWebDavTagProbeBytes : maxBytes;
@@ -31,30 +31,5 @@ Future<AudioTags?> readWebDavTags({
     return parseAudioTags(bytes);
   } catch (_) {
     return null;
-  }
-}
-
-/// Last path segment of [href], percent-decoded when possible. Query strings
-/// and fragments are not part of the file name.
-String _fileNameOf(String href) {
-  var path = href;
-  final query = path.indexOf('?');
-  if (query >= 0) {
-    path = path.substring(0, query);
-  }
-  final fragment = path.indexOf('#');
-  if (fragment >= 0) {
-    path = path.substring(0, fragment);
-  }
-  path = path.replaceAll(RegExp(r'/+$'), '');
-  final slash = path.lastIndexOf('/');
-  final segment = slash >= 0 ? path.substring(slash + 1) : path;
-  if (segment.isEmpty) {
-    return path;
-  }
-  try {
-    return Uri.decodeComponent(segment);
-  } catch (_) {
-    return segment;
   }
 }
