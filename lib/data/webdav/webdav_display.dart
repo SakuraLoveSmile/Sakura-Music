@@ -77,6 +77,35 @@ bool isAudioFileName(String name) {
   final extension = _extensionOf(name);
   return extension != null && _audioExtensions.contains(extension);
 }
+/// Last path segment of [href] (the WebDAV file name), percent-decoded when
+/// possible. A query string or fragment is not part of the name, and trailing
+/// `/` characters (folder href) are dropped, so `/Music/` yields `Music`.
+String webDavFileNameOf(String href) {
+  var path = href;
+  final query = path.indexOf('?');
+  if (query >= 0) {
+    path = path.substring(0, query);
+  }
+  final fragment = path.indexOf('#');
+  if (fragment >= 0) {
+    path = path.substring(0, fragment);
+  }
+  path = path.replaceAll(RegExp(r'/+$'), '');
+  final slash = path.lastIndexOf('/');
+  final segment = slash >= 0 ? path.substring(slash + 1) : path;
+  if (segment.isEmpty) {
+    return path;
+  }
+  try {
+    return Uri.decodeComponent(segment);
+  } catch (_) {
+    return segment;
+  }
+}
+
+/// True when the last segment of [href] names an audio file; `/Music/song.mp3`
+/// qualifies while `/Music/01%20-%20One.lrc` or `/Music/cover.jpg` does not.
+bool isAudioHref(String href) => isAudioFileName(webDavFileNameOf(href));
 
 /// Extension of [name] without its leading dot, lower-cased, or `null` when
 /// there is none. A dot without any suffix (`song.`) is not an extension.

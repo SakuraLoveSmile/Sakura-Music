@@ -7,6 +7,7 @@ import 'package:subsonic_api/subsonic_api.dart';
 
 import '../data/db/app_database.dart';
 import '../data/server_repository.dart';
+import '../data/webdav/webdav_display.dart';
 import 'audio_player_provider.dart';
 import 'audio_player_service.dart';
 import 'persisted_playable_item.dart';
@@ -152,8 +153,15 @@ class PlaybackCoordinator {
     }
     return entries
         .where((entry) => entry.id.isNotEmpty && entry.title.isNotEmpty)
+        .where(_isRestorable)
         .toList(growable: false);
   }
+
+  /// A persisted WebDAV entry is only restorable when its href still names an
+  /// audio file: builds before the browse filter landed enqueued `.lrc`, `.jpg`
+  /// and `.m3u` sidecars as songs, and those must not come back on a cold start.
+  bool _isRestorable(PersistedPlayableItem entry) =>
+      entry.sourceType != 'webdav' || isAudioHref(entry.id);
 
   /// Rebuilds a playable item with a freshly signed stream URL. Returns null
   /// when the source cannot be rebuilt (e.g. internet radio, missing server)

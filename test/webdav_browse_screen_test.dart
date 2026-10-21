@@ -698,6 +698,71 @@ void main() {
       expect(player.playCalls, 1);
     },
   );
+
+  // Regression: a real WebDAV folder also lists sidecars (`.lrc`, `.jpg`,
+  // `.m3u`). They used to be treated as songs, so `cover.jpg` got a row and
+  // tapping a song queued its LRC — the player then showed `♪ LRC` with
+  // `00:00 / 00:00`. Only real audio files may reach the songs section and the
+  // playback queue.
+  testWidgets(
+    'lists and enqueues only audio files, never their sidecars (regression)',
+    (tester) async {
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+
+      // The screen uses an entry's href verbatim, so the listing below is the
+      // root and the file hrefs still carry their folder prefix.
+      final client = _FakeWebDavClient()
+        ..listings[''] = const <WebDavEntry>[
+          WebDavEntry(href: '/Album/', name: 'Album', isDirectory: true),
+          WebDavEntry(
+            href: '/Album/01%20-%20One.mp3',
+            name: '01 - One.mp3',
+            isDirectory: false,
+          ),
+          WebDavEntry(
+            href: '/Album/01%20-%20One.lrc',
+            name: '01 - One.lrc',
+            isDirectory: false,
+          ),
+          WebDavEntry(
+            href: '/Album/cover.jpg',
+            name: 'cover.jpg',
+            isDirectory: false,
+          ),
+        ];
+      final player = _FakePlayerService();
+
+      await _pumpBrowse(
+        tester,
+        database: database,
+        client: client,
+        player: player,
+      );
+
+      // The folder row stays, the audio row shows once, and no sidecar gets a
+      // row of its own.
+      expect(find.text('Album'), findsOneWidget);
+      expect(find.text('One'), findsOneWidget);
+      expect(find.textContaining('.lrc'), findsNothing);
+      expect(find.textContaining('cover.jpg'), findsNothing);
+
+      await tester.tap(find.widgetWithText(ListTile, 'One'));
+      await tester.pumpAndSettle();
+
+      // The whole folder is enqueued, but only its audio file is.
+      expect(player.queues, hasLength(1));
+      expect(player.queues.single.map((item) => item.id).toList(), <String>[
+        '/Album/01%20-%20One.mp3',
+      ]);
+      expect(player.startIndexes, <int>[0]);
+      expect(player.playCalls, 1);
+      // Only the audio href was probed for tags.
+      expect(client.fetchCalls, contains('/Album/01%20-%20One.mp3'));
+      expect(client.fetchCalls.any((href) => href.endsWith('.lrc')), isFalse);
+      expect(client.fetchCalls.any((href) => href.endsWith('.jpg')), isFalse);
+    },
+  );
 }
 
 /// Mounts [WebDavBrowseScreen] with the production database and the fakes.
