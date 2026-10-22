@@ -123,6 +123,28 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # Keep Gradle out of the SDK auto-installer path that returned an invalid
+      # ZIP in the Android release job. This is Google's SDK CMake package;
+      # its SHA-256 was checked against the official repository's size/SHA-1.
+      - name: Install verified CMake 3.22.1
+        env:
+          PILOT_CMAKE_SHA256: '9196644852a978012caf7a4067ba1898debf6cc204c3341562771e31080d6869'
+        run: |
+          set -euo pipefail
+          cmake_root="$(mktemp -d "$RUNNER_TEMP/android-cmake-3.22.1.XXXXXX")"
+          cmake_archive="$cmake_root/download.zip"
+          curl --fail --location --silent --show-error --retry 2 \
+            --connect-timeout 20 --max-time 180 \
+            --output "$cmake_archive" \
+            https://dl.google.com/android/repository/cmake-3.22.1-linux.zip
+          printf '%s  %s\n' "$PILOT_CMAKE_SHA256" "$cmake_archive" | shasum -a 256 --check -
+          unzip -tq "$cmake_archive"
+          unzip -q "$cmake_archive" -d "$cmake_root"
+          "$cmake_root/bin/cmake" --version
+          "$cmake_root/bin/ninja" --version
+          printf '\ncmake.dir=%s\n' "$cmake_root" >> android/local.properties
+          printf '%s\n' "$cmake_root/bin" >> "$GITHUB_PATH"
+
       - name: Decode Android signing keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
