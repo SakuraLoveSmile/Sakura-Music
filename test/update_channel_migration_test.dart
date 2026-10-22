@@ -57,9 +57,13 @@ void main() {
             );
         await seeded.setWebDavLastPath(1, '/Saved%20folder/');
 
-        // Reconstruct the on-disk shape from before the channel was introduced.
+        // Reconstruct the on-disk shape from before the channel and the
+        // floating-lyrics appearance were introduced.
         await seeded.customStatement(
           'ALTER TABLE settings DROP COLUMN update_channel',
+        );
+        await seeded.customStatement(
+          'ALTER TABLE settings DROP COLUMN lyrics_overlay_config',
         );
         final expected = <String, List<Map<String, dynamic>>>{};
         for (final table in [
@@ -86,9 +90,9 @@ void main() {
           final actual =
               (await upgraded.customSelect('SELECT * FROM ${entry.key}').get())
                   .map(
-                    (row) =>
-                        Map<String, dynamic>.from(row.data)
-                          ..remove('update_channel'),
+                    (row) => Map<String, dynamic>.from(row.data)
+                      ..remove('update_channel')
+                      ..remove('lyrics_overlay_config'),
                   )
                   .toList();
           expect(
@@ -104,7 +108,7 @@ void main() {
         expect(
           (await upgraded.customSelect('PRAGMA user_version').getSingle())
               .read<int>('user_version'),
-          17,
+          18,
         );
       },
     );

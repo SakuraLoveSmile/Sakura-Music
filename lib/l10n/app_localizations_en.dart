@@ -1528,4 +1528,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get updateChannelSaveFailed =>
       'Could not save the update channel. Please try again.';
+
+  @override
+  String get lyricsDisplay => 'Lyrics display';
+
+  @override
+  String get lyricsOverlayFontSize => 'Font size';
+
+  @override
+  String get lyricsOverlayTextColor => 'Text color';
+
+  @override
+  String get lyricsOverlayOpacity => 'Background opacity';
+
+  @override
+  String get lyricsOverlayCornerRadius => 'Corner radius';
+
+  @override
+  String get lyricsOverlayShowNextLine => 'Show next line';
+
+  @override
+  String get lyricsOverlayShowCloseButton => 'Show close button';
+
+  @override
+  String get lyricsOverlayPosition => 'Position';
+
+  @override
+  String get lyricsOverlayPositionTop => 'Top';
+
+  @override
+  String get lyricsOverlayPositionCenter => 'Center';
+
+  @override
+  String get lyricsOverlayPositionBottom => 'Bottom';
+
+  @override
+  String get lyricsOverlayReset => 'Reset appearance';
+
+  @override
+  String get lyriconAppearanceNote =>
+      'Status bar lyrics appearance is controlled by the Lyricon app itself';
 }

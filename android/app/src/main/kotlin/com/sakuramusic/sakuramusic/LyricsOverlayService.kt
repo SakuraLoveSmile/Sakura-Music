@@ -29,6 +29,22 @@ import com.sakuramusic.app.R
 import io.flutter.plugin.common.MethodChannel
 
 /**
+ * Immutable snapshot of the floating window appearance that Flutter controls
+ * through `sakuramusic/lyrics_overlay#applyConfig`. The defaults reproduce the
+ * previously hard-coded look, so a window shown before any settings arrive is
+ * pixel-identical to the old behaviour.
+ */
+data class OverlayConfig(
+    val fontScale: Float = 1f,
+    val textColor: Int = Color.WHITE,
+    val backgroundOpacity: Int = 0xB8,
+    val cornerRadiusDp: Float = 18f,
+    val showNextLine: Boolean = true,
+    val showCloseButton: Boolean = true,
+    val position: String = "top",
+)
+
+/**
  * Foreground service that renders the floating lyrics window on top of other
  * apps. Flutter drives it through the `sakuramusic/lyrics_overlay` channel
  * registered in [MainActivity]; dragging moves the window, tapping it reopens
@@ -40,6 +56,21 @@ class LyricsOverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "sakuramusic_lyrics_overlay"
         private const val NOTIFICATION_ID = 4101
+
+        private const val POSITION_TOP = "top"
+        private const val POSITION_CENTER = "center"
+        private const val POSITION_BOTTOM = "bottom"
+
+        private const val MIN_FONT_SCALE = 0.8f
+        private const val MAX_FONT_SCALE = 1.6f
+        private const val MAX_CORNER_RADIUS_DP = 40f
+
+        /**
+         * Appearance used by the next window and kept even while no window is
+         * attached, so a service restart reuses the last settings.
+         */
+        @Volatile
+        private var config = OverlayConfig()
 
         @Volatile
         private var instance: LyricsOverlayService? = null
@@ -64,8 +95,41 @@ class LyricsOverlayService : Service() {
             context.stopService(Intent(context, LyricsOverlayService::class.java))
         }
 
+        /**
+         * Stores a new appearance pushed from Dart and applies it to the window
+         * that is already visible, so the settings sheet updates live. Values
+         * are clamped to the ranges the Dart side advertises.
+         */
+        fun applyConfig(
+            fontScale: Float = config.fontScale,
+            textColor: Int = config.textColor,
+            backgroundOpacity: Int = config.backgroundOpacity,
+            cornerRadiusDp: Float = config.cornerRadiusDp,
+            showNextLine: Boolean = config.showNextLine,
+            showCloseButton: Boolean = config.showCloseButton,
+            position: String = config.position,
+        ) {
+            val next = OverlayConfig(
+                fontScale = fontScale.coerceIn(MIN_FONT_SCALE, MAX_FONT_SCALE),
+                textColor = textColor,
+                backgroundOpacity = backgroundOpacity.coerceIn(0x00, 0xFF),
+                cornerRadiusDp = cornerRadiusDp.coerceIn(0f, MAX_CORNER_RADIUS_DP),
+                showNextLine = showNextLine,
+                showCloseButton = showCloseButton,
+                position = normalizePosition(position),
+            )
+            config = next
+            instance?.applyAppearance(next)
+        }
+
         fun updateLyrics(current: String, next: String, isPlaying: Boolean) {
             instance?.renderLyrics(current, next, isPlaying)
+        }
+
+        private fun normalizePosition(position: String): String = when (position) {
+            POSITION_CENTER -> POSITION_CENTER
+            POSITION_BOTTOM -> POSITION_BOTTOM
+            else -> POSITION_TOP
         }
     }
 
@@ -73,6 +137,11 @@ class LyricsOverlayService : Service() {
     private var overlayView: View? = null
     private var currentLineView: TextView? = null
     private var nextLineView: TextView? = null
+    private var closeButton: TextView? = null
+
+    // Kept as a field so appearance changes can re-issue the layout and the
+    // touch listener keeps mutating the same params instance while dragging.
+    private var windowParams: WindowManager.LayoutParams? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -93,6 +162,8 @@ class LyricsOverlayService : Service() {
         overlayView = null
         currentLineView = null
         nextLineView = null
+        closeButton = null
+        windowParams = null
         if (view != null) {
             try {
                 windowManager?.removeView(view)
@@ -150,36 +221,37 @@ class LyricsOverlayService : Service() {
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
         windowManager = wm
 
-        val density = resources.displayMetrics.density
-        fun dp(value: Int): Int = (value * density + 0.5f).toInt()
-
+        val appearance = config
         val currentView = TextView(this).apply {
             text = "♪"
-            textSize = 16f
-            setTextColor(Color.WHITE)
+            textSize = 16f * appearance.fontScale
+            setTextColor(appearance.textColor)
             typeface = Typeface.DEFAULT_BOLD
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
         }
         val nextView = TextView(this).apply {
-            textSize = 12f
+            textSize = 12f * appearance.fontScale
             setTextColor(Color.argb(0x80, 0xFF, 0xFF, 0xFF))
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
+            visibility = if (appearance.showNextLine) View.VISIBLE else View.GONE
         }
         currentLineView = currentView
         nextLineView = nextView
 
-        val closeButton = TextView(this).apply {
+        val close = TextView(this).apply {
             text = "✕"
             textSize = 13f
             setTextColor(Color.argb(0xB3, 0xFF, 0xFF, 0xFF))
             setPadding(dp(10), 0, dp(2), dp(10))
+            visibility = if (appearance.showCloseButton) View.VISIBLE else View.GONE
             setOnClickListener {
                 channel?.invokeMethod("onOverlayClosed", null)
                 stopSelf()
             }
         }
+        closeButton = close
 
         val textColumn = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -190,13 +262,13 @@ class LyricsOverlayService : Service() {
 
         val root = FrameLayout(this).apply {
             background = GradientDrawable().apply {
-                cornerRadius = dp(18).toFloat()
-                setColor(Color.argb(0xB8, 0x10, 0x12, 0x16))
+                cornerRadius = dpFloat(appearance.cornerRadiusDp)
+                setColor(Color.argb(appearance.backgroundOpacity, 0x10, 0x12, 0x16))
             }
             setPadding(dp(16), dp(10), dp(8), dp(10))
             addView(textColumn)
             addView(
-                closeButton,
+                close,
                 FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -221,13 +293,69 @@ class LyricsOverlayService : Service() {
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            gravity = gravityFor(appearance.position)
             x = dp(16)
-            y = dp(120)
+            y = verticalOffsetFor(appearance.position)
         }
+        windowParams = params
 
         root.setOnTouchListener(OverlayTouchListener(wm, root, params))
         wm.addView(root, params)
+    }
+
+    /**
+     * Re-applies [config] to the window currently on screen without recreating
+     * it, so every slider in the settings sheet is visible immediately.
+     */
+    private fun applyAppearance(config: OverlayConfig) {
+        currentLineView?.apply {
+            textSize = 16f * config.fontScale
+            setTextColor(config.textColor)
+        }
+        nextLineView?.apply {
+            textSize = 12f * config.fontScale
+            setTextColor(Color.argb(0x80, 0xFF, 0xFF, 0xFF))
+            visibility = if (config.showNextLine) View.VISIBLE else View.GONE
+        }
+        closeButton?.visibility = if (config.showCloseButton) View.VISIBLE else View.GONE
+
+        val root = overlayView
+        (root?.background as? GradientDrawable)?.apply {
+            cornerRadius = dpFloat(config.cornerRadiusDp)
+            setColor(Color.argb(config.backgroundOpacity, 0x10, 0x12, 0x16))
+        }
+
+        val params = windowParams
+        val manager = windowManager
+        if (root != null && params != null && manager != null) {
+            params.gravity = gravityFor(config.position)
+            params.y = verticalOffsetFor(config.position)
+            try {
+                manager.updateViewLayout(root, params)
+            } catch (_: Exception) {
+                // The window may have vanished mid-update; onDestroy cleans up.
+            }
+        }
+    }
+
+    /** Converts a dp value into whole pixels for the current density. */
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
+
+    /** Converts a dp value into a float pixel size, as drawables expect. */
+    private fun dpFloat(value: Float): Float = value * resources.displayMetrics.density
+
+    /** Window gravity for [position]; the window hugs the screen start edge. */
+    private fun gravityFor(position: String): Int = when (position) {
+        POSITION_CENTER -> Gravity.CENTER_VERTICAL or Gravity.START
+        POSITION_BOTTOM -> Gravity.BOTTOM or Gravity.START
+        else -> Gravity.TOP or Gravity.START
+    }
+
+    /** Vertical offset in pixels for [position], keeping the old top margin. */
+    private fun verticalOffsetFor(position: String): Int = when (position) {
+        POSITION_CENTER -> 0
+        POSITION_BOTTOM -> dp(96)
+        else -> dp(120)
     }
 
     private fun renderLyrics(current: String, next: String, isPlaying: Boolean) {

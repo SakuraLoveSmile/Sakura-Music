@@ -642,5 +642,18 @@
   "updateChannelPrerelease": "Preview",
   "updateChannelStableDescription": "Receive stable releases only",
   "updateChannelPrereleaseDescription": "Receive stable and preview releases",
-  "updateChannelSaveFailed": "Could not save the update channel. Please try again."
+  "updateChannelSaveFailed": "Could not save the update channel. Please try again.",
+  "lyricsDisplay": "Lyrics display",
+  "lyricsOverlayFontSize": "Font size",
+  "lyricsOverlayTextColor": "Text color",
+  "lyricsOverlayOpacity": "Background opacity",
+  "lyricsOverlayCornerRadius": "Corner radius",
+  "lyricsOverlayShowNextLine": "Show next line",
+  "lyricsOverlayShowCloseButton": "Show close button",
+  "lyricsOverlayPosition": "Position",
+  "lyricsOverlayPositionTop": "Top",
+  "lyricsOverlayPositionCenter": "Center",
+  "lyricsOverlayPositionBottom": "Bottom",
+  "lyricsOverlayReset": "Reset appearance",
+  "lyriconAppearanceNote": "Status bar lyrics appearance is controlled by the Lyricon app itself"
 }

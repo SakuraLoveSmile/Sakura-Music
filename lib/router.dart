@@ -17,6 +17,7 @@ import 'features/player/player_screen.dart';
 import 'features/search/search_screen.dart';
 import 'features/settings/membership_screen.dart';
 import 'features/debug/debug_screen.dart';
+import 'features/settings/lyrics_display_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/welcome/add_server_screen.dart';
 import 'features/welcome/welcome_screen.dart';
@@ -210,6 +211,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) =>
             const NoTransitionPage(child: SettingsScreen()),
+      ),
+      GoRoute(
+        path: '/lyrics-display',
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            const MaterialPage(child: LyricsDisplayScreen()),
       ),
       GoRoute(
         path: '/debug',

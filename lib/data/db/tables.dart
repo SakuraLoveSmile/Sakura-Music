@@ -77,6 +77,15 @@ class SearchHistory extends Table {
   DateTimeColumn get searchedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Default appearance of the Android floating lyrics window, stored as the
+/// `lyrics_overlay_config` column default. It must stay identical to
+/// `LyricsOverlayConfig.defaults().encode()`; `test/lyrics_overlay_config_test`
+/// pins the two together.
+const String lyricsOverlayConfigDefaultsJson =
+    '{"fontScale":1.0,"textColor":4294967295,"backgroundOpacity":184,'
+    '"cornerRadiusDp":18.0,"showNextLine":true,"showCloseButton":true,'
+    '"position":"top"}';
+
 class Settings extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -109,6 +118,12 @@ class Settings extends Table {
   /// Lyricon on the device). Degrades silently when Lyricon is not installed.
   BoolColumn get statusBarLyricsEnabled =>
       boolean().withDefault(const Constant(false))();
+
+  /// JSON blob with the floating-lyrics window appearance. The default is the
+  /// look that used to be hard-coded in `LyricsOverlayService`, so upgrading
+  /// an existing install never changes what the user sees.
+  TextColumn get lyricsOverlayConfig =>
+      text().withDefault(const Constant(lyricsOverlayConfigDefaultsJson))();
 
   /// When enabled, the Android equalizer `AudioPipeline` is not attached to the
   /// audio player. Used as a diagnostic toggle to rule out the equalizer as the
