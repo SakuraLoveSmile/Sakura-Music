@@ -295,6 +295,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lyricsOverlay => 'Floating lyrics';
 
   @override
+  String get lyricsOverlayAppearance => 'Floating lyrics appearance';
+
+  @override
   String get lyricsOverlayPermissionNeeded =>
       'Overlay permission is required. Grant it in system settings and try again.';
 

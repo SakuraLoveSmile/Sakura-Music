@@ -61,9 +61,9 @@ class LyricsOverlayService : Service() {
         private const val POSITION_CENTER = "center"
         private const val POSITION_BOTTOM = "bottom"
 
-        private const val MIN_FONT_SCALE = 0.8f
+        private const val MIN_FONT_SCALE = 0.6f
         private const val MAX_FONT_SCALE = 1.6f
-        private const val MAX_CORNER_RADIUS_DP = 40f
+        private const val MAX_CORNER_RADIUS_DP = 32f
 
         /**
          * Appearance used by the next window and kept even while no window is
@@ -232,7 +232,7 @@ class LyricsOverlayService : Service() {
         }
         val nextView = TextView(this).apply {
             textSize = 12f * appearance.fontScale
-            setTextColor(Color.argb(0x80, 0xFF, 0xFF, 0xFF))
+            setTextColor(nextLineColor(appearance.textColor))
             maxLines = 1
             ellipsize = TextUtils.TruncateAt.END
             visibility = if (appearance.showNextLine) View.VISIBLE else View.GONE
@@ -314,7 +314,7 @@ class LyricsOverlayService : Service() {
         }
         nextLineView?.apply {
             textSize = 12f * config.fontScale
-            setTextColor(Color.argb(0x80, 0xFF, 0xFF, 0xFF))
+            setTextColor(nextLineColor(config.textColor))
             visibility = if (config.showNextLine) View.VISIBLE else View.GONE
         }
         closeButton?.visibility = if (config.showCloseButton) View.VISIBLE else View.GONE
@@ -338,7 +338,16 @@ class LyricsOverlayService : Service() {
         }
     }
 
-    /** Converts a dp value into whole pixels for the current density. */
+    /**
+     * Colour of the upcoming lyric line: the same RGB as [argb] at half alpha,
+     * so the preview line follows the configured text colour instead of
+     * drifting to a hard-coded white. The default [Color.WHITE] input yields
+     * `0x80FFFFFF`, which is exactly the value the window used before the
+     * appearance became configurable.
+     */
+    private fun nextLineColor(argb: Int): Int =
+        Color.argb(0x80, Color.red(argb), Color.green(argb), Color.blue(argb))
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
 
     /** Converts a dp value into a float pixel size, as drawables expect. */

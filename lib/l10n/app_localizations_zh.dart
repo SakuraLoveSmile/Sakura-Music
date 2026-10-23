@@ -284,6 +284,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lyricsOverlay => '桌面悬浮歌词';
 
   @override
+  String get lyricsOverlayAppearance => '悬浮歌词外观';
+
+  @override
   String get lyricsOverlayPermissionNeeded => '需要悬浮窗权限，请在系统设置中授予后重试';
 
   @override

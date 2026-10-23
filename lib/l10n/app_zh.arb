@@ -115,6 +115,7 @@
   "streamingQuality": "在线播放音质",
   "equalizerSettings": "均衡器设置",
   "lyricsOverlay": "桌面悬浮歌词",
+  "lyricsOverlayAppearance": "悬浮歌词外观",
   "lyricsOverlayPermissionNeeded": "需要悬浮窗权限，请在系统设置中授予后重试",
   "statusBarLyrics": "状态栏歌词 (Lyricon)",
   "statusBarLyricsDesc": "将当前播放的歌曲与歌词同步到状态栏（需设备已安装 LSPosed 与 Lyricon），未安装时自动忽略。",

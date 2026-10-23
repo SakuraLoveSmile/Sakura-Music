@@ -40,7 +40,15 @@ void main() {
     );
 
     expect(LyricsOverlayConfig.decode(config.encode()), config);
-    expect(config.toChannelMap(), config.toJson());
+    expect(config.toChannelMap(), <String, Object?>{
+      'fontScale': 1.3,
+      'textColor': 0xFFFFD1DC,
+      'backgroundOpacity': 60,
+      'cornerRadiusDp': 6.5,
+      'showNextLine': false,
+      'showCloseButton': false,
+      'position': 'bottom',
+    });
   });
 
   test('malformed JSON falls back to the defaults', () {
@@ -68,16 +76,23 @@ void main() {
       }),
     );
 
-    expect(config.fontScale, LyricsOverlayConfig.maxFontScale);
+    expect(config.fontScale, 1.6);
     expect(config.textColor, 0xFFFFFFFF);
-    expect(config.backgroundOpacity, LyricsOverlayConfig.maxBackgroundOpacity);
-    expect(config.cornerRadiusDp, LyricsOverlayConfig.minCornerRadiusDp);
+    expect(config.backgroundOpacity, 255);
+    expect(config.cornerRadiusDp, 0.0);
     expect(config.showNextLine, isTrue);
     expect(config.showCloseButton, isTrue);
     expect(config.position, LyricsOverlayPosition.top);
+
+    // The same bounds, spelled out on single-field literal JSON.
+    expect(LyricsOverlayConfig.decode('{"fontScale":4.2}').fontScale, 1.6);
+    expect(
+      LyricsOverlayConfig.decode('{"cornerRadiusDp":-3}').cornerRadiusDp,
+      0.0,
+    );
   });
 
-  test('values below the lower bound clamp up', () {
+  test('values outside the bounds snap back onto the nearest bound', () {
     final config = LyricsOverlayConfig.decode(
       jsonEncode(<String, Object?>{
         'fontScale': 0.1,
@@ -86,9 +101,27 @@ void main() {
       }),
     );
 
-    expect(config.fontScale, LyricsOverlayConfig.minFontScale);
-    expect(config.backgroundOpacity, LyricsOverlayConfig.minBackgroundOpacity);
-    expect(config.cornerRadiusDp, LyricsOverlayConfig.maxCornerRadiusDp);
+    expect(config.fontScale, 0.6);
+    expect(config.backgroundOpacity, 0);
+    expect(config.cornerRadiusDp, 32.0);
+
+    expect(LyricsOverlayConfig.decode('{"fontScale":0.1}').fontScale, 0.6);
+    expect(
+      LyricsOverlayConfig.decode('{"backgroundOpacity":900}')
+          .backgroundOpacity,
+      255,
+    );
+    expect(
+      LyricsOverlayConfig.decode('{"cornerRadiusDp":99}').cornerRadiusDp,
+      32.0,
+    );
+  });
+
+  test('the documented ranges are 0.6-1.6 font scale and 0-32 dp corners', () {
+    expect(LyricsOverlayConfig.minFontScale, 0.6);
+    expect(LyricsOverlayConfig.maxFontScale, 1.6);
+    expect(LyricsOverlayConfig.minCornerRadiusDp, 0);
+    expect(LyricsOverlayConfig.maxCornerRadiusDp, 32);
   });
 
   test('numeric strings and integral doubles are accepted', () {

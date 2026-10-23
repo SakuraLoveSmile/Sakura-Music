@@ -11,31 +11,96 @@ import '../lyrics_overlay/lyrics_overlay_config.dart';
 import '../lyrics_overlay/lyrics_overlay_controller.dart';
 import '../status_bar_lyrics/status_bar_lyrics_controller.dart';
 
+/// Whether the Android-only sections of this screen are visible. Exposed as a
+/// provider so widget tests can render them on a desktop host.
+final isAndroidPlatformProvider = Provider<bool>((ref) => Platform.isAndroid);
+
 /// Android "lyrics display" screen: the floating desktop overlay switch with
 /// its live appearance settings, plus the Lyricon status-bar lyrics switch.
-class LyricsDisplayScreen extends ConsumerWidget {
+class LyricsDisplayScreen extends ConsumerStatefulWidget {
   const LyricsDisplayScreen({super.key});
 
+  @override
+  ConsumerState<LyricsDisplayScreen> createState() =>
+      _LyricsDisplayScreenState();
+}
+
+class _LyricsDisplayScreenState extends ConsumerState<LyricsDisplayScreen> {
   static const Color _background = Color(0xFF131418);
   static const Color _card = Color(0xFF1B1C22);
   static const Color _accent = Color(0xFF1E7BF6);
   static const Color _accentGreen = Color(0xFF30D158);
 
+  /// Quiet window a slider drag must stay still before it is written to the
+  /// settings row; state and the visible window update on every change.
+  static const Duration _persistDebounceDelay = Duration(milliseconds: 150);
+
   /// Quick picks offered next to `lyricsOverlayTextColor`.
   static const List<Color> _textColorPresets = <Color>[
-    Colors.white,
-    Color(0xFFFFD1DC),
-    Color(0xFFFFD54F),
-    Color(0xFF9BE7FF),
-    Color(0xFFFF8A80),
+    Color(0xFFFFFFFF),
+    Color(0xFF000000),
+    Color(0xFFF48FB1),
+    Color(0xFF64D2FF),
   ];
 
+  /// Stable keys for the appearance controls: widget tests target one slider,
+  /// switch, colour dot or position chip without relying on tree order.
+  static const Key _fontScaleSliderKey = Key('lyricsOverlayFontScaleSlider');
+  static const Key _opacitySliderKey = Key('lyricsOverlayOpacitySlider');
+  static const Key _cornerRadiusSliderKey = Key(
+    'lyricsOverlayCornerRadiusSlider',
+  );
+  static const Key _nextLineSwitchKey = Key('lyricsOverlayShowNextLineSwitch');
+  static const Key _closeButtonSwitchKey = Key(
+    'lyricsOverlayShowCloseButtonSwitch',
+  );
+  static const Key _resetButtonKey = Key('lyricsOverlayResetButton');
+
+  Timer? _persistDebounce;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAndroid = Platform.isAndroid;
-    final config =
-        ref.watch(lyricsOverlayConfigProvider).value ??
-        LyricsOverlayConfig.defaults();
+  void dispose() {
+    _persistDebounce?.cancel();
+    super.dispose();
+  }
+
+  /// Applies a continuous slider change immediately (state and the native
+  /// window) and coalesces the database write until the drag pauses.
+  void _applyDebounced(LyricsOverlayConfig next) {
+    final notifier = ref.read(lyricsOverlayConfigProvider.notifier);
+    unawaited(notifier.apply(next, persist: false));
+    _persistDebounce?.cancel();
+    _persistDebounce = Timer(_persistDebounceDelay, () {
+      _persistDebounce = null;
+      unawaited(notifier.persistCurrent());
+    });
+  }
+
+  /// Applies a discrete change (toggle, colour dot, position chip, reset) and
+  /// persists it at once, cancelling a pending slider write so the debounce
+  /// cannot store the same value twice.
+  void _applyNow(LyricsOverlayConfig next) {
+    _persistDebounce?.cancel();
+    _persistDebounce = null;
+    unawaited(ref.read(lyricsOverlayConfigProvider.notifier).apply(next));
+  }
+
+  /// Restores the defaults; the button is only enabled while the stored
+  /// appearance differs from them.
+  void _resetAppearance() {
+    _persistDebounce?.cancel();
+    _persistDebounce = null;
+    unawaited(ref.read(lyricsOverlayConfigProvider.notifier).reset());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAndroid = ref.watch(isAndroidPlatformProvider);
+    final configAsync = ref.watch(lyricsOverlayConfigProvider);
+    final config = configAsync.value ?? LyricsOverlayConfig.defaults();
+    // While the stored appearance is still loading the controls stay disabled:
+    // an edit made now would be overwritten by the first read.
+    final loading = configAsync.isLoading;
 
     return Scaffold(
       backgroundColor: _background,
@@ -76,8 +141,8 @@ class LyricsDisplayScreen extends ConsumerWidget {
                 _buildSectionTitle(context.l10n.lyricsOverlay),
                 _buildOverlaySwitchCard(context, ref),
                 const SizedBox(height: 24),
-                _buildSectionTitle(context.l10n.lyricsDisplay),
-                _buildAppearanceCard(context, ref, config),
+                _buildSectionTitle(context.l10n.lyricsOverlayAppearance),
+                _buildAppearanceCard(context, config, loading),
                 const SizedBox(height: 24),
               ],
               _buildSectionTitle(context.l10n.statusBarLyrics),
@@ -193,6 +258,15 @@ class LyricsDisplayScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
+            context.l10n.statusBarLyricsDesc,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: Colors.white.withValues(alpha: 0.45),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
             context.l10n.lyriconAppearanceNote,
             style: TextStyle(
               fontSize: 12,
@@ -207,11 +281,9 @@ class LyricsDisplayScreen extends ConsumerWidget {
 
   Widget _buildAppearanceCard(
     BuildContext context,
-    WidgetRef ref,
     LyricsOverlayConfig config,
+    bool loading,
   ) {
-    final notifier = ref.read(lyricsOverlayConfigProvider.notifier);
-
     return _buildCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,18 +293,21 @@ class LyricsDisplayScreen extends ConsumerWidget {
             '${(config.fontScale * 100).round()}%',
           ),
           _buildSlider(
+            sliderKey: _fontScaleSliderKey,
             value: config.fontScale,
             min: LyricsOverlayConfig.minFontScale,
             max: LyricsOverlayConfig.maxFontScale,
-            divisions: 8,
+            divisions: 20,
             label: '${(config.fontScale * 100).round()}%',
-            onChanged: (value) {
-              unawaited(notifier.apply(config.copyWith(fontScale: value)));
-            },
+            onChanged: loading
+                ? null
+                : (value) {
+                    _applyDebounced(config.copyWith(fontScale: value));
+                  },
           ),
           _buildDivider(),
           _buildValueRow(context.l10n.lyricsOverlayTextColor, null),
-          _buildTextColorRow(config, notifier),
+          _buildTextColorRow(config, loading),
           const SizedBox(height: 12),
           _buildDivider(),
           _buildValueRow(
@@ -240,18 +315,19 @@ class LyricsDisplayScreen extends ConsumerWidget {
             '${(config.backgroundOpacity * 100 / 255).round()}%',
           ),
           _buildSlider(
+            sliderKey: _opacitySliderKey,
             value: config.backgroundOpacity.toDouble(),
             min: LyricsOverlayConfig.minBackgroundOpacity.toDouble(),
             max: LyricsOverlayConfig.maxBackgroundOpacity.toDouble(),
             divisions: 51,
             label: '${(config.backgroundOpacity * 100 / 255).round()}%',
-            onChanged: (value) {
-              unawaited(
-                notifier.apply(
-                  config.copyWith(backgroundOpacity: value.round()),
-                ),
-              );
-            },
+            onChanged: loading
+                ? null
+                : (value) {
+                    _applyDebounced(
+                      config.copyWith(backgroundOpacity: value.round()),
+                    );
+                  },
           ),
           _buildDivider(),
           _buildValueRow(
@@ -259,44 +335,54 @@ class LyricsDisplayScreen extends ConsumerWidget {
             '${config.cornerRadiusDp.round()} dp',
           ),
           _buildSlider(
+            sliderKey: _cornerRadiusSliderKey,
             value: config.cornerRadiusDp,
             min: LyricsOverlayConfig.minCornerRadiusDp,
             max: LyricsOverlayConfig.maxCornerRadiusDp,
-            divisions: 40,
+            divisions: 32,
             label: '${config.cornerRadiusDp.round()} dp',
-            onChanged: (value) {
-              unawaited(notifier.apply(config.copyWith(cornerRadiusDp: value)));
-            },
+            onChanged: loading
+                ? null
+                : (value) {
+                    _applyDebounced(config.copyWith(cornerRadiusDp: value));
+                  },
           ),
           _buildDivider(),
           _buildSwitchRow(
             title: context.l10n.lyricsOverlayShowNextLine,
+            switchKey: _nextLineSwitchKey,
             value: config.showNextLine,
-            onChanged: (value) {
-              unawaited(notifier.apply(config.copyWith(showNextLine: value)));
-            },
+            onChanged: loading
+                ? null
+                : (value) {
+                    _applyNow(config.copyWith(showNextLine: value));
+                  },
           ),
           _buildDivider(),
           _buildSwitchRow(
             title: context.l10n.lyricsOverlayShowCloseButton,
+            switchKey: _closeButtonSwitchKey,
             value: config.showCloseButton,
-            onChanged: (value) {
-              unawaited(
-                notifier.apply(config.copyWith(showCloseButton: value)),
-              );
-            },
+            onChanged: loading
+                ? null
+                : (value) {
+                    _applyNow(config.copyWith(showCloseButton: value));
+                  },
           ),
           _buildDivider(),
           _buildValueRow(context.l10n.lyricsOverlayPosition, null),
           const SizedBox(height: 10),
-          _buildPositionRow(context, config, notifier),
+          _buildPositionRow(context, config, loading),
           const SizedBox(height: 6),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {
-                unawaited(notifier.reset());
-              },
+              key: _resetButtonKey,
+              // Nothing to restore while the appearance already matches the
+              // defaults, and no edit is allowed until the first read lands.
+              onPressed: (loading || config == LyricsOverlayConfig.defaults())
+                  ? null
+                  : _resetAppearance,
               style: TextButton.styleFrom(foregroundColor: Colors.white70),
               child: Text(
                 context.l10n.lyricsOverlayReset,
@@ -309,10 +395,7 @@ class LyricsDisplayScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTextColorRow(
-    LyricsOverlayConfig config,
-    LyricsOverlayConfigController notifier,
-  ) {
+  Widget _buildTextColorRow(LyricsOverlayConfig config, bool loading) {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
@@ -321,15 +404,16 @@ class LyricsDisplayScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: _buildColorDot(
+                dotKey: _colorKey(color),
                 color: color,
                 selected: config.textColor == color.toARGB32(),
-                onTap: () {
-                  unawaited(
-                    notifier.apply(
-                      config.copyWith(textColor: color.toARGB32()),
-                    ),
-                  );
-                },
+                onTap: loading
+                    ? null
+                    : () {
+                        _applyNow(
+                          config.copyWith(textColor: color.toARGB32()),
+                        );
+                      },
               ),
             ),
         ],
@@ -338,14 +422,16 @@ class LyricsDisplayScreen extends ConsumerWidget {
   }
 
   Widget _buildColorDot({
+    required Key dotKey,
     required Color color,
     required bool selected,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return Semantics(
       button: true,
       selected: selected,
       child: GestureDetector(
+        key: dotKey,
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
@@ -371,7 +457,7 @@ class LyricsDisplayScreen extends ConsumerWidget {
   Widget _buildPositionRow(
     BuildContext context,
     LyricsOverlayConfig config,
-    LyricsOverlayConfigController notifier,
+    bool loading,
   ) {
     return Wrap(
       spacing: 10,
@@ -380,19 +466,19 @@ class LyricsDisplayScreen extends ConsumerWidget {
         _buildPositionChip(
           label: context.l10n.lyricsOverlayPositionTop,
           config: config,
-          notifier: notifier,
+          loading: loading,
           position: LyricsOverlayPosition.top,
         ),
         _buildPositionChip(
           label: context.l10n.lyricsOverlayPositionCenter,
           config: config,
-          notifier: notifier,
+          loading: loading,
           position: LyricsOverlayPosition.center,
         ),
         _buildPositionChip(
           label: context.l10n.lyricsOverlayPositionBottom,
           config: config,
-          notifier: notifier,
+          loading: loading,
           position: LyricsOverlayPosition.bottom,
         ),
       ],
@@ -402,17 +488,20 @@ class LyricsDisplayScreen extends ConsumerWidget {
   Widget _buildPositionChip({
     required String label,
     required LyricsOverlayConfig config,
-    required LyricsOverlayConfigController notifier,
+    required bool loading,
     required LyricsOverlayPosition position,
   }) {
     final selected = config.position == position;
     return ChoiceChip(
+      key: _positionKey(position),
       label: Text(label),
       selected: selected,
       showCheckmark: false,
-      onSelected: (_) {
-        unawaited(notifier.apply(config.copyWith(position: position)));
-      },
+      onSelected: loading
+          ? null
+          : (_) {
+              _applyNow(config.copyWith(position: position));
+            },
       backgroundColor: _background,
       selectedColor: _accent.withValues(alpha: 0.22),
       labelStyle: TextStyle(
@@ -426,6 +515,14 @@ class LyricsDisplayScreen extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
+
+  /// Test-visible key of a colour preset dot, e.g. `lyricsOverlayTextColor-0xff000000`.
+  static Key _colorKey(Color color) => ValueKey<String>(
+    'lyricsOverlayTextColor-0x${color.toARGB32().toRadixString(16).padLeft(8, '0')}',
+  );
+
+  static Key _positionKey(LyricsOverlayPosition position) =>
+      ValueKey<String>('lyricsOverlayPosition-${position.name}');
 
   Widget _buildValueRow(String title, String? value) {
     return Padding(
@@ -457,8 +554,9 @@ class LyricsDisplayScreen extends ConsumerWidget {
 
   Widget _buildSwitchRow({
     required String title,
+    required Key switchKey,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    required ValueChanged<bool>? onChanged,
   }) {
     return Row(
       children: <Widget>[
@@ -472,20 +570,27 @@ class LyricsDisplayScreen extends ConsumerWidget {
             ),
           ),
         ),
-        Switch(value: value, activeTrackColor: _accent, onChanged: onChanged),
+        Switch(
+          key: switchKey,
+          value: value,
+          activeTrackColor: _accent,
+          onChanged: onChanged,
+        ),
       ],
     );
   }
 
   Widget _buildSlider({
+    required Key sliderKey,
     required double value,
     required double min,
     required double max,
     required int divisions,
     required String label,
-    required ValueChanged<double> onChanged,
+    required ValueChanged<double>? onChanged,
   }) {
     return Slider(
+      key: sliderKey,
       value: value,
       min: min,
       max: max,

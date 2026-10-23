@@ -88,6 +88,7 @@
   "streamingQuality": "Streaming quality",
   "equalizerSettings": "Equalizer",
   "lyricsOverlay": "Floating lyrics",
+  "lyricsOverlayAppearance": "Floating lyrics appearance",
   "lyricsOverlayPermissionNeeded": "Overlay permission is required. Grant it in system settings and try again.",
   "statusBarLyrics": "Status-bar lyrics (Lyricon)",
   "statusBarLyricsDesc": "Sync the current song and its lyrics to the status bar (requires LSPosed and Lyricon on the device). Silently ignored when not installed.",

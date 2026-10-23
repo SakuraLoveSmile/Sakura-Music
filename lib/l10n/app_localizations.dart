@@ -626,6 +626,12 @@ abstract class AppLocalizations {
   /// **'桌面悬浮歌词'**
   String get lyricsOverlay;
 
+  /// No description provided for @lyricsOverlayAppearance.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮歌词外观'**
+  String get lyricsOverlayAppearance;
+
   /// No description provided for @lyricsOverlayPermissionNeeded.
   ///
   /// In zh, this message translates to:

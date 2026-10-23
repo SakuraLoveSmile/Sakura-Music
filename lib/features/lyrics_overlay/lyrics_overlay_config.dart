@@ -38,7 +38,7 @@ class LyricsOverlayConfig {
   });
 
   /// Scale applied to the current (16sp) and next (12sp) lyric lines.
-  static const double minFontScale = 0.8;
+  static const double minFontScale = 0.6;
 
   /// Upper bound of [fontScale].
   static const double maxFontScale = 1.6;
@@ -53,7 +53,7 @@ class LyricsOverlayConfig {
   static const double minCornerRadiusDp = 0;
 
   /// Upper bound of the window corner radius.
-  static const double maxCornerRadiusDp = 40;
+  static const double maxCornerRadiusDp = 32;
 
   /// The appearance used before this settings screen existed.
   static const LyricsOverlayConfig _defaults = LyricsOverlayConfig();

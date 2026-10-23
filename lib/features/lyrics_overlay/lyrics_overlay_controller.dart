@@ -248,18 +248,43 @@ class LyricsOverlayConfigController extends AsyncNotifier<LyricsOverlayConfig> {
     }
   }
 
-  /// Applies [next] to the window and stores it. Named `apply` rather than
-  /// `update` because `AsyncNotifier.update` is reserved by Riverpod.
-  Future<void> apply(LyricsOverlayConfig next) async {
+  /// Applies [next] to the window and, unless [persist] is false, stores it.
+  /// Named `apply` rather than `update` because `AsyncNotifier.update` is
+  /// reserved by Riverpod.
+  ///
+  /// Continuous sliders call this with `persist: false` so dragging stays
+  /// responsive (state and native update on every change) while the database
+  /// write is coalesced by [persistCurrent].
+  Future<void> apply(
+    LyricsOverlayConfig next, {
+    bool persist = true,
+  }) async {
     if (state.value == next) {
       return;
     }
     state = AsyncData(next);
     _applyToOverlay(next);
+    if (!persist) {
+      return;
+    }
+    await _persist(next);
+  }
+
+  /// Writes the current state to the settings row without touching native.
+  /// Used by the settings screen after the debounce window goes quiet.
+  Future<void> persistCurrent() async {
+    final current = state.value;
+    if (current == null) {
+      return;
+    }
+    await _persist(current);
+  }
+
+  Future<void> _persist(LyricsOverlayConfig config) async {
     try {
       await ref
           .read(settingsRepositoryProvider)
-          .updateLyricsOverlayConfig(configJson: next.encode());
+          .updateLyricsOverlayConfig(configJson: config.encode());
     } catch (_) {
       // A persistence failure must not roll the visible appearance back.
     }
