@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,6 +9,7 @@ import '../../data/settings_repository.dart';
 import '../player/lyrics/lyrics_parser.dart';
 import '../player/lyrics/lyrics_service.dart';
 import 'lyrics_overlay_channel.dart';
+import 'lyrics_overlay_config.dart';
 
 /// Keeps the Android floating-lyrics window in sync with playback.
 ///
@@ -48,6 +48,7 @@ class LyricsOverlayController extends Notifier<bool> {
       if (value) {
         await _channel.show();
         _startListening();
+        await _applyStoredConfig();
       } else {
         _stopListening();
         await _channel.hide();
@@ -166,6 +167,18 @@ class LyricsOverlayController extends Notifier<bool> {
     unawaited(_persist(false));
   }
 
+  /// Pushes the persisted appearance once the window is visible. The native
+  /// default look matches [LyricsOverlayConfig.defaults], so a failed push
+  /// only costs customisation, never a broken window.
+  Future<void> _applyStoredConfig() async {
+    try {
+      final config = await ref.read(lyricsOverlayConfigProvider.future);
+      await _channel.applyConfig(config);
+    } catch (_) {
+      // Keep the native defaults when the config cannot be resolved.
+    }
+  }
+
   Future<void> _persist(bool value) async {
     try {
       await ref
@@ -216,4 +229,81 @@ class LyricsOverlayController extends Notifier<bool> {
 final lyricsOverlayControllerProvider =
     NotifierProvider<LyricsOverlayController, bool>(
       LyricsOverlayController.new,
+    );
+
+/// Appearance state of the Android floating lyrics window.
+///
+/// Changes are persisted to the settings row and, only while the window is
+/// visible, pushed to native so it updates live. Parameters edited while the
+/// window is hidden are stored and applied the next time it opens.
+class LyricsOverlayConfigController extends AsyncNotifier<LyricsOverlayConfig> {
+  @override
+  Future<LyricsOverlayConfig> build() async {
+    try {
+      final row = await ref.read(settingsRepositoryProvider).read();
+      return LyricsOverlayConfig.decode(row?.lyricsOverlayConfig);
+    } catch (_) {
+      // An unreadable row must not break the settings screen.
+      return LyricsOverlayConfig.defaults();
+    }
+  }
+
+  /// Applies [next] to the window and, unless [persist] is false, stores it.
+  /// Named `apply` rather than `update` because `AsyncNotifier.update` is
+  /// reserved by Riverpod.
+  ///
+  /// Continuous sliders call this with `persist: false` so dragging stays
+  /// responsive (state and native update on every change) while the database
+  /// write is coalesced by [persistCurrent].
+  Future<void> apply(
+    LyricsOverlayConfig next, {
+    bool persist = true,
+  }) async {
+    if (state.value == next) {
+      return;
+    }
+    state = AsyncData(next);
+    _applyToOverlay(next);
+    if (!persist) {
+      return;
+    }
+    await _persist(next);
+  }
+
+  /// Writes the current state to the settings row without touching native.
+  /// Used by the settings screen after the debounce window goes quiet.
+  Future<void> persistCurrent() async {
+    final current = state.value;
+    if (current == null) {
+      return;
+    }
+    await _persist(current);
+  }
+
+  Future<void> _persist(LyricsOverlayConfig config) async {
+    try {
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateLyricsOverlayConfig(configJson: config.encode());
+    } catch (_) {
+      // A persistence failure must not roll the visible appearance back.
+    }
+  }
+
+  Future<void> reset() => apply(LyricsOverlayConfig.defaults());
+
+  void _applyToOverlay(LyricsOverlayConfig config) {
+    if (!ref.read(lyricsOverlayControllerProvider)) {
+      return;
+    }
+    ref
+        .read(lyricsOverlayChannelProvider)
+        .applyConfig(config)
+        .catchError((Object _) {});
+  }
+}
+
+final lyricsOverlayConfigProvider =
+    AsyncNotifierProvider<LyricsOverlayConfigController, LyricsOverlayConfig>(
+      LyricsOverlayConfigController.new,
     );

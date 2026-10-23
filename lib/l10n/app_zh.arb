@@ -115,6 +115,7 @@
   "streamingQuality": "在线播放音质",
   "equalizerSettings": "均衡器设置",
   "lyricsOverlay": "桌面悬浮歌词",
+  "lyricsOverlayAppearance": "悬浮歌词外观",
   "lyricsOverlayPermissionNeeded": "需要悬浮窗权限，请在系统设置中授予后重试",
   "statusBarLyrics": "状态栏歌词 (Lyricon)",
   "statusBarLyricsDesc": "将当前播放的歌曲与歌词同步到状态栏（需设备已安装 LSPosed 与 Lyricon），未安装时自动忽略。",
@@ -664,5 +665,18 @@
   "updateChannelPrerelease": "测试版",
   "updateChannelStableDescription": "仅接收稳定版本",
   "updateChannelPrereleaseDescription": "接收正式版和测试版本",
-  "updateChannelSaveFailed": "更新渠道保存失败，请重试"
+  "updateChannelSaveFailed": "更新渠道保存失败，请重试",
+  "lyricsDisplay": "歌词显示",
+  "lyricsOverlayFontSize": "字体大小",
+  "lyricsOverlayTextColor": "文字颜色",
+  "lyricsOverlayOpacity": "背景不透明度",
+  "lyricsOverlayCornerRadius": "圆角",
+  "lyricsOverlayShowNextLine": "显示下一句",
+  "lyricsOverlayShowCloseButton": "显示关闭按钮",
+  "lyricsOverlayPosition": "位置",
+  "lyricsOverlayPositionTop": "顶部",
+  "lyricsOverlayPositionCenter": "居中",
+  "lyricsOverlayPositionBottom": "底部",
+  "lyricsOverlayReset": "恢复默认外观",
+  "lyriconAppearanceNote": "状态栏歌词的外观由 Lyricon 应用自身的设置决定"
 }

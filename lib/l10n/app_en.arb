@@ -88,6 +88,7 @@
   "streamingQuality": "Streaming quality",
   "equalizerSettings": "Equalizer",
   "lyricsOverlay": "Floating lyrics",
+  "lyricsOverlayAppearance": "Floating lyrics appearance",
   "lyricsOverlayPermissionNeeded": "Overlay permission is required. Grant it in system settings and try again.",
   "statusBarLyrics": "Status-bar lyrics (Lyricon)",
   "statusBarLyricsDesc": "Sync the current song and its lyrics to the status bar (requires LSPosed and Lyricon on the device). Silently ignored when not installed.",
@@ -642,5 +643,18 @@
   "updateChannelPrerelease": "Preview",
   "updateChannelStableDescription": "Receive stable releases only",
   "updateChannelPrereleaseDescription": "Receive stable and preview releases",
-  "updateChannelSaveFailed": "Could not save the update channel. Please try again."
+  "updateChannelSaveFailed": "Could not save the update channel. Please try again.",
+  "lyricsDisplay": "Lyrics display",
+  "lyricsOverlayFontSize": "Font size",
+  "lyricsOverlayTextColor": "Text color",
+  "lyricsOverlayOpacity": "Background opacity",
+  "lyricsOverlayCornerRadius": "Corner radius",
+  "lyricsOverlayShowNextLine": "Show next line",
+  "lyricsOverlayShowCloseButton": "Show close button",
+  "lyricsOverlayPosition": "Position",
+  "lyricsOverlayPositionTop": "Top",
+  "lyricsOverlayPositionCenter": "Center",
+  "lyricsOverlayPositionBottom": "Bottom",
+  "lyricsOverlayReset": "Reset appearance",
+  "lyriconAppearanceNote": "Status bar lyrics appearance is controlled by the Lyricon app itself"
 }

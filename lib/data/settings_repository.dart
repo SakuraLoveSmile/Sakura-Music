@@ -26,6 +26,12 @@ class SettingsRepository {
     return database.saveSettings(lyricsOverlayEnabled: enabled);
   }
 
+  /// Persists the floating-lyrics appearance blob as produced by
+  /// `LyricsOverlayConfig.encode()`.
+  Future<void> updateLyricsOverlayConfig({required String configJson}) {
+    return database.saveSettings(lyricsOverlayConfig: configJson);
+  }
+
   Future<void> updateStatusBarLyrics({required bool enabled}) {
     return database.saveSettings(statusBarLyricsEnabled: enabled);
   }

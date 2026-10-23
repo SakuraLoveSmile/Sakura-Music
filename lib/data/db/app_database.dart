@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -132,6 +132,11 @@ class AppDatabase extends _$AppDatabase {
       if (from >= 4 && from < 17) {
         // Settings created while upgrading pre-v4 databases already include it.
         await m.addColumn(settings, settings.updateChannel);
+      }
+      if (from >= 4 && from < 18) {
+        // V18: floating-lyrics appearance. The column default reproduces the
+        // previously hard-coded look, so upgraded installs render unchanged.
+        await m.addColumn(settings, settings.lyricsOverlayConfig);
       }
     },
     beforeOpen: (details) async {
@@ -427,6 +432,7 @@ class AppDatabase extends _$AppDatabase {
     String? membershipMethod,
     bool clearMembershipMethod = false,
     String? updateChannel,
+    String? lyricsOverlayConfig,
   }) async {
     final current = await getSettings();
     await into(settings).insertOnConflictUpdate(
@@ -473,6 +479,11 @@ class AppDatabase extends _$AppDatabase {
         ),
         updateChannel: Value(
           updateChannel ?? current?.updateChannel ?? 'stable',
+        ),
+        lyricsOverlayConfig: Value(
+          lyricsOverlayConfig ??
+              current?.lyricsOverlayConfig ??
+              lyricsOverlayConfigDefaultsJson,
         ),
       ),
     );

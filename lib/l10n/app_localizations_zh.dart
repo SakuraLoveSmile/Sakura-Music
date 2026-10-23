@@ -284,6 +284,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lyricsOverlay => '桌面悬浮歌词';
 
   @override
+  String get lyricsOverlayAppearance => '悬浮歌词外观';
+
+  @override
   String get lyricsOverlayPermissionNeeded => '需要悬浮窗权限，请在系统设置中授予后重试';
 
   @override
@@ -1450,4 +1453,43 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get updateChannelSaveFailed => '更新渠道保存失败，请重试';
+
+  @override
+  String get lyricsDisplay => '歌词显示';
+
+  @override
+  String get lyricsOverlayFontSize => '字体大小';
+
+  @override
+  String get lyricsOverlayTextColor => '文字颜色';
+
+  @override
+  String get lyricsOverlayOpacity => '背景不透明度';
+
+  @override
+  String get lyricsOverlayCornerRadius => '圆角';
+
+  @override
+  String get lyricsOverlayShowNextLine => '显示下一句';
+
+  @override
+  String get lyricsOverlayShowCloseButton => '显示关闭按钮';
+
+  @override
+  String get lyricsOverlayPosition => '位置';
+
+  @override
+  String get lyricsOverlayPositionTop => '顶部';
+
+  @override
+  String get lyricsOverlayPositionCenter => '居中';
+
+  @override
+  String get lyricsOverlayPositionBottom => '底部';
+
+  @override
+  String get lyricsOverlayReset => '恢复默认外观';
+
+  @override
+  String get lyriconAppearanceNote => '状态栏歌词的外观由 Lyricon 应用自身的设置决定';
 }

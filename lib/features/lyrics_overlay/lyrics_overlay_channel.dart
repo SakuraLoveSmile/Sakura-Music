@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'lyrics_overlay_config.dart';
 
 /// Boundary for talking to the Android lyrics-overlay implementation. The
 /// controller depends on this interface so unit tests can fake the channel.
@@ -17,6 +18,10 @@ abstract class LyricsOverlayChannel {
     required String next,
     required bool isPlaying,
   });
+
+  /// Pushes the floating window appearance. Called on every change so the
+  /// native window updates live while the user drags a slider.
+  Future<void> applyConfig(LyricsOverlayConfig config);
 
   /// Native reports back when the user closes the overlay from its own close
   /// button, so the Flutter-side switch can stay in sync.
@@ -70,6 +75,14 @@ class MethodChannelLyricsOverlayChannel implements LyricsOverlayChannel {
       'next': next,
       'isPlaying': isPlaying,
     });
+  }
+
+  @override
+  Future<void> applyConfig(LyricsOverlayConfig config) async {
+    await _methodChannel.invokeMethod<void>(
+      'applyConfig',
+      config.toChannelMap(),
+    );
   }
 
   @override

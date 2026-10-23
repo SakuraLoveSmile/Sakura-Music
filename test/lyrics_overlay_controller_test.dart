@@ -7,6 +7,7 @@ import 'package:sakuramusic/audio/equalizer_models.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
 import 'package:sakuramusic/features/lyrics_overlay/lyrics_overlay_channel.dart';
+import 'package:sakuramusic/features/lyrics_overlay/lyrics_overlay_config.dart';
 import 'package:sakuramusic/features/lyrics_overlay/lyrics_overlay_controller.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_parser.dart';
 import 'package:sakuramusic/features/player/lyrics/lyrics_service.dart';
@@ -16,6 +17,7 @@ class _FakeOverlayChannel implements LyricsOverlayChannel {
       <({String current, String next, bool isPlaying})>[];
   int showCalls = 0;
   int hideCalls = 0;
+  final List<LyricsOverlayConfig> configs = <LyricsOverlayConfig>[];
   void Function()? closedHandler;
 
   @override
@@ -41,6 +43,11 @@ class _FakeOverlayChannel implements LyricsOverlayChannel {
     required bool isPlaying,
   }) async {
     calls.add((current: current, next: next, isPlaying: isPlaying));
+  }
+
+  @override
+  Future<void> applyConfig(LyricsOverlayConfig config) async {
+    configs.add(config);
   }
 
   @override
@@ -228,5 +235,33 @@ void main() {
 
     final settings = await database.getSettings();
     expect(settings?.lyricsOverlayEnabled, isFalse);
+  });
+
+  test('enabling the overlay pushes the stored appearance', () async {
+    final channel = _FakeOverlayChannel();
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    const stored = LyricsOverlayConfig(
+      fontScale: 1.4,
+      textColor: 0xFF9BE7FF,
+      backgroundOpacity: 40,
+      cornerRadiusDp: 4,
+      showNextLine: false,
+      showCloseButton: false,
+      position: LyricsOverlayPosition.bottom,
+    );
+    await database.saveSettings(lyricsOverlayConfig: stored.encode());
+    final container = _container(channel, database);
+    addTearDown(container.dispose);
+
+    final controller = container.read(lyricsOverlayControllerProvider.notifier);
+    await controller.setEnabled(true);
+
+    expect(channel.configs, <LyricsOverlayConfig>[stored]);
+
+    // Toggling it off must not push any appearance.
+    await controller.setEnabled(false);
+    expect(channel.configs, <LyricsOverlayConfig>[stored]);
+    expect(channel.hideCalls, 1);
   });
 }

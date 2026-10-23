@@ -48,6 +48,30 @@ class MainActivity : AudioServiceActivity() {
                     LyricsOverlayService.updateLyrics(current, next, isPlaying)
                     result.success(true)
                 }
+                "applyConfig" -> {
+                    val fontScale = call.argument<Number>("fontScale")?.toFloat() ?: 1f
+                    // Dart sends 0xFFFFFFFF for opaque white; on the platform
+                    // side that arrives as the Long 4294967295, so widen and
+                    // truncate back into a 32-bit ARGB Int (-1 == Color.WHITE).
+                    val textColor = call.argument<Number>("textColor")?.toLong()?.toInt()
+                        ?: 0xFFFFFFFF.toInt()
+                    val backgroundOpacity = call.argument<Number>("backgroundOpacity")?.toInt()
+                        ?: 0xB8
+                    val cornerRadiusDp = call.argument<Number>("cornerRadiusDp")?.toFloat() ?: 18f
+                    val showNextLine = call.argument<Boolean>("showNextLine") ?: true
+                    val showCloseButton = call.argument<Boolean>("showCloseButton") ?: true
+                    val position = call.argument<String>("position") ?: "top"
+                    LyricsOverlayService.applyConfig(
+                        fontScale = fontScale,
+                        textColor = textColor,
+                        backgroundOpacity = backgroundOpacity,
+                        cornerRadiusDp = cornerRadiusDp,
+                        showNextLine = showNextLine,
+                        showCloseButton = showCloseButton,
+                        position = position,
+                    )
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }

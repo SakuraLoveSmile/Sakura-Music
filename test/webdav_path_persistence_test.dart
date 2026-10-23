@@ -21,8 +21,8 @@ void main() {
 
     tearDown(() => database.close());
 
-    test('schema version is 17 and the table is created', () async {
-      expect(database.schemaVersion, 17);
+    test('schema version is 18 and the table is created', () async {
+      expect(database.schemaVersion, 18);
       expect(await database.select(database.webDavPaths).get(), isEmpty);
     });
 
@@ -100,6 +100,9 @@ void main() {
       final seeded = AppDatabase(NativeDatabase(file));
       await seeded.customStatement(
         'ALTER TABLE settings DROP COLUMN update_channel',
+      );
+      await seeded.customStatement(
+        'ALTER TABLE settings DROP COLUMN lyrics_overlay_config',
       );
       await seeded.customStatement(
         'DROP TABLE ${seeded.webDavPaths.actualTableName}',

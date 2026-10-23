@@ -626,6 +626,12 @@ abstract class AppLocalizations {
   /// **'桌面悬浮歌词'**
   String get lyricsOverlay;
 
+  /// No description provided for @lyricsOverlayAppearance.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮歌词外观'**
+  String get lyricsOverlayAppearance;
+
   /// No description provided for @lyricsOverlayPermissionNeeded.
   ///
   /// In zh, this message translates to:
@@ -2827,6 +2833,84 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'更新渠道保存失败，请重试'**
   String get updateChannelSaveFailed;
+
+  /// No description provided for @lyricsDisplay.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词显示'**
+  String get lyricsDisplay;
+
+  /// No description provided for @lyricsOverlayFontSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'字体大小'**
+  String get lyricsOverlayFontSize;
+
+  /// No description provided for @lyricsOverlayTextColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'文字颜色'**
+  String get lyricsOverlayTextColor;
+
+  /// No description provided for @lyricsOverlayOpacity.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景不透明度'**
+  String get lyricsOverlayOpacity;
+
+  /// No description provided for @lyricsOverlayCornerRadius.
+  ///
+  /// In zh, this message translates to:
+  /// **'圆角'**
+  String get lyricsOverlayCornerRadius;
+
+  /// No description provided for @lyricsOverlayShowNextLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示下一句'**
+  String get lyricsOverlayShowNextLine;
+
+  /// No description provided for @lyricsOverlayShowCloseButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示关闭按钮'**
+  String get lyricsOverlayShowCloseButton;
+
+  /// No description provided for @lyricsOverlayPosition.
+  ///
+  /// In zh, this message translates to:
+  /// **'位置'**
+  String get lyricsOverlayPosition;
+
+  /// No description provided for @lyricsOverlayPositionTop.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶部'**
+  String get lyricsOverlayPositionTop;
+
+  /// No description provided for @lyricsOverlayPositionCenter.
+  ///
+  /// In zh, this message translates to:
+  /// **'居中'**
+  String get lyricsOverlayPositionCenter;
+
+  /// No description provided for @lyricsOverlayPositionBottom.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部'**
+  String get lyricsOverlayPositionBottom;
+
+  /// No description provided for @lyricsOverlayReset.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复默认外观'**
+  String get lyricsOverlayReset;
+
+  /// No description provided for @lyriconAppearanceNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态栏歌词的外观由 Lyricon 应用自身的设置决定'**
+  String get lyriconAppearanceNote;
 }
 
 class _AppLocalizationsDelegate

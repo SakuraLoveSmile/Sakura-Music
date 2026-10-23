@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/locale.dart';
 import '../../core/feedback/feedback_config.dart';
@@ -14,8 +13,6 @@ import '../../core/update/update_models.dart';
 import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
 import '../../data/settings_repository.dart';
-import '../../features/lyrics_overlay/lyrics_overlay_controller.dart';
-import '../../features/status_bar_lyrics/status_bar_lyrics_controller.dart';
 import '../player/equalizer_panel.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -209,20 +206,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (Platform.isAndroid) ...<Widget>[
                   _buildDivider(),
-                  _buildSwitchTile(
+                  _buildActionTile(
                     icon: Icons.lyrics_rounded,
                     iconColor: const Color(0xFF1E7BF6),
-                    title: context.l10n.lyricsOverlay,
-                    value: ref.watch(lyricsOverlayControllerProvider),
-                    onChanged: _toggleLyricsOverlay,
-                  ),
-                  _buildDivider(),
-                  _buildSwitchTile(
-                    icon: Icons.text_fields_rounded,
-                    iconColor: const Color(0xFF30D158),
-                    title: context.l10n.statusBarLyrics,
-                    value: ref.watch(statusBarLyricsControllerProvider),
-                    onChanged: _toggleStatusBarLyrics,
+                    title: context.l10n.lyricsDisplay,
+                    onTap: () => context.push('/lyrics-display'),
                   ),
                 ],
               ]),
@@ -576,36 +564,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _toggleLyricsOverlay(bool enabled) async {
-    if (!enabled) {
-      await ref
-          .read(lyricsOverlayControllerProvider.notifier)
-          .setEnabled(false);
-      return;
-    }
-    var status = await Permission.systemAlertWindow.status;
-    if (!status.isGranted) {
-      status = await Permission.systemAlertWindow.request();
-    }
-    if (!status.isGranted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.lyricsOverlayPermissionNeeded)),
-        );
-      }
-      return;
-    }
-    await ref.read(lyricsOverlayControllerProvider.notifier).setEnabled(true);
-  }
-
-  Future<void> _toggleStatusBarLyrics(bool enabled) async {
-    // No overlay permission needed: the Lyricon provider degrades silently on
-    // devices without LSPosed/Lyricon installed.
-    await ref
-        .read(statusBarLyricsControllerProvider.notifier)
-        .setEnabled(enabled);
   }
 
   String? _updateStatusText(UpdateState state) {
