@@ -770,6 +770,12 @@ abstract class AppLocalizations {
   /// **'问题反馈'**
   String get feedbackEntry;
 
+  /// No description provided for @feedbackLauncherToggle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示反馈悬浮球'**
+  String get feedbackLauncherToggle;
+
   /// No description provided for @updateAvailable.
   ///
   /// In zh, this message translates to:

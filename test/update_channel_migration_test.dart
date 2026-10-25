@@ -65,6 +65,9 @@ void main() {
         await seeded.customStatement(
           'ALTER TABLE settings DROP COLUMN lyrics_overlay_config',
         );
+        await seeded.customStatement(
+          'ALTER TABLE settings DROP COLUMN feedback_launcher_enabled',
+        );
         final expected = <String, List<Map<String, dynamic>>>{};
         for (final table in [
           'settings',
@@ -92,7 +95,8 @@ void main() {
                   .map(
                     (row) => Map<String, dynamic>.from(row.data)
                       ..remove('update_channel')
-                      ..remove('lyrics_overlay_config'),
+                      ..remove('lyrics_overlay_config')
+                      ..remove('feedback_launcher_enabled'),
                   )
                   .toList();
           expect(
@@ -108,7 +112,7 @@ void main() {
         expect(
           (await upgraded.customSelect('PRAGMA user_version').getSingle())
               .read<int>('user_version'),
-          18,
+          19,
         );
       },
     );

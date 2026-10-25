@@ -43,6 +43,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final localeCode = ref.watch(localeCodeProvider);
     // Only offer the in-app feedback entry when the layer is actually mounted.
     final feedbackEnabled = ref.watch(feedbackServiceConfigProvider) != null;
+    // Orb visibility is independent of the entry above: the switch below only
+    // hides the floating orb, never the 问题反馈 entry or the panel.
+    final feedbackLauncherEnabled =
+        ref.watch(feedbackLauncherEnabledProvider).value ?? true;
     final downloadNetworkOptions = <String>[
       context.l10n.downloadWifiOnly,
       context.l10n.downloadAnyNetwork,
@@ -344,6 +348,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (feedbackEnabled) ...<Widget>[
                   _buildDivider(),
+                  // Sits right next to the 问题反馈 entry: it only hides the
+                  // floating orb, the entry below keeps working either way.
+                  _buildSwitchTile(
+                    icon: Icons.touch_app_rounded,
+                    iconColor: const Color(0xFFFF9F0A),
+                    title: context.l10n.feedbackLauncherToggle,
+                    value: feedbackLauncherEnabled,
+                    onChanged: _setFeedbackLauncher,
+                  ),
+                  _buildDivider(),
                   _buildActionTile(
                     icon: Icons.feedback_outlined,
                     iconColor: const Color(0xFFFF9F0A),
@@ -501,6 +515,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  /// Persists the floating-orb preference. The notifier updates its own state
+  /// first (the orb disappears immediately) and rolls it back on a write error.
+  Future<void> _setFeedbackLauncher(bool enabled) async {
+    try {
+      await ref
+          .read(feedbackLauncherEnabledProvider.notifier)
+          .setEnabled(enabled);
+    } catch (_) {
+      // Nothing else to restore: the notifier already reverted its state.
+    }
   }
 
   Widget _buildActionTile({

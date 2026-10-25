@@ -357,6 +357,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get feedbackEntry => '问题反馈';
 
   @override
+  String get feedbackLauncherToggle => '显示反馈悬浮球';
+
+  @override
   String get updateAvailable => '发现新版本';
 
   @override

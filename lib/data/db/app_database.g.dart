@@ -2161,6 +2161,21 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     requiredDuringInsert: false,
     defaultValue: const Constant('stable'),
   );
+  static const VerificationMeta _feedbackLauncherEnabledMeta =
+      const VerificationMeta('feedbackLauncherEnabled');
+  @override
+  late final GeneratedColumn<bool> feedbackLauncherEnabled =
+      GeneratedColumn<bool>(
+        'feedback_launcher_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("feedback_launcher_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(true),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2179,6 +2194,7 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     membershipActive,
     membershipMethod,
     updateChannel,
+    feedbackLauncherEnabled,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2324,6 +2340,15 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
       );
     }
+    if (data.containsKey('feedback_launcher_enabled')) {
+      context.handle(
+        _feedbackLauncherEnabledMeta,
+        feedbackLauncherEnabled.isAcceptableOrUnknown(
+          data['feedback_launcher_enabled']!,
+          _feedbackLauncherEnabledMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2397,6 +2422,10 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.string,
         data['${effectivePrefix}update_channel'],
       )!,
+      feedbackLauncherEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}feedback_launcher_enabled'],
+      )!,
     );
   }
 
@@ -2437,6 +2466,11 @@ class Setting extends DataClass implements Insertable<Setting> {
   final bool membershipActive;
   final String? membershipMethod;
   final String updateChannel;
+
+  /// Whether the right-edge floating feedback orb is shown. Only the orb is
+  /// affected: the Settings → 问题反馈 entry and the feedback panel stay
+  /// reachable either way. Defaults to on so upgraded installs keep it.
+  final bool feedbackLauncherEnabled;
   const Setting({
     required this.id,
     required this.themeMode,
@@ -2454,6 +2488,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     required this.membershipActive,
     this.membershipMethod,
     required this.updateChannel,
+    required this.feedbackLauncherEnabled,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2478,6 +2513,7 @@ class Setting extends DataClass implements Insertable<Setting> {
       map['membership_method'] = Variable<String>(membershipMethod);
     }
     map['update_channel'] = Variable<String>(updateChannel);
+    map['feedback_launcher_enabled'] = Variable<bool>(feedbackLauncherEnabled);
     return map;
   }
 
@@ -2503,6 +2539,7 @@ class Setting extends DataClass implements Insertable<Setting> {
           ? const Value.absent()
           : Value(membershipMethod),
       updateChannel: Value(updateChannel),
+      feedbackLauncherEnabled: Value(feedbackLauncherEnabled),
     );
   }
 
@@ -2540,6 +2577,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       membershipActive: serializer.fromJson<bool>(json['membershipActive']),
       membershipMethod: serializer.fromJson<String?>(json['membershipMethod']),
       updateChannel: serializer.fromJson<String>(json['updateChannel']),
+      feedbackLauncherEnabled: serializer.fromJson<bool>(
+        json['feedbackLauncherEnabled'],
+      ),
     );
   }
   @override
@@ -2562,6 +2602,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       'membershipActive': serializer.toJson<bool>(membershipActive),
       'membershipMethod': serializer.toJson<String?>(membershipMethod),
       'updateChannel': serializer.toJson<String>(updateChannel),
+      'feedbackLauncherEnabled': serializer.toJson<bool>(
+        feedbackLauncherEnabled,
+      ),
     };
   }
 
@@ -2582,6 +2625,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     bool? membershipActive,
     Value<String?> membershipMethod = const Value.absent(),
     String? updateChannel,
+    bool? feedbackLauncherEnabled,
   }) => Setting(
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
@@ -2604,6 +2648,8 @@ class Setting extends DataClass implements Insertable<Setting> {
         ? membershipMethod.value
         : this.membershipMethod,
     updateChannel: updateChannel ?? this.updateChannel,
+    feedbackLauncherEnabled:
+        feedbackLauncherEnabled ?? this.feedbackLauncherEnabled,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2651,6 +2697,9 @@ class Setting extends DataClass implements Insertable<Setting> {
       updateChannel: data.updateChannel.present
           ? data.updateChannel.value
           : this.updateChannel,
+      feedbackLauncherEnabled: data.feedbackLauncherEnabled.present
+          ? data.feedbackLauncherEnabled.value
+          : this.feedbackLauncherEnabled,
     );
   }
 
@@ -2672,7 +2721,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
           ..write('membershipMethod: $membershipMethod, ')
-          ..write('updateChannel: $updateChannel')
+          ..write('updateChannel: $updateChannel, ')
+          ..write('feedbackLauncherEnabled: $feedbackLauncherEnabled')
           ..write(')'))
         .toString();
   }
@@ -2695,6 +2745,7 @@ class Setting extends DataClass implements Insertable<Setting> {
     membershipActive,
     membershipMethod,
     updateChannel,
+    feedbackLauncherEnabled,
   );
   @override
   bool operator ==(Object other) =>
@@ -2715,7 +2766,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.localeCode == this.localeCode &&
           other.membershipActive == this.membershipActive &&
           other.membershipMethod == this.membershipMethod &&
-          other.updateChannel == this.updateChannel);
+          other.updateChannel == this.updateChannel &&
+          other.feedbackLauncherEnabled == this.feedbackLauncherEnabled);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2735,6 +2787,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<bool> membershipActive;
   final Value<String?> membershipMethod;
   final Value<String> updateChannel;
+  final Value<bool> feedbackLauncherEnabled;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
@@ -2752,6 +2805,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.membershipActive = const Value.absent(),
     this.membershipMethod = const Value.absent(),
     this.updateChannel = const Value.absent(),
+    this.feedbackLauncherEnabled = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2770,6 +2824,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.membershipActive = const Value.absent(),
     this.membershipMethod = const Value.absent(),
     this.updateChannel = const Value.absent(),
+    this.feedbackLauncherEnabled = const Value.absent(),
   });
   static Insertable<Setting> custom({
     Expression<int>? id,
@@ -2788,6 +2843,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<bool>? membershipActive,
     Expression<String>? membershipMethod,
     Expression<String>? updateChannel,
+    Expression<bool>? feedbackLauncherEnabled,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2811,6 +2867,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (membershipActive != null) 'membership_active': membershipActive,
       if (membershipMethod != null) 'membership_method': membershipMethod,
       if (updateChannel != null) 'update_channel': updateChannel,
+      if (feedbackLauncherEnabled != null)
+        'feedback_launcher_enabled': feedbackLauncherEnabled,
     });
   }
 
@@ -2831,6 +2889,7 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<bool>? membershipActive,
     Value<String?>? membershipMethod,
     Value<String>? updateChannel,
+    Value<bool>? feedbackLauncherEnabled,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
@@ -2850,6 +2909,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       membershipActive: membershipActive ?? this.membershipActive,
       membershipMethod: membershipMethod ?? this.membershipMethod,
       updateChannel: updateChannel ?? this.updateChannel,
+      feedbackLauncherEnabled:
+          feedbackLauncherEnabled ?? this.feedbackLauncherEnabled,
     );
   }
 
@@ -2910,6 +2971,11 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     if (updateChannel.present) {
       map['update_channel'] = Variable<String>(updateChannel.value);
     }
+    if (feedbackLauncherEnabled.present) {
+      map['feedback_launcher_enabled'] = Variable<bool>(
+        feedbackLauncherEnabled.value,
+      );
+    }
     return map;
   }
 
@@ -2931,7 +2997,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('localeCode: $localeCode, ')
           ..write('membershipActive: $membershipActive, ')
           ..write('membershipMethod: $membershipMethod, ')
-          ..write('updateChannel: $updateChannel')
+          ..write('updateChannel: $updateChannel, ')
+          ..write('feedbackLauncherEnabled: $feedbackLauncherEnabled')
           ..write(')'))
         .toString();
   }
@@ -5873,6 +5940,7 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<bool> membershipActive,
       Value<String?> membershipMethod,
       Value<String> updateChannel,
+      Value<bool> feedbackLauncherEnabled,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
@@ -5892,6 +5960,7 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<bool> membershipActive,
       Value<String?> membershipMethod,
       Value<String> updateChannel,
+      Value<bool> feedbackLauncherEnabled,
     });
 
 class $$SettingsTableFilterComposer
@@ -5980,6 +6049,11 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<String> get updateChannel => $composableBuilder(
     column: $table.updateChannel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get feedbackLauncherEnabled => $composableBuilder(
+    column: $table.feedbackLauncherEnabled,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6072,6 +6146,11 @@ class $$SettingsTableOrderingComposer
     column: $table.updateChannel,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get feedbackLauncherEnabled => $composableBuilder(
+    column: $table.feedbackLauncherEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SettingsTableAnnotationComposer
@@ -6158,6 +6237,11 @@ class $$SettingsTableAnnotationComposer
     column: $table.updateChannel,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get feedbackLauncherEnabled => $composableBuilder(
+    column: $table.feedbackLauncherEnabled,
+    builder: (column) => column,
+  );
 }
 
 class $$SettingsTableTableManager
@@ -6204,6 +6288,7 @@ class $$SettingsTableTableManager
                 Value<bool> membershipActive = const Value.absent(),
                 Value<String?> membershipMethod = const Value.absent(),
                 Value<String> updateChannel = const Value.absent(),
+                Value<bool> feedbackLauncherEnabled = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 themeMode: themeMode,
@@ -6221,6 +6306,7 @@ class $$SettingsTableTableManager
                 membershipActive: membershipActive,
                 membershipMethod: membershipMethod,
                 updateChannel: updateChannel,
+                feedbackLauncherEnabled: feedbackLauncherEnabled,
               ),
           createCompanionCallback:
               ({
@@ -6240,6 +6326,7 @@ class $$SettingsTableTableManager
                 Value<bool> membershipActive = const Value.absent(),
                 Value<String?> membershipMethod = const Value.absent(),
                 Value<String> updateChannel = const Value.absent(),
+                Value<bool> feedbackLauncherEnabled = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 themeMode: themeMode,
@@ -6257,6 +6344,7 @@ class $$SettingsTableTableManager
                 membershipActive: membershipActive,
                 membershipMethod: membershipMethod,
                 updateChannel: updateChannel,
+                feedbackLauncherEnabled: feedbackLauncherEnabled,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

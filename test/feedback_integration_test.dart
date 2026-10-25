@@ -78,6 +78,25 @@ void main() {
       expect(config.appVersion, '1.2.3+4');
     });
 
+    test('the orb launcher is on by default and can be switched off', () {
+      expect(
+        buildFeedbackConfig(
+          service: _testService(),
+          pageLabel: 'settings',
+        ).showLauncher,
+        isTrue,
+        reason: 'fresh installs and upgraded installs must show the orb',
+      );
+      expect(
+        buildFeedbackConfig(
+          service: _testService(),
+          pageLabel: 'settings',
+          showLauncher: false,
+        ).showLauncher,
+        isFalse,
+      );
+    });
+
     test('reports the app display name when the service provides one', () {
       // Feedback 0.4.0: optional appName, adopted by the service only while
       // the admin has not set a name for the appId.
@@ -275,6 +294,43 @@ void main() {
             'state (draft + login token) is never rebuilt away',
       );
       expect(find.byKey(const Key('feedback-orb')), findsOneWidget);
+    });
+
+    testWidgets('hiding the orb leaves the panel reachable', (
+      WidgetTester tester,
+    ) async {
+      final FeedbackController controller = FeedbackController();
+      addTearDown(controller.dispose);
+      final GlobalKey<NavigatorState> feedbackKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FeedbackOverlay(
+            controller: controller,
+            navigatorKey: feedbackKey,
+            config: buildFeedbackConfig(
+              service: _testService(),
+              pageLabel: 'settings',
+              showLauncher: false,
+              // Keeps the panel's automatic diagnostics out of the test.
+              logProvider: null,
+            ),
+            child: const Scaffold(body: Center(child: Text('page a'))),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Settings → 关于 switch off: no floating launcher at all.
+      expect(find.byKey(const Key('feedback-orb')), findsNothing);
+      expect(find.byKey(const Key('feedback-fab')), findsNothing);
+
+      // The Settings → 问题反馈 entry shares this controller, so the panel must
+      // still open even though the orb is hidden.
+      controller.open();
+      await tester.pumpAndSettle();
+      expect(controller.isOpen, isTrue);
+      expect(find.byKey(const Key('feedback-close')), findsOneWidget);
     });
   });
 

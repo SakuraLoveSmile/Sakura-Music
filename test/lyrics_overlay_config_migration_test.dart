@@ -33,6 +33,9 @@ void main() {
       await seeded.customStatement(
         'ALTER TABLE settings DROP COLUMN lyrics_overlay_config',
       );
+      await seeded.customStatement(
+        'ALTER TABLE settings DROP COLUMN feedback_launcher_enabled',
+      );
       await seeded.customStatement('PRAGMA user_version = 17');
       final expected =
           (await seeded.customSelect('SELECT * FROM settings').get())
@@ -43,7 +46,7 @@ void main() {
       final upgraded = AppDatabase(NativeDatabase(file));
       addTearDown(upgraded.close);
 
-      expect(upgraded.schemaVersion, 18);
+      expect(upgraded.schemaVersion, 19);
       final row = await upgraded.getSettings();
       expect(row, isNotNull);
       expect(row!.lyricsOverlayConfig, lyricsOverlayConfigDefaultsJson);
@@ -63,7 +66,7 @@ void main() {
       expect(
         (await upgraded.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        18,
+        19,
       );
     },
   );
@@ -105,7 +108,7 @@ void main() {
       expect(
         (await upgraded.customSelect('PRAGMA user_version').getSingle())
             .read<int>('user_version'),
-        18,
+        19,
       );
     },
   );

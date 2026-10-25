@@ -369,6 +369,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackEntry => 'Send feedback';
 
   @override
+  String get feedbackLauncherToggle => 'Show floating feedback button';
+
+  @override
   String get updateAvailable => 'Update available';
 
   @override

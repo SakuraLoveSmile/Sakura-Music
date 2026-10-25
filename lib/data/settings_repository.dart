@@ -48,6 +48,10 @@ class SettingsRepository {
     return database.saveSettings(updateChannel: updateChannel);
   }
 
+  Future<void> updateFeedbackLauncher({required bool enabled}) {
+    return database.saveSettings(feedbackLauncherEnabled: enabled);
+  }
+
   Future<void> updateMembership({
     required bool active,
     required String? method,

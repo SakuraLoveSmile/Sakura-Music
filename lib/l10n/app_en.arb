@@ -112,6 +112,7 @@
   "unknown": "Unknown",
   "checkUpdates": "Check for updates",
   "feedbackEntry": "Send feedback",
+  "feedbackLauncherToggle": "Show floating feedback button",
   "updateAvailable": "Update available",
   "downloading": "Downloading",
   "downloaded": "Downloaded",

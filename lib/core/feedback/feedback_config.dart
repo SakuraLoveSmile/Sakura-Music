@@ -2,6 +2,7 @@ import 'package:feedback_widget/feedback_widget.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/settings_repository.dart';
 import 'feedback_logs.dart' show collectFeedbackLogs;
 
 /// Compile-time feedback wiring, injected with `--dart-define`.
@@ -132,10 +133,15 @@ String feedbackPageLabelFromUri(Uri uri) {
 /// submission. This is an explicit host decision — the component still never
 /// grabs host info on its own — and callers/tests may override it or pass
 /// `null` to attach nothing.
+///
+/// [showLauncher] mirrors the persisted Settings → 关于 switch: `false` hides
+/// only the right-edge orb. The panel stays fully usable, because the host
+/// entry point opens it through the shared [feedbackControllerProvider].
 FeedbackConfig buildFeedbackConfig({
   required FeedbackServiceConfig service,
   required String pageLabel,
   String? appVersion,
+  bool showLauncher = true,
   FeedbackLogProvider? logProvider = collectFeedbackLogs,
 }) {
   return FeedbackConfig(
@@ -149,6 +155,7 @@ FeedbackConfig buildFeedbackConfig({
     // Explicit: orb launcher + capture the current viewport on invoke. The
     // package defaults are `tab` / `off`, so these must be stated.
     launcherMode: FeedbackLauncherMode.orb,
+    showLauncher: showLauncher,
     captureMode: FeedbackCaptureMode.viewport,
     // 30% up the right edge keeps the orb clear of the mini-player bar and the
     // mobile bottom NavigationBar; it remains draggable to anywhere else.
@@ -156,3 +163,41 @@ FeedbackConfig buildFeedbackConfig({
     logProvider: logProvider,
   );
 }
+
+/// Persisted switch for the right-edge floating orb (Settings → 关于).
+///
+/// Off only hides the orb: the Settings → 问题反馈 entry still calls
+/// [FeedbackController.captureAndOpen] on the shared controller, so the panel
+/// and the whole capture → submit flow keep working.
+class FeedbackLauncherNotifier extends AsyncNotifier<bool> {
+  @override
+  Future<bool> build() async {
+    final row = await ref.watch(settingsRepositoryProvider).read();
+    // Default on: fresh installs and rows written before v19 both show the orb.
+    return row?.feedbackLauncherEnabled ?? true;
+  }
+
+  /// Flips the orb immediately (no restart) and stores it in the settings row.
+  /// A failed write rolls the state back, so the UI never shows a value that
+  /// will not survive a restart.
+  Future<void> setEnabled(bool enabled) async {
+    final previous = state.value ?? true;
+    if (previous == enabled) {
+      return;
+    }
+    state = AsyncData(enabled);
+    try {
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateFeedbackLauncher(enabled: enabled);
+    } catch (error, stackTrace) {
+      state = AsyncData(previous);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+}
+
+final feedbackLauncherEnabledProvider =
+    AsyncNotifierProvider<FeedbackLauncherNotifier, bool>(
+      FeedbackLauncherNotifier.new,
+    );
