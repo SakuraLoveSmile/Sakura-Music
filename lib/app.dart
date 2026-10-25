@@ -119,6 +119,10 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
     final String? feedbackAppVersion = packageInfo == null
         ? null
         : '${packageInfo.version}+${packageInfo.buildNumber}';
+    // Persisted Settings → 关于 switch; default on while the row loads so the
+    // orb never flashes in after the first frame.
+    final bool feedbackLauncherEnabled =
+        ref.watch(feedbackLauncherEnabledProvider).value ?? true;
     return MaterialApp.router(
       title: 'SakuraMusic',
       // The app is dark-only by design; no light theme is provided.
@@ -148,6 +152,7 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
                 service: feedbackService,
                 pageLabel: pageLabel,
                 appVersion: feedbackAppVersion,
+                showLauncher: feedbackLauncherEnabled,
               ),
               child: routerChild,
             );

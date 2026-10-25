@@ -141,6 +141,12 @@ class Settings extends Table {
 
   TextColumn get updateChannel =>
       text().withDefault(const Constant('stable'))();
+
+  /// Whether the right-edge floating feedback orb is shown. Only the orb is
+  /// affected: the Settings → 问题反馈 entry and the feedback panel stay
+  /// reachable either way. Defaults to on so upgraded installs keep it.
+  BoolColumn get feedbackLauncherEnabled =>
+      boolean().withDefault(const Constant(true))();
 }
 
 class Downloads extends Table {

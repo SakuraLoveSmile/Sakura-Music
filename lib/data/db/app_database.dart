@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -137,6 +137,11 @@ class AppDatabase extends _$AppDatabase {
         // V18: floating-lyrics appearance. The column default reproduces the
         // previously hard-coded look, so upgraded installs render unchanged.
         await m.addColumn(settings, settings.lyricsOverlayConfig);
+      }
+      if (from >= 4 && from < 19) {
+        // V19: switch for the floating feedback orb. Off only hides the orb;
+        // the Settings → 问题反馈 entry and the panel keep working.
+        await m.addColumn(settings, settings.feedbackLauncherEnabled);
       }
     },
     beforeOpen: (details) async {
@@ -433,6 +438,7 @@ class AppDatabase extends _$AppDatabase {
     bool clearMembershipMethod = false,
     String? updateChannel,
     String? lyricsOverlayConfig,
+    bool? feedbackLauncherEnabled,
   }) async {
     final current = await getSettings();
     await into(settings).insertOnConflictUpdate(
@@ -484,6 +490,11 @@ class AppDatabase extends _$AppDatabase {
           lyricsOverlayConfig ??
               current?.lyricsOverlayConfig ??
               lyricsOverlayConfigDefaultsJson,
+        ),
+        // The column default is true, so a partial write on a fresh row must
+        // not hide the orb.
+        feedbackLauncherEnabled: Value(
+          feedbackLauncherEnabled ?? current?.feedbackLauncherEnabled ?? true,
         ),
       ),
     );

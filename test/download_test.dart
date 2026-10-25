@@ -120,7 +120,7 @@ void main() {
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 18);
+        expect(database.schemaVersion, 19);
 
         final recent = await database.getRecentPlays(serverId: 1);
         expect(recent.single.coverArtId, isNull);
@@ -213,7 +213,7 @@ void main() {
         final database = AppDatabase(NativeDatabase(dbFile));
         addTearDown(database.close);
 
-        expect(database.schemaVersion, 18);
+        expect(database.schemaVersion, 19);
         expect((await database.getRecentPlays(serverId: 2)), isEmpty);
         expect(
           (await database.getDownload('v14-song', serverId: 2))!.filePath,

@@ -21,8 +21,8 @@ void main() {
 
     tearDown(() => database.close());
 
-    test('schema version is 18 and the table is created', () async {
-      expect(database.schemaVersion, 18);
+    test('schema version is 19 and the table is created', () async {
+      expect(database.schemaVersion, 19);
       expect(await database.select(database.webDavPaths).get(), isEmpty);
     });
 
@@ -103,6 +103,9 @@ void main() {
       );
       await seeded.customStatement(
         'ALTER TABLE settings DROP COLUMN lyrics_overlay_config',
+      );
+      await seeded.customStatement(
+        'ALTER TABLE settings DROP COLUMN feedback_launcher_enabled',
       );
       await seeded.customStatement(
         'DROP TABLE ${seeded.webDavPaths.actualTableName}',
