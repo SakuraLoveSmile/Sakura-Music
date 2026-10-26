@@ -386,17 +386,19 @@ class LyricsOverlayService : Service() {
 
     /**
      * A marquee does not restart by itself when its text is replaced, so both
-     * lines are re-armed after a lyric change or an appearance update: clearing
-     * the ellipsis drops the running animation, and re-selecting the view starts
-     * it again from the first character. Hidden lines are skipped because a GONE
-     * text view has no layout width to scroll in.
+     * lines are re-armed after a lyric change or an appearance update:
+     * deselecting the view stops the running animation, rewinding the scroll
+     * offset puts it back at the first character, and re-selecting starts it
+     * again. The truncate mode is deliberately left untouched here: clearing
+     * the ellipsis would make the deselect step a no-op for the animation, so a
+     * recycled line kept its old offset (a wrap-in started mid-sentence) and
+     * short lines or the `♪` placeholder never stopped drifting. Hidden lines
+     * are skipped because a GONE text view has no layout width to scroll in.
      */
     private fun restartMarquee(view: TextView?) {
         if (view == null || view.visibility != View.VISIBLE) return
-        view.ellipsize = null
         view.isSelected = false
         view.scrollTo(0, 0)
-        view.ellipsize = TextUtils.TruncateAt.MARQUEE
         view.isSelected = true
         view.invalidate()
     }
