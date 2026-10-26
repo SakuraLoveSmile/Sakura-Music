@@ -222,19 +222,20 @@ class LyricsOverlayService : Service() {
         windowManager = wm
 
         val appearance = config
+        // Both lines share one bounded frame: the window itself stays
+        // WRAP_CONTENT, so a long line scrolls instead of widening the window.
+        val lyricMaxWidth = maxLyricTextWidthPx()
         val currentView = TextView(this).apply {
             text = "♪"
             textSize = 16f * appearance.fontScale
             setTextColor(appearance.textColor)
             typeface = Typeface.DEFAULT_BOLD
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
+            configureLyricMarquee(lyricMaxWidth)
         }
         val nextView = TextView(this).apply {
             textSize = 12f * appearance.fontScale
             setTextColor(nextLineColor(appearance.textColor))
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
+            configureLyricMarquee(lyricMaxWidth)
             visibility = if (appearance.showNextLine) View.VISIBLE else View.GONE
         }
         currentLineView = currentView
@@ -336,6 +337,10 @@ class LyricsOverlayService : Service() {
                 // The window may have vanished mid-update; onDestroy cleans up.
             }
         }
+        // Font scale and visibility changes reflow both lines, so re-arm the
+        // marquee afterwards to keep each line scrolling from its first glyph.
+        restartMarquee(currentLineView)
+        restartMarquee(nextLineView)
     }
 
     /**
@@ -352,6 +357,51 @@ class LyricsOverlayService : Service() {
 
     /** Converts a dp value into a float pixel size, as drawables expect. */
     private fun dpFloat(value: Float): Float = value * resources.displayMetrics.density
+
+    /**
+     * Bounded maximum width for one lyric line. The window itself stays
+     * WRAP_CONTENT, so the text view needs this explicit frame to scroll a long
+     * line instead of widening the window off the screen: screen width minus
+     * the window margin (dp(16)), the root horizontal padding (dp(16) + dp(8)),
+     * the text column end padding (dp(18)), the close button (~dp(28)) and a
+     * right-hand safety margin (dp(10)) leaves roughly `screen - dp(96)`.
+     */
+    private fun maxLyricTextWidthPx(): Int =
+        (resources.displayMetrics.widthPixels - dp(96)).coerceAtLeast(dp(120))
+
+    /**
+     * Turns [this] into a single-line marquee, so a lyric line that is wider
+     * than [maxWidthPx] scrolls horizontally instead of ending in an ellipsis.
+     * Short lines and the `♪` placeholder stay narrower than the frame, so they
+     * remain static and the window still hugs their text.
+     */
+    private fun TextView.configureLyricMarquee(maxWidthPx: Int) {
+        maxLines = 1
+        setHorizontallyScrolling(true)
+        ellipsize = TextUtils.TruncateAt.MARQUEE
+        marqueeRepeatLimit = -1
+        maxWidth = maxWidthPx
+        isSelected = true
+    }
+
+    /**
+     * A marquee does not restart by itself when its text is replaced, so both
+     * lines are re-armed after a lyric change or an appearance update:
+     * deselecting the view stops the running animation, rewinding the scroll
+     * offset puts it back at the first character, and re-selecting starts it
+     * again. The truncate mode is deliberately left untouched here: clearing
+     * the ellipsis would make the deselect step a no-op for the animation, so a
+     * recycled line kept its old offset (a wrap-in started mid-sentence) and
+     * short lines or the `♪` placeholder never stopped drifting. Hidden lines
+     * are skipped because a GONE text view has no layout width to scroll in.
+     */
+    private fun restartMarquee(view: TextView?) {
+        if (view == null || view.visibility != View.VISIBLE) return
+        view.isSelected = false
+        view.scrollTo(0, 0)
+        view.isSelected = true
+        view.invalidate()
+    }
 
     /** Window gravity for [position]; the window hugs the screen start edge. */
     private fun gravityFor(position: String): Int = when (position) {
@@ -371,6 +421,10 @@ class LyricsOverlayService : Service() {
         currentLineView?.text = if (current.isEmpty()) "♪" else current
         nextLineView?.text = next
         currentLineView?.alpha = if (isPlaying) 1f else 0.6f
+        // A replaced line must scroll again from its first character instead of
+        // keeping the previous scroll offset.
+        restartMarquee(currentLineView)
+        restartMarquee(nextLineView)
     }
 
     private fun openMainActivity() {
