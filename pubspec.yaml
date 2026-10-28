@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Keep the +N build number strictly increasing across releases: Android
 # split-per-abi APKs encode versionCode as ABI*1000 + N (e.g. arm64 = 2000 + N),
 # so resetting N downgrades the app and fails installation.
-version: 0.3.2+1792423078
+version: 0.3.3+1793213802
 
 environment:
   sdk: ^3.11.1
@@ -52,7 +52,7 @@ dependencies:
   feedback_widget:
     git:
       url: git@github.com:SakuraLoveSmile/Sakura-Feedback.git
-      ref: 60a9b22eb85904a023dcb60852f3d6be1792f684
+      ref: 404f7cf05088f9d40f1a1a6e395e0db377f0a8c5
       path: flutter/feedback
   flutter_riverpod: ^3.0.3
   go_router: ^16.2.0
