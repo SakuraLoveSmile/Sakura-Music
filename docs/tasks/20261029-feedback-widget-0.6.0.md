@@ -1,7 +1,7 @@
 # feedback-20261029：升级 feedback 组件至 0.6.0 并发布 v0.3.3
 
 - 项目 / 任务编号：personal-music / feedback-20261029
-- 状态：实现中
+- 状态：待体验
 - 创建日期（Asia/Taipei）：2026-10-29
 - 权威记录：本文件
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Music`
@@ -28,8 +28,8 @@ Windows 发布构建的 vendoring SHA、应用版本号。不覆盖：Feedback �
 
 | 步骤 | 用户效果 / 实现范围 | 验收情形与预期 | 当前结果及证据 | 状态 |
 | --- | --- | --- | --- | --- |
-| T1 | 组件升级到 0.6.0 | 新版灵感球/会话式面板随包生效；`flutter analyze` 无问题；现有反馈测试通过 | 见下方执行记录 | 实现中 |
-| T2 | 发布 v0.3.3 正式版 | 标签触发发布工作流；九类平台资产生成；`latest.json`/`preview.json` 推进到 0.3.3 | 未运行 | 未开始 |
+| T1 | 组件升级到 0.6.0 | 新版灵感球/会话式面板随包生效；`flutter analyze` 无问题；现有反馈测试通过 | 已合入 main（2be1ebe / daa3e07）；分析、404 项测试、macOS release 启动核验通过 | 已完成 |
+| T2 | 发布 v0.3.3 正式版 | 标签触发发布工作流；九类平台资产生成；`latest.json`/`preview.json` 推进到 0.3.3 | [Release v0.3.3](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.3) 已发布（9 个资产、非草稿、非预发布）；两渠道清单均为 v0.3.3+1793213802 | 已完成 |
 
 ## 执行与验证记录
 
@@ -40,18 +40,20 @@ Windows 发布构建的 vendoring SHA、应用版本号。不覆盖：Feedback �
 | 2026-10-29 | 同上 | 同上 | `flutter test test/feedback_*` | 26 项通过 |
 | 2026-10-29 | 同上 | 同上 | `flutter test` | 404 项通过 |
 | 2026-10-29 | 同上 | macOS arm64 release + 生产 Feedback 地址 | `flutter build macos --release` 后启动，仅截取自研窗口 | 新 0.6.0 灵感球在窗口右侧渲染；未用合成键鼠点击，面板交互由组件/宿主 widget 测试覆盖 |
+| 2026-10-29 | v0.3.3（daa3e07） | GitHub Actions（ubuntu / windows / macos） | 推送标签 `v0.3.3`，运行 [40750629160](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/40750629160) | 全部作业成功：AI 校验、测试、Android/iOS/macOS/Windows 构建、发布；main CI（40750595362）成功 |
+| 2026-10-29 | v0.3.3 清单 | GitHub main（2b6b5c3） | 核对 `release/latest.json`、`release/preview.json` 与 Release 资产 | 两清单 tag/version/build 一致，9 个资产 URL 指向 v0.3.3；清单由发布流水线自动提交 |
 
 ## 提交与集成
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 待定 | 升级 feedback 组件 0.5.2 → 0.6.0，版本 0.3.2 → 0.3.3 | 分析 + 全量单测 | 未提交 / 未发布 |
+| 2be1ebe | 升级 feedback 组件 0.5.2 → 0.6.0，版本 0.3.2 → 0.3.3 | 分析、404 项单测、macOS release 核验；PR CI 全绿 | PR #15 合入 main（daa3e07）；标签 v0.3.3；Release 已发布；清单推进（2b6b5c3） |
 
 ## 交付与恢复
 
 - 体验入口和操作步骤：运行正式构建 → 右下角灵感球打开反馈面板（可在设置 → 关于隐藏球体，保留“问题反馈”入口）。
-- 尚未完成 / 尚未验证：macOS 原生运行观感、真实服务端 E2E（需账号）、CI 多平台构建。
+- 尚未完成 / 尚未验证：真实服务端 E2E（`integration_test/feedback_e2e_test.dart`，需 submitter/admin 凭据）；面板内的真实点击/登录/提交未在原生窗口操作（避免合成键鼠）。
 - 用户确认：待体验。
-- 下一步：完成原生观感核验 → 推送并合入 main → 打 v0.3.3 标签发布。
+- 下一步：从 v0.3.3 正式包或更新渠道体验灵感球与反馈面板，确认后改为已验收。
 - 回退方式：还原 `pubspec.yaml` ref 与版本号后重新构建；已发布包不回改标签。
-- 本任务 worktree 收尾：待发布验证后清理。
+- 本任务 worktree 收尾：已验证并清理（分支已合入 main）。
