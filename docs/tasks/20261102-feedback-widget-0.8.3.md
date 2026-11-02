@@ -7,7 +7,7 @@
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Music`
 - 基线 / 分支 / 合入目标：`origin/main`（c27d64b）/ `feat/20261102-feedback-widget-0.8.3` → 合入 `main`
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-music/20261102-feat-feedback-widget-0.8.3`
-- 当前 HEAD / 未提交差异：工作树未提交（ref a1f1949，应用版本 0.3.6+1793626126）
+- 当前 HEAD / 未提交差异：实现提交 `35c0cd1`（PR #23）已推送，工作树干净
 
 ## 目标与范围
 
@@ -29,9 +29,10 @@
   `a1f1949a6378e62d8991a66755a100c2aa54548e`），与 Release `SOURCE.txt` 的
   `commit=` 和 `release-manifest.json` 的 `version=0.8.3` 一致。上游 `main`（10f42db）
   仍是 0.7.1 的发布记录，0.8.x 都发布在各自分支标签上，不能以 main 为准。
-- 0.8.1 → 0.8.3 的宿主公共接口只有兼容新增（导出 `MarkAllReadResult`、
-  `ApiClient.markAllRead`、状态色板与 `FeedbackOrbIdleStyle.hidden`）；现有
-  `FeedbackOverlay` / `FeedbackConfig` / `FeedbackController` 用法无需改动，包依赖未新增。
+- 0.8.1 → 0.8.3 的宿主公共接口只有兼容新增：包库导出 `MarkAllReadResult`、
+  `ApiClient.markAllRead`；状态色板与 `FeedbackOrbIdleStyle.hidden` 是组件内部新增
+  （未经宿主 barrel 导出，宿主无需处理）。现有 `FeedbackOverlay` / `FeedbackConfig` /
+  `FeedbackController` 用法无需改动，包依赖未新增。
 - 应用版本取 `0.3.6`（正式版），构建号 `1793626126`（2026-11-02 时间戳，严格大于测试版
   `0.3.6-beta.1+1793614825`，且小于 Android versionCode 上限）；正式版清单的版本比较为
   0.3.6 > 0.3.5，测试版用户按同数字版本比较构建号升级。
@@ -65,8 +66,8 @@
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 待定 | 组件 0.8.1 → 0.8.3；应用版本 0.3.6-beta.1 → 0.3.6；用户向更新日志 | 本机分析 + 404 项单测 + 47 项发布脚本测试 + macOS 构建核验 | 待推送/PR |
-| 待定 | closeout：补记 v0.3.6 发布证据与状态 | 文档核对 | 随 PR 合入 main |
+| 35c0cd1 | 组件 0.8.1 → 0.8.3；应用版本 0.3.6-beta.1 → 0.3.6；用户向更新日志 | 本机分析 + 404 项单测 + 47 项发布脚本测试 + macOS 构建核验；PR CI 全绿 | PR #23（待合并） |
+| 待定 | closeout：补记 v0.3.6 发布证据与状态 | 文档核对 | 发布完成后单独提交/PR 合入 main |
 
 ## 交付与恢复
 
