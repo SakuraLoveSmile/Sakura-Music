@@ -1,13 +1,13 @@
 # feedback-20261102：升级 feedback 组件至 0.7.0
 
 - 项目 / 任务编号：personal-music / feedback-20261102
-- 状态：实现中
+- 状态：待体验
 - 创建日期（Asia/Taipei）：2026-11-02
 - 权威记录：本文件
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Music`
-- 基线 / 分支 / 合入目标：`origin/main`（9fd4ec9）/ `feat/20261102-feedback-widget-0.7.0` / `main`
+- 基线 / 分支 / 合入目标：`origin/main`（9fd4ec9）/ `feat/20261102-feedback-widget-0.7.0` → 合入 `main`（`d3643ca`）
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-music/20261102-feat-feedback-widget-0.7.0`
-- 当前 HEAD / 未提交差异：`9fd4ec9` + 未提交（`pubspec.yaml` ref、`pubspec.lock`、Windows 发布 vendoring SHA、本记录；共 4 个文件）
+- 当前 HEAD / 未提交差异：实现提交 `2c44921` 已随 PR #17 合入 `main`（合并提交 `d3643ca`），渠道清单提交 `b54c0d7`；本 closeout 只更新本记录
 
 ## 目标与范围
 
@@ -43,7 +43,7 @@
 | 步骤 | 用户效果 / 实现范围 | 验收情形与预期 | 当前结果及证据 | 状态 |
 | --- | --- | --- | --- | --- |
 | T1 | 组件升级到 0.7.0 | 解析到 0.7.0（ref = 49470c8）；`flutter analyze` 无问题；现有反馈测试与全量测试通过；macOS 构建把新着色器打进产物 | lock/package_config 解析 0.7.0；analyze、404 项单测、macOS debug 构建均通过（见执行记录） | 已完成 |
-| T2 | 发布 v0.3.4 正式版 | 标签触发发布工作流；九类平台资产生成；`latest.json`/`preview.json` 推进到 0.3.4 | 进行中（见执行记录） | 进行中 |
+| T2 | 发布 v0.3.4 正式版 | 标签触发发布工作流；九类平台资产生成；`latest.json`/`preview.json` 推进到 0.3.4 | [Release v0.3.4](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.4) 已发布（9 个资产、非草稿、非预发布，2026-11-02T06:35:13Z）；两渠道清单推进到 `v0.3.4+1793600077`（`b54c0d7`）；标签 GitHub 验证 `verified=true` | 已完成 |
 | T3 | 新交互随包生效 | 液态灵感球、局部选区截图、多图编辑、会话式追踪在应用内可用且顺畅 | 尚未在原生窗口手动操作体验 | 未开始 |
 
 ## 执行与验证记录
@@ -56,23 +56,28 @@
 | 2026-11-02 | 同上 | 同上 | `flutter test` | 404 项全部通过 |
 | 2026-11-02 | 同上 | macOS arm64 debug | `flutter build macos --debug` | `✓ Built build/macos/Build/Products/Debug/SakuraMusic.app`；产物含 `flutter_assets/packages/feedback_widget/shaders/orb_lens.frag`，`AssetManifest.bin` 有对应条目（新液态透镜着色器已被打包） |
 | — | — | — | 真实服务端 E2E（`integration_test/feedback_e2e_test.dart`） | 未运行：需可达服务端 + submitter/admin 账号 dart-define；0.7.0 服务端为 schema 14，生产服务是否已升级需另行确认 |
+| 2026-11-02 | `2c44921`（PR #17） | GitHub Actions（ubuntu / macOS） | 推送分支与 PR CI：[41399162743](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41399162743)、[41399199752](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41399199752) | Analyze / Test / Release workflow checks 全部通过；PR #17 以合并提交 `d3643ca` 合入 `main` |
+| 2026-11-02 | `d3643ca`（v0.3.4） | GitHub Actions（ubuntu / macOS / windows） | 推送签名标签 `v0.3.4`，运行 [41399651149](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41399651149)；标签 CI [41399651196](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41399651196)；main CI [41399527942](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41399527942) | 发布工作流全部作业成功（Validate / Test / Android / iOS / macOS / Windows / Publish）；Release 已发布，9 资产；标签对象 `5ce11be` 解析到 `d3643ca`，GitHub 验证通过 |
+| 2026-11-02 | v0.3.4 清单 | GitHub main（`b54c0d7`） | 核对 `release/latest.json`、`release/preview.json` 与 Release 资产 | 两清单 tag/version/build 一致（`v0.3.4` / `0.3.4` / `1793600077`），9 个资产 URL 指向 v0.3.4；清单由发布流水线自动提交 |
 
 ## 提交与集成
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 未提交 | 组件 0.6.0 → 0.7.0：`pubspec.yaml` ref、lock 解析版本、Windows 发布 vendoring SHA；应用版本 0.3.3 → 0.3.4 | 分析 + 404 项单测 + macOS debug 构建 | 未提交 / 未推送 / 未发布（提交后补记） |
+| 2c44921 | 组件 0.6.0 → 0.7.0：`pubspec.yaml` ref、lock 解析版本、Windows 发布 vendoring SHA；应用版本 0.3.3 → 0.3.4 | 本机分析 + 404 项单测 + macOS debug 构建；PR CI 全绿 | PR #17 合入 main（`d3643ca`）；标签 `v0.3.4`；Release 已发布；清单推进（`b54c0d7`） |
+| 待定 | closeout：补记 v0.3.4 发布证据与状态 | 文档核对 | 随 PR 合入 main |
 
 ## 交付与恢复
 
-- 体验入口和操作步骤：在 worktree 运行 `flutter run -d macos`（或对应设备）→ 右侧灵感球
+- 体验入口和操作步骤：安装 [v0.3.4 正式包](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.4)（或在应用内“设置 → 关于 → 检查更新”，正式/测试渠道均已指向 0.3.4）→ 右侧灵感球
   待机 5 秒后收为小把手/贴边球，拖动松手进入局部选区截图，面板内可多图编辑、登录后
   “我的反馈”查看会话；设置 → 关于 的反馈开关仍只隐藏悬浮球、保留“问题反馈”入口。
 - 尚未完成 / 尚未验证：原生窗口内的真实点击/拖动/截图体验；真实服务端 E2E（需账号）；
-  Android/iOS/Windows 构建（本机仅验证 macOS）；0.7.0 服务端升级与生产服务兼容性。
+  Android/iOS/Windows 本机运行（发布流水线已构建，未逐一安装）；0.7.0 服务端升级与
+  生产服务兼容性（服务端未随本次发布升级，新交互会按能力协商降级）。
 - 用户确认（明确确认后才改为已验收）：待体验。
-- 下一步：合入 `main` → 打 `v0.3.4` 标签并推送触发发布 → 核对资产与两个渠道清单。
+- 下一步：从 v0.3.4 正式包或更新渠道体验新灵感球与反馈面板，确认后改为已验收。
 - 回退方式：还原 `pubspec.yaml` ref、`pubspec.lock` 的 feedback 块与
   `release-build.yml` 的 vendoring SHA，重新 `flutter pub get` 即可回到 0.6.0；
-  已提交/已发布对象不回改。
-- 本任务 worktree 收尾：尚不满足清理条件（待发布核验）。
+  已发布的 `v0.3.4` 标签/Release 与清单不回改，旧版用户可继续使用 v0.3.3。
+- 本任务 worktree 收尾：已检查并清理（实现与 closeout 均已合入 main，无独有成果）。
