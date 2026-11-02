@@ -357,7 +357,41 @@ class AppLocalizationsZh extends AppLocalizations {
   String get feedbackEntry => '问题反馈';
 
   @override
-  String get feedbackLauncherToggle => '显示反馈悬浮球';
+  String get feedbackOrbStyle => '悬浮球样式';
+
+  @override
+  String get feedbackOrbStyleHandle => '小把手';
+
+  @override
+  String get feedbackOrbStyleEdge => '球体贴边';
+
+  @override
+  String get feedbackOrbStyleHidden => '隐藏';
+
+  @override
+  String get feedbackOrbStyleHint =>
+      '选择悬浮入口闲置后的样式。「隐藏」不显示任何悬浮入口，仍可从下方「问题反馈」打开面板改回。';
+
+  @override
+  String get feedbackWakeGestures => '唤醒手势';
+
+  @override
+  String get feedbackWakeGesturesOff => '未开启';
+
+  @override
+  String get feedbackWakeGesturesHint => '可同时开启，仅在当前应用内生效。手势只唤醒悬浮球，不会直接截图。';
+
+  @override
+  String get feedbackWakeTwoFingerHold => '双指长按';
+
+  @override
+  String get feedbackWakeThreeFingerSwipeUp => '三指上滑';
+
+  @override
+  String get feedbackWakeTwoFingerDoubleTap => '双指双击';
+
+  @override
+  String get feedbackSaveFailed => '保存失败，请重试';
 
   @override
   String get updateAvailable => '发现新版本';

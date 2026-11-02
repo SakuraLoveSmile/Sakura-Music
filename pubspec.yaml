@@ -52,7 +52,7 @@ dependencies:
   feedback_widget:
     git:
       url: git@github.com:SakuraLoveSmile/Sakura-Feedback.git
-      ref: a1f1949a6378e62d8991a66755a100c2aa54548e
+      ref: b1a92cb050602baca089ad820dbf2c03b07ceed5
       path: flutter/feedback
   flutter_riverpod: ^3.0.3
   go_router: ^16.2.0

@@ -2176,6 +2176,30 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
         defaultValue: const Constant(true),
       );
+  static const VerificationMeta _feedbackOrbIdleStyleMeta =
+      const VerificationMeta('feedbackOrbIdleStyle');
+  @override
+  late final GeneratedColumn<String> feedbackOrbIdleStyle =
+      GeneratedColumn<String>(
+        'feedback_orb_idle_style',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('handle'),
+      );
+  static const VerificationMeta _feedbackWakeGesturesMeta =
+      const VerificationMeta('feedbackWakeGestures');
+  @override
+  late final GeneratedColumn<String> feedbackWakeGestures =
+      GeneratedColumn<String>(
+        'feedback_wake_gestures',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('[]'),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2195,6 +2219,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
     membershipMethod,
     updateChannel,
     feedbackLauncherEnabled,
+    feedbackOrbIdleStyle,
+    feedbackWakeGestures,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2349,6 +2375,24 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         ),
       );
     }
+    if (data.containsKey('feedback_orb_idle_style')) {
+      context.handle(
+        _feedbackOrbIdleStyleMeta,
+        feedbackOrbIdleStyle.isAcceptableOrUnknown(
+          data['feedback_orb_idle_style']!,
+          _feedbackOrbIdleStyleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('feedback_wake_gestures')) {
+      context.handle(
+        _feedbackWakeGesturesMeta,
+        feedbackWakeGestures.isAcceptableOrUnknown(
+          data['feedback_wake_gestures']!,
+          _feedbackWakeGesturesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2426,6 +2470,14 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
         DriftSqlType.bool,
         data['${effectivePrefix}feedback_launcher_enabled'],
       )!,
+      feedbackOrbIdleStyle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}feedback_orb_idle_style'],
+      )!,
+      feedbackWakeGestures: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}feedback_wake_gestures'],
+      )!,
     );
   }
 
@@ -2467,10 +2519,22 @@ class Setting extends DataClass implements Insertable<Setting> {
   final String? membershipMethod;
   final String updateChannel;
 
-  /// Whether the right-edge floating feedback orb is shown. Only the orb is
-  /// affected: the Settings → 问题反馈 entry and the feedback panel stay
-  /// reachable either way. Defaults to on so upgraded installs keep it.
+  /// Legacy Settings → 关于 switch for the right-edge floating orb (v19).
+  ///
+  /// v20 replaced it with [feedbackOrbIdleStyle]; the column is kept only so
+  /// the upgrade can map an explicitly hidden orb to the component's `hidden`
+  /// style without losing the stored preference. New code must not write it.
   final bool feedbackLauncherEnabled;
+
+  /// Idle style of the floating feedback orb: `handle`, `edge` or `hidden`
+  /// (the feedback component's `FeedbackOrbIdleStyle` names). `hidden` is the
+  /// former "off" switch — no floating entry, while Settings → 问题反馈 and
+  /// the panel keep working.
+  final String feedbackOrbIdleStyle;
+
+  /// Wake gestures for the floating feedback orb, stored as a JSON array of
+  /// the feedback component's gesture ids. Empty means every gesture off.
+  final String feedbackWakeGestures;
   const Setting({
     required this.id,
     required this.themeMode,
@@ -2489,6 +2553,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     this.membershipMethod,
     required this.updateChannel,
     required this.feedbackLauncherEnabled,
+    required this.feedbackOrbIdleStyle,
+    required this.feedbackWakeGestures,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2514,6 +2580,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     }
     map['update_channel'] = Variable<String>(updateChannel);
     map['feedback_launcher_enabled'] = Variable<bool>(feedbackLauncherEnabled);
+    map['feedback_orb_idle_style'] = Variable<String>(feedbackOrbIdleStyle);
+    map['feedback_wake_gestures'] = Variable<String>(feedbackWakeGestures);
     return map;
   }
 
@@ -2540,6 +2608,8 @@ class Setting extends DataClass implements Insertable<Setting> {
           : Value(membershipMethod),
       updateChannel: Value(updateChannel),
       feedbackLauncherEnabled: Value(feedbackLauncherEnabled),
+      feedbackOrbIdleStyle: Value(feedbackOrbIdleStyle),
+      feedbackWakeGestures: Value(feedbackWakeGestures),
     );
   }
 
@@ -2580,6 +2650,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       feedbackLauncherEnabled: serializer.fromJson<bool>(
         json['feedbackLauncherEnabled'],
       ),
+      feedbackOrbIdleStyle: serializer.fromJson<String>(
+        json['feedbackOrbIdleStyle'],
+      ),
+      feedbackWakeGestures: serializer.fromJson<String>(
+        json['feedbackWakeGestures'],
+      ),
     );
   }
   @override
@@ -2605,6 +2681,8 @@ class Setting extends DataClass implements Insertable<Setting> {
       'feedbackLauncherEnabled': serializer.toJson<bool>(
         feedbackLauncherEnabled,
       ),
+      'feedbackOrbIdleStyle': serializer.toJson<String>(feedbackOrbIdleStyle),
+      'feedbackWakeGestures': serializer.toJson<String>(feedbackWakeGestures),
     };
   }
 
@@ -2626,6 +2704,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     Value<String?> membershipMethod = const Value.absent(),
     String? updateChannel,
     bool? feedbackLauncherEnabled,
+    String? feedbackOrbIdleStyle,
+    String? feedbackWakeGestures,
   }) => Setting(
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
@@ -2650,6 +2730,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     updateChannel: updateChannel ?? this.updateChannel,
     feedbackLauncherEnabled:
         feedbackLauncherEnabled ?? this.feedbackLauncherEnabled,
+    feedbackOrbIdleStyle: feedbackOrbIdleStyle ?? this.feedbackOrbIdleStyle,
+    feedbackWakeGestures: feedbackWakeGestures ?? this.feedbackWakeGestures,
   );
   Setting copyWithCompanion(SettingsCompanion data) {
     return Setting(
@@ -2700,6 +2782,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       feedbackLauncherEnabled: data.feedbackLauncherEnabled.present
           ? data.feedbackLauncherEnabled.value
           : this.feedbackLauncherEnabled,
+      feedbackOrbIdleStyle: data.feedbackOrbIdleStyle.present
+          ? data.feedbackOrbIdleStyle.value
+          : this.feedbackOrbIdleStyle,
+      feedbackWakeGestures: data.feedbackWakeGestures.present
+          ? data.feedbackWakeGestures.value
+          : this.feedbackWakeGestures,
     );
   }
 
@@ -2722,7 +2810,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           ..write('membershipActive: $membershipActive, ')
           ..write('membershipMethod: $membershipMethod, ')
           ..write('updateChannel: $updateChannel, ')
-          ..write('feedbackLauncherEnabled: $feedbackLauncherEnabled')
+          ..write('feedbackLauncherEnabled: $feedbackLauncherEnabled, ')
+          ..write('feedbackOrbIdleStyle: $feedbackOrbIdleStyle, ')
+          ..write('feedbackWakeGestures: $feedbackWakeGestures')
           ..write(')'))
         .toString();
   }
@@ -2746,6 +2836,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     membershipMethod,
     updateChannel,
     feedbackLauncherEnabled,
+    feedbackOrbIdleStyle,
+    feedbackWakeGestures,
   );
   @override
   bool operator ==(Object other) =>
@@ -2767,7 +2859,9 @@ class Setting extends DataClass implements Insertable<Setting> {
           other.membershipActive == this.membershipActive &&
           other.membershipMethod == this.membershipMethod &&
           other.updateChannel == this.updateChannel &&
-          other.feedbackLauncherEnabled == this.feedbackLauncherEnabled);
+          other.feedbackLauncherEnabled == this.feedbackLauncherEnabled &&
+          other.feedbackOrbIdleStyle == this.feedbackOrbIdleStyle &&
+          other.feedbackWakeGestures == this.feedbackWakeGestures);
 }
 
 class SettingsCompanion extends UpdateCompanion<Setting> {
@@ -2788,6 +2882,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<String?> membershipMethod;
   final Value<String> updateChannel;
   final Value<bool> feedbackLauncherEnabled;
+  final Value<String> feedbackOrbIdleStyle;
+  final Value<String> feedbackWakeGestures;
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
@@ -2806,6 +2902,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.membershipMethod = const Value.absent(),
     this.updateChannel = const Value.absent(),
     this.feedbackLauncherEnabled = const Value.absent(),
+    this.feedbackOrbIdleStyle = const Value.absent(),
+    this.feedbackWakeGestures = const Value.absent(),
   });
   SettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2825,6 +2923,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     this.membershipMethod = const Value.absent(),
     this.updateChannel = const Value.absent(),
     this.feedbackLauncherEnabled = const Value.absent(),
+    this.feedbackOrbIdleStyle = const Value.absent(),
+    this.feedbackWakeGestures = const Value.absent(),
   });
   static Insertable<Setting> custom({
     Expression<int>? id,
@@ -2844,6 +2944,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Expression<String>? membershipMethod,
     Expression<String>? updateChannel,
     Expression<bool>? feedbackLauncherEnabled,
+    Expression<String>? feedbackOrbIdleStyle,
+    Expression<String>? feedbackWakeGestures,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2869,6 +2971,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       if (updateChannel != null) 'update_channel': updateChannel,
       if (feedbackLauncherEnabled != null)
         'feedback_launcher_enabled': feedbackLauncherEnabled,
+      if (feedbackOrbIdleStyle != null)
+        'feedback_orb_idle_style': feedbackOrbIdleStyle,
+      if (feedbackWakeGestures != null)
+        'feedback_wake_gestures': feedbackWakeGestures,
     });
   }
 
@@ -2890,6 +2996,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     Value<String?>? membershipMethod,
     Value<String>? updateChannel,
     Value<bool>? feedbackLauncherEnabled,
+    Value<String>? feedbackOrbIdleStyle,
+    Value<String>? feedbackWakeGestures,
   }) {
     return SettingsCompanion(
       id: id ?? this.id,
@@ -2911,6 +3019,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
       updateChannel: updateChannel ?? this.updateChannel,
       feedbackLauncherEnabled:
           feedbackLauncherEnabled ?? this.feedbackLauncherEnabled,
+      feedbackOrbIdleStyle: feedbackOrbIdleStyle ?? this.feedbackOrbIdleStyle,
+      feedbackWakeGestures: feedbackWakeGestures ?? this.feedbackWakeGestures,
     );
   }
 
@@ -2976,6 +3086,16 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
         feedbackLauncherEnabled.value,
       );
     }
+    if (feedbackOrbIdleStyle.present) {
+      map['feedback_orb_idle_style'] = Variable<String>(
+        feedbackOrbIdleStyle.value,
+      );
+    }
+    if (feedbackWakeGestures.present) {
+      map['feedback_wake_gestures'] = Variable<String>(
+        feedbackWakeGestures.value,
+      );
+    }
     return map;
   }
 
@@ -2998,7 +3118,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
           ..write('membershipActive: $membershipActive, ')
           ..write('membershipMethod: $membershipMethod, ')
           ..write('updateChannel: $updateChannel, ')
-          ..write('feedbackLauncherEnabled: $feedbackLauncherEnabled')
+          ..write('feedbackLauncherEnabled: $feedbackLauncherEnabled, ')
+          ..write('feedbackOrbIdleStyle: $feedbackOrbIdleStyle, ')
+          ..write('feedbackWakeGestures: $feedbackWakeGestures')
           ..write(')'))
         .toString();
   }
@@ -5941,6 +6063,8 @@ typedef $$SettingsTableCreateCompanionBuilder =
       Value<String?> membershipMethod,
       Value<String> updateChannel,
       Value<bool> feedbackLauncherEnabled,
+      Value<String> feedbackOrbIdleStyle,
+      Value<String> feedbackWakeGestures,
     });
 typedef $$SettingsTableUpdateCompanionBuilder =
     SettingsCompanion Function({
@@ -5961,6 +6085,8 @@ typedef $$SettingsTableUpdateCompanionBuilder =
       Value<String?> membershipMethod,
       Value<String> updateChannel,
       Value<bool> feedbackLauncherEnabled,
+      Value<String> feedbackOrbIdleStyle,
+      Value<String> feedbackWakeGestures,
     });
 
 class $$SettingsTableFilterComposer
@@ -6054,6 +6180,16 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<bool> get feedbackLauncherEnabled => $composableBuilder(
     column: $table.feedbackLauncherEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get feedbackOrbIdleStyle => $composableBuilder(
+    column: $table.feedbackOrbIdleStyle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get feedbackWakeGestures => $composableBuilder(
+    column: $table.feedbackWakeGestures,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6151,6 +6287,16 @@ class $$SettingsTableOrderingComposer
     column: $table.feedbackLauncherEnabled,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get feedbackOrbIdleStyle => $composableBuilder(
+    column: $table.feedbackOrbIdleStyle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get feedbackWakeGestures => $composableBuilder(
+    column: $table.feedbackWakeGestures,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SettingsTableAnnotationComposer
@@ -6242,6 +6388,16 @@ class $$SettingsTableAnnotationComposer
     column: $table.feedbackLauncherEnabled,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get feedbackOrbIdleStyle => $composableBuilder(
+    column: $table.feedbackOrbIdleStyle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get feedbackWakeGestures => $composableBuilder(
+    column: $table.feedbackWakeGestures,
+    builder: (column) => column,
+  );
 }
 
 class $$SettingsTableTableManager
@@ -6289,6 +6445,8 @@ class $$SettingsTableTableManager
                 Value<String?> membershipMethod = const Value.absent(),
                 Value<String> updateChannel = const Value.absent(),
                 Value<bool> feedbackLauncherEnabled = const Value.absent(),
+                Value<String> feedbackOrbIdleStyle = const Value.absent(),
+                Value<String> feedbackWakeGestures = const Value.absent(),
               }) => SettingsCompanion(
                 id: id,
                 themeMode: themeMode,
@@ -6307,6 +6465,8 @@ class $$SettingsTableTableManager
                 membershipMethod: membershipMethod,
                 updateChannel: updateChannel,
                 feedbackLauncherEnabled: feedbackLauncherEnabled,
+                feedbackOrbIdleStyle: feedbackOrbIdleStyle,
+                feedbackWakeGestures: feedbackWakeGestures,
               ),
           createCompanionCallback:
               ({
@@ -6327,6 +6487,8 @@ class $$SettingsTableTableManager
                 Value<String?> membershipMethod = const Value.absent(),
                 Value<String> updateChannel = const Value.absent(),
                 Value<bool> feedbackLauncherEnabled = const Value.absent(),
+                Value<String> feedbackOrbIdleStyle = const Value.absent(),
+                Value<String> feedbackWakeGestures = const Value.absent(),
               }) => SettingsCompanion.insert(
                 id: id,
                 themeMode: themeMode,
@@ -6345,6 +6507,8 @@ class $$SettingsTableTableManager
                 membershipMethod: membershipMethod,
                 updateChannel: updateChannel,
                 feedbackLauncherEnabled: feedbackLauncherEnabled,
+                feedbackOrbIdleStyle: feedbackOrbIdleStyle,
+                feedbackWakeGestures: feedbackWakeGestures,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

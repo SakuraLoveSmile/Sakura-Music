@@ -119,10 +119,14 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
     final String? feedbackAppVersion = packageInfo == null
         ? null
         : '${packageInfo.version}+${packageInfo.buildNumber}';
-    // Persisted Settings → 关于 switch; default on while the row loads so the
-    // orb never flashes in after the first frame.
-    final bool feedbackLauncherEnabled =
-        ref.watch(feedbackLauncherEnabledProvider).value ?? true;
+    // Host-owned orb settings (feedback_widget 0.8.4). Defaults are applied
+    // while the row loads: handle + no wake gestures = the pre-0.8.2 look.
+    final FeedbackOrbIdleStyle feedbackOrbIdleStyle =
+        ref.watch(feedbackOrbIdleStyleProvider).value ??
+        FeedbackOrbIdleStyle.handle;
+    final Set<FeedbackWakeGesture> feedbackWakeGestures =
+        ref.watch(feedbackWakeGesturesProvider).value ??
+        const <FeedbackWakeGesture>{};
     return MaterialApp.router(
       title: 'SakuraMusic',
       // The app is dark-only by design; no light theme is provided.
@@ -152,8 +156,21 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
                 service: feedbackService,
                 pageLabel: pageLabel,
                 appVersion: feedbackAppVersion,
-                showLauncher: feedbackLauncherEnabled,
               ),
+              orbIdleStyle: feedbackOrbIdleStyle,
+              onOrbIdleStyleChanged: (FeedbackOrbIdleStyle style) {
+                ref
+                    .read(feedbackOrbIdleStyleProvider.notifier)
+                    .setStyle(style)
+                    .ignore();
+              },
+              wakeGestures: feedbackWakeGestures,
+              onWakeGesturesChanged: (Set<FeedbackWakeGesture> gestures) {
+                ref
+                    .read(feedbackWakeGesturesProvider.notifier)
+                    .setGestures(gestures)
+                    .ignore();
+              },
               child: routerChild,
             );
           },
