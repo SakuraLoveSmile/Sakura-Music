@@ -232,7 +232,7 @@ jobs:
           mkdir .ci-feedback
           git -C .ci-feedback init -q
           git -C .ci-feedback remote add origin git@github.com:SakuraLoveSmile/Sakura-Feedback.git
-          git -C .ci-feedback fetch -q --depth 1 origin 49470c8d8c635046161b1e51bc3dfb5ed7190b65
+          git -C .ci-feedback fetch -q --depth 1 origin 693e693d7462c0f748e6bdfef1aa7f9dac29acda
           git -C .ci-feedback checkout -q --detach FETCH_HEAD
           tr -d '\200-\377' < .ci-feedback/flutter/feedback/pubspec.yaml > .ci-feedback/flutter/feedback/pubspec.ascii.yaml
           mv .ci-feedback/flutter/feedback/pubspec.ascii.yaml .ci-feedback/flutter/feedback/pubspec.yaml
