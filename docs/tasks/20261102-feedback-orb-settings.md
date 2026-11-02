@@ -7,7 +7,7 @@
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Music`
 - 基线 / 分支 / 合入目标：`origin/main`（da8517d）/ `feat/20261102-feedback-orb-settings` → 合入 `main`
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-music/20261102-feat-feedback-orb-settings`
-- 当前 HEAD / 未提交差异：实现提交 `6742d48`（PR #25）已推送，复核修订提交随后；工作树干净
+- 当前 HEAD / 未提交差异：实现提交 `6742d48` 与复核修订 `c5cca9f` 已随 PR #25 合入 `main`（合并提交 `65152b3`）；本 closeout 只更新本记录
 
 ## 目标与范围
 
@@ -63,15 +63,17 @@
 | 2026-11-02 | 同上 | macOS arm64 debug | `flutter build macos --debug --build-name 0.3.6 --build-number 1793626126` | 构建成功；Info.plist 0.3.6 / 1793626126；含 orb_lens 着色器；kernel 含「悬浮球样式」「唤醒手势」「球体贴边」「双指长按」与组件偏好键 |
 | 2026-11-02 | 同上 | 同上 | `flutter test`（修订后） | 410 项通过（新增「旧包打开过 v20 库后再升级不重复加列」回归） |
 | 2026-11-02 | `6742d48` + 复核修订 | 独立只读复核（orb-settings-reviewer） | 复核组件托管用法、迁移、UI、测试与 SHA 一致性 | 功能/迁移 0 阻塞；1 项差异卫生（lock 混入 7 个 SDK 包降级）已修复为只含 feedback_widget 变化；建议项（面板保存失败提示、hidden 路径测试、迁移可重复执行、英文连接符、记录措辞）已处理 |
+| 2026-11-02 | `c5cca9f`（PR #25） | GitHub Actions（ubuntu / macOS） | PR CI [41476671771](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41476671771)、[41476682543](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41476682543) | Analyze / Test / Release workflow checks 全部通过；PR #25 以合并提交 `65152b3` 合入 `main` |
+| 2026-11-02 | `65152b3`（合并后 main） | GitHub Actions（ubuntu / macOS） | main CI [41477172617](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41477172617) | Analyze / Test / Release workflow checks 全部通过 |
 | — | — | — | 真实窗口点击设置项、真机安装、回退后再升级实测 | 未运行：需要交互式运行与安装包；回退场景用数据库测试模拟 |
 
 ## 提交与集成
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 6742d48 | 组件 0.8.4；设置页开关改为样式 + 唤醒手势；DB v20 迁移 | analyze + 409 项测试 + macOS debug 构建；PR CI 全绿 | PR #25（复核修订待推送） |
-| 待定 | 复核修订：lock 仅保留组件变化、面板保存失败提示、hidden 路径测试、迁移重复执行守卫与记录更正 | analyze + 410 项测试 | 随后推送，same PR |
-| 待定 | closeout：补记合入与验证状态 | 文档核对 | 合入后单独提交 |
+| 6742d48 | 组件 0.8.4；设置页开关改为样式 + 唤醒手势；DB v20 迁移 | analyze + 409 项测试 + macOS debug 构建 | PR #25 合入 main（`65152b3`） |
+| c5cca9f | 复核修订：lock 仅保留组件变化、面板保存失败提示、hidden 路径测试、迁移重复执行守卫与记录更正 | analyze + 410 项测试 | 随 PR #25 一起合入 main |
+| 待定 | closeout：补记合入与验证状态 | 文档核对 | 本 PR 合入 main |
 
 ## 交付与恢复
 
@@ -89,4 +91,4 @@
   设置页与 DB 迁移即可回到 0.3.6 行为。装过 schema 20 的库被旧包打开时 drift 会把
   `user_version` 写回 19（列仍在）；再次升级由 v20 迁移的列存在性守卫兜底，不会重复加列，
   也不会覆盖用户在旧包期间保存的样式（有回归测试）。
-- 本任务 worktree 收尾：合入并核验后检查清理。
+- 本任务 worktree 收尾：closeout 合入后检查清理（实现与 closeout 均已合入 main，无独有成果）。
