@@ -103,7 +103,9 @@ class WorkflowTests(unittest.TestCase):
         source = validation['steps'][1]
         self.assertEqual(source['with']['ref'], '${{ inputs.tag_name || github.ref }}')
         self.assertEqual(w['jobs']['packages']['with'],
-                         {'target_sha': '${{ needs.validate-release.outputs.target_sha }}'})
+                         {'target_sha': '${{ needs.validate-release.outputs.target_sha }}',
+                          'version': '${{ needs.validate-release.outputs.version }}',
+                          'build_number': '${{ needs.validate-release.outputs.build_number }}'})
         scripts = '\n'.join(step.get('run', '') for step in validation['steps'])
         self.assertIn('source-version release-source/pubspec.yaml', scripts)
         self.assertIn('refs/tags/$RELEASE_TAG^{commit}', scripts)
@@ -116,10 +118,36 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn(chr(34) + '$FROZEN_TARGET_SHA' + chr(34), step['run'])
         self.assertEqual(publish[release]['with']['overwrite_files'], 'false')
         self.assertEqual(publish[release]['with']['make_latest'], '${{ needs.validate-release.outputs.make_latest }}')
+        self.assertEqual(publish[release]['with']['body_path'], '${{ steps.notes.outputs.body_path }}')
+        self.assertEqual(publish[release]['with']['generate_release_notes'], '${{ steps.notes.outputs.generate }}')
         self.assertNotIn('if', publish[-1])
         self.assertNotIn('if', publish[-2])
         self.assertIn('legacy-manifest', publish[-2]['run'])
         self.assertIn('release-source/pubspec.yaml release-files', publish[-2]['run'])
+
+    def test_legacy_prefers_curated_user_facing_release_notes(self):
+        w = workflow('release.yml')
+        publish = w['jobs']['publish-release']['steps']
+        notes = next(step for step in publish if step.get('id') == 'notes')
+        self.assertEqual(notes['shell'], 'bash')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / 'output'
+            env = dict(os.environ, RELEASE_TAG='v1.2.3', GITHUB_OUTPUT=str(output))
+            result = subprocess.run(['bash', '-c', notes['run']], cwd=root, env=env,
+                                    text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            # No curated file yet: keep the automatically generated notes.
+            self.assertIn('generate=true', output.read_text())
+            curated = root / 'release-source' / 'release' / 'notes' / 'v1.2.3.md'
+            curated.parent.mkdir(parents=True)
+            curated.write_text('用户向更新日志\n')
+            result = subprocess.run(['bash', '-c', notes['run']], cwd=root, env=env,
+                                    text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            text = output.read_text()
+            self.assertIn('generate=false', text)
+            self.assertIn('body_path=release-source/release/notes/v1.2.3.md', text)
 
     def test_legacy_source_freeze_shell_rejects_head_that_is_not_the_tag(self):
         import os

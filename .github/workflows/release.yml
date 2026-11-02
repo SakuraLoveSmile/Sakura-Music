@@ -30,6 +30,8 @@ jobs:
     outputs:
       release_tag: ${{ steps.validate.outputs.release_tag }}
       target_sha: ${{ steps.validate.outputs.target_sha }}
+      version: ${{ steps.metadata.outputs.version }}
+      build_number: ${{ steps.metadata.outputs.build_number }}
       prerelease: ${{ steps.metadata.outputs.prerelease }}
       make_latest: ${{ steps.validate.outputs.make_latest }}
     steps:
@@ -86,6 +88,12 @@ jobs:
     uses: ./.github/workflows/release-build.yml
     with:
       target_sha: ${{ needs.validate-release.outputs.target_sha }}
+      # Prerelease tags carry a suffix in the pubspec, but installed package
+      # versions must match the numeric manifest version or the updater would
+      # offer the same build again on every check. Pass the numeric identity
+      # explicitly (identical to the pubspec for stable releases).
+      version: ${{ needs.validate-release.outputs.version }}
+      build_number: ${{ needs.validate-release.outputs.build_number }}
     secrets:
       FEEDBACK_DEPLOY_KEY: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -120,6 +128,25 @@ jobs:
         run: |
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
 
+      - name: Select user-facing release notes
+        id: notes
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.validate-release.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          notes="release-source/release/notes/${RELEASE_TAG}.md"
+          if [[ -f "$notes" ]]; then
+            # Curated notes describe the user-visible change; they also become
+            # the manifest body consumed by the in-app update dialog.
+            echo "body_path=$notes" >> "$GITHUB_OUTPUT"
+            echo "generate=false" >> "$GITHUB_OUTPUT"
+          else
+            # No curated notes for this tag: keep the previous behaviour.
+            echo "body_path=" >> "$GITHUB_OUTPUT"
+            echo "generate=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Reject retained packages with a different build identity
         env:
           FROZEN_TARGET_SHA: ${{ needs.validate-release.outputs.target_sha }}
@@ -132,7 +159,8 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           files: release-files/*
           overwrite_files: false
-          generate_release_notes: true
+          body_path: ${{ steps.notes.outputs.body_path }}
+          generate_release_notes: ${{ steps.notes.outputs.generate }}
           draft: false
           prerelease: ${{ needs.validate-release.outputs.prerelease }}
           make_latest: ${{ needs.validate-release.outputs.make_latest }}
