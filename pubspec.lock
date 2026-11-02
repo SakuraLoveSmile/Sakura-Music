@@ -341,11 +341,11 @@ packages:
     dependency: "direct main"
     description:
       path: "flutter/feedback"
-      ref: "693e693d7462c0f748e6bdfef1aa7f9dac29acda"
-      resolved-ref: "693e693d7462c0f748e6bdfef1aa7f9dac29acda"
+      ref: "620c82ca93d68ee931aa2181df20f49f5a3205c1"
+      resolved-ref: "620c82ca93d68ee931aa2181df20f49f5a3205c1"
       url: "git@github.com:SakuraLoveSmile/Sakura-Feedback.git"
     source: git
-    version: "0.8.0"
+    version: "0.8.1"
   ffi:
     dependency: "direct main"
     description:
