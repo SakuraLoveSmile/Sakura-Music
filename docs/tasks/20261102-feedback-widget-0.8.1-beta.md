@@ -1,13 +1,13 @@
 # feedback-20261102c：升级 feedback 组件至 0.8.1 并发布测试版 0.3.6-beta.1
 
 - 项目 / 任务编号：personal-music / feedback-20261102c
-- 状态：实现中
+- 状态：待体验
 - 创建日期（Asia/Taipei）：2026-11-02
 - 权威记录：本文件
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Music`
-- 基线 / 分支 / 合入目标：`origin/main`（f743eab）/ `feat/20261102-feedback-widget-0.8.1-beta` / `main`
+- 基线 / 分支 / 合入目标：`origin/main`（f743eab）/ `feat/20261102-feedback-widget-0.8.1-beta` → 合入 `main`（`71a94e0`）
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-music/20261102-feat-feedback-widget-0.8.1-beta`
-- 当前 HEAD / 未提交差异：`f743eab` + 未提交（feedback ref/lock/vendoring SHA、应用测试版版本号、发布工作流与用户向更新日志、本记录）
+- 当前 HEAD / 未提交差异：实现提交 `4354f76` 已随 PR #21 合入 `main`（合并提交 `71a94e0`），渠道清单提交 `673be23`；本 closeout 只更新本记录
 
 ## 目标与范围
 
@@ -55,7 +55,7 @@
 | 步骤 | 用户效果 / 实现范围 | 验收情形与预期 | 当前结果及证据 | 状态 |
 | --- | --- | --- | --- | --- |
 | T1 | 组件升级到 0.8.1 | 解析到 0.8.1（ref = 620c82c）；`flutter analyze` 无问题；全量测试通过；发布工作流脚本测试通过 | 解析 0.8.1；analyze、404 项单测、47 项发布脚本测试均通过 | 已完成 |
-| T2 | 发布测试版 v0.3.6-beta.1 | 标签触发发布；Release 为预发布、9 资产；`preview.json` 推进到 0.3.6，`latest.json` 保持 0.3.5；Release body 为用户向日志 | 进行中（见执行记录） | 进行中 |
+| T2 | 发布测试版 v0.3.6-beta.1 | 标签触发发布；Release 为预发布、9 资产；`preview.json` 推进到 0.3.6，`latest.json` 保持 0.3.5；Release body 为用户向日志 | [Release v0.3.6-beta.1](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.6-beta.1) 已发布（预发布、非草稿、9 资产，2026-11-02T10:43:22Z）；`preview.json` = `v0.3.6-beta.1`/`0.3.6`/`1793614825`/prerelease=true 且 body 为用户向日志；`latest.json` 仍为 v0.3.5；发布包 Info.plist 为 0.3.6 / 1793614825 | 已完成 |
 | T3 | 测试版更新体验 | 测试渠道能看到 v0.3.6-beta.1；安装后不再重复提示同一构建；正式版渠道不受影响 | 尚未在真实安装包上验证 | 未开始 |
 
 ## 执行与验证记录
@@ -70,23 +70,29 @@
 | 2026-11-02 | 同上 | macOS arm64 debug | `flutter build macos --debug --build-name 0.3.6 --build-number 1793614825`（模拟发布流水线的数字身份透传） | 构建成功；Info.plist `CFBundleShortVersionString=0.3.6`、`CFBundleVersion=1793614825`，与渠道清单身份一致；产物含 `packages/feedback_widget/shaders/orb_lens.frag` |
 | 2026-11-02 | 同上 | macOS arm64 debug | `flutter build macos --debug`（不带覆盖，验证带后缀 pubspec 也能构建） | 构建成功；但 Apple 版本被 Flutter 写成 `0.3.6.1`，正是需要在发布流水线透传数字版本的原因 |
 | — | — | — | 真实服务端 E2E / 测试渠道真机升级 | 未运行：需账号与真实安装包 |
+| 2026-11-02 | `4354f76`（PR #21） | GitHub Actions（ubuntu / macOS） | 推送分支与 PR CI：[41429140961](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41429140961)、[41429152024](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41429152024) | Analyze / Test / Release workflow checks 全部通过；PR #21 以合并提交 `71a94e0` 合入 `main` |
+| 2026-11-02 | `71a94e0`（v0.3.6-beta.1） | GitHub Actions（ubuntu / macOS / windows） | 推送签名标签 `v0.3.6-beta.1`，运行 [41429510597](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41429510597)；标签 CI [41429510508](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41429510508)；main CI [41429452965](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41429452965) | 发布工作流全部作业成功；Release 为预发布、9 资产；标签对象解析到 `71a94e0`，GitHub 验证通过 |
+| 2026-11-02 | v0.3.6-beta.1 清单 | GitHub main（`673be23`） | 核对 `release/preview.json`、`release/latest.json` 与公开 raw 地址 | preview = `v0.3.6-beta.1` / `0.3.6` / `1793614825` / prerelease=true，body 为用户向日志；latest 仍为 `v0.3.5` / `1793611631`；公开 raw 实测一致 |
+| 2026-11-02 | v0.3.6-beta.1 发布包 | 下载 `SakuraMusic-macos.zip` 核对 | 解包检查 Info.plist 与着色器 | `CFBundleShortVersionString=0.3.6`、`CFBundleVersion=1793614825`（数字身份透传在 CI 生效，与清单一致）；含 `packages/feedback_widget/shaders/orb_lens.frag` |
 
 ## 提交与集成
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 未提交 | 组件 0.8.0 → 0.8.1；应用版本 0.3.5 → 0.3.6-beta.1；发布流水线数字版本透传 + 用户向更新日志 | 分析 + 404 项单测 + 47 项发布脚本测试 + macOS 构建核验 | 未提交 / 未推送 / 未发布 |
+| 4354f76 | 组件 0.8.0 → 0.8.1；应用版本 0.3.5 → 0.3.6-beta.1；发布流水线数字版本透传 + 用户向更新日志 | 本机分析 + 404 项单测 + 47 项发布脚本测试 + macOS 构建核验；PR CI 全绿 | PR #21 合入 main（`71a94e0`）；标签 `v0.3.6-beta.1`；Release 已发布（预发布）；清单推进（`673be23`） |
+| 待定 | closeout：补记 v0.3.6-beta.1 发布证据与状态 | 文档核对 | 随 PR 合入 main |
 
 ## 交付与恢复
 
-- 体验入口和操作步骤：发布后安装 v0.3.6-beta.1（或在应用内 设置 → 关于 →
+- 体验入口和操作步骤：安装 [v0.3.6-beta.1](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.6-beta.1)（或在应用内 设置 → 关于 →
   更新渠道 → 测试版 → 检查更新）；更新弹窗会显示本次用户向更新日志。
 - 尚未完成 / 尚未验证：测试渠道真实升级路径（需要一台已装 0.3.5 的设备/桌面机）；
-  安装后重复更新提示是否消失的端到端确认；正式版渠道是否保持 0.3.5。
+  安装后重复更新提示是否消失的端到端确认（版本/构建号已一致，机制上不会重复提示）；
+  Android/iOS/Windows 本机安装（发布流水线已构建）。
 - 用户确认（明确确认后才改为已验收）：待体验。
-- 下一步：合入 main → 推送 `v0.3.6-beta.1` 标签触发发布 → 核对预发布状态、9 个资产、
-  `preview.json` 推进与 `latest.json` 不变、Release body 为用户向日志。
+- 下一步：从 0.3.5 设备切换到测试版渠道体验本版本，确认更新弹窗文案与重复提示行为；
+  确认后可改为已验收，并在下一次正式版发布时走同一套用户向更新日志机制。
 - 回退方式：还原 `pubspec.yaml` ref、`pubspec.lock` 的 feedback 块、
   `release-build.yml` vendoring SHA 与 `release.yml` 两处调整，删除
   `release/notes/v0.3.6-beta.1.md` 即可回到 0.8.0/0.3.5；已发布对象不回改。
-- 本任务 worktree 收尾：尚不满足清理条件（待发布核验）。
+- 本任务 worktree 收尾：已检查并清理（实现与 closeout 均已合入 main，无独有成果）。
