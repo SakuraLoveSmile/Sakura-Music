@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'sakuramusic'));
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -142,6 +142,37 @@ class AppDatabase extends _$AppDatabase {
         // V19: switch for the floating feedback orb. Off only hides the orb;
         // the Settings → 问题反馈 entry and the panel keep working.
         await m.addColumn(settings, settings.feedbackLauncherEnabled);
+      }
+      if (from >= 4 && from < 20) {
+        // V20: the plain orb switch becomes the feedback component's idle
+        // style plus host-owned wake gestures. An explicitly hidden orb maps
+        // to `hidden`; visible or fresh rows keep the default `handle`.
+        // Guard the column additions: opening a v20 database once with an
+        // older build resets user_version, and this migration then runs again
+        // with the columns already present.
+        final Set<String> existingColumns = <String>{
+          for (final row in await m.database
+              .customSelect('PRAGMA table_info(settings)')
+              .get())
+            row.read<String>('name'),
+        };
+        final bool addedIdleStyleColumn =
+            !existingColumns.contains('feedback_orb_idle_style');
+        if (addedIdleStyleColumn) {
+          await m.addColumn(settings, settings.feedbackOrbIdleStyle);
+        }
+        if (!existingColumns.contains('feedback_wake_gestures')) {
+          await m.addColumn(settings, settings.feedbackWakeGestures);
+        }
+        if (addedIdleStyleColumn) {
+          // Only when the column is new: a re-run after a downgrade must not
+          // overwrite the style the user picked in the meantime.
+          await customStatement(
+            "UPDATE settings SET feedback_orb_idle_style = CASE "
+            "WHEN feedback_launcher_enabled = 0 THEN 'hidden' "
+            "ELSE 'handle' END",
+          );
+        }
       }
     },
     beforeOpen: (details) async {
@@ -439,6 +470,8 @@ class AppDatabase extends _$AppDatabase {
     String? updateChannel,
     String? lyricsOverlayConfig,
     bool? feedbackLauncherEnabled,
+    String? feedbackOrbIdleStyle,
+    String? feedbackWakeGestures,
   }) async {
     final current = await getSettings();
     await into(settings).insertOnConflictUpdate(
@@ -491,10 +524,20 @@ class AppDatabase extends _$AppDatabase {
               current?.lyricsOverlayConfig ??
               lyricsOverlayConfigDefaultsJson,
         ),
-        // The column default is true, so a partial write on a fresh row must
-        // not hide the orb.
+        // Legacy v19 switch: kept for upgrades only (migration maps it to the
+        // idle style); the app no longer changes it.
         feedbackLauncherEnabled: Value(
           feedbackLauncherEnabled ?? current?.feedbackLauncherEnabled ?? true,
+        ),
+        feedbackOrbIdleStyle: Value(
+          feedbackOrbIdleStyle ??
+              current?.feedbackOrbIdleStyle ??
+              'handle',
+        ),
+        feedbackWakeGestures: Value(
+          feedbackWakeGestures ??
+              current?.feedbackWakeGestures ??
+              '[]',
         ),
       ),
     );

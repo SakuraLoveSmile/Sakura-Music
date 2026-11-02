@@ -770,11 +770,77 @@ abstract class AppLocalizations {
   /// **'问题反馈'**
   String get feedbackEntry;
 
-  /// No description provided for @feedbackLauncherToggle.
+  /// No description provided for @feedbackOrbStyle.
   ///
   /// In zh, this message translates to:
-  /// **'显示反馈悬浮球'**
-  String get feedbackLauncherToggle;
+  /// **'悬浮球样式'**
+  String get feedbackOrbStyle;
+
+  /// No description provided for @feedbackOrbStyleHandle.
+  ///
+  /// In zh, this message translates to:
+  /// **'小把手'**
+  String get feedbackOrbStyleHandle;
+
+  /// No description provided for @feedbackOrbStyleEdge.
+  ///
+  /// In zh, this message translates to:
+  /// **'球体贴边'**
+  String get feedbackOrbStyleEdge;
+
+  /// No description provided for @feedbackOrbStyleHidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏'**
+  String get feedbackOrbStyleHidden;
+
+  /// No description provided for @feedbackOrbStyleHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择悬浮入口闲置后的样式。「隐藏」不显示任何悬浮入口，唤醒手势也不会触发；仍可从下方「问题反馈」打开面板改回。'**
+  String get feedbackOrbStyleHint;
+
+  /// No description provided for @feedbackWakeGestures.
+  ///
+  /// In zh, this message translates to:
+  /// **'唤醒手势'**
+  String get feedbackWakeGestures;
+
+  /// No description provided for @feedbackWakeGesturesOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'未开启'**
+  String get feedbackWakeGesturesOff;
+
+  /// No description provided for @feedbackWakeGesturesHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'可同时开启，仅在当前应用内生效。手势只唤醒悬浮球，不会直接截图。'**
+  String get feedbackWakeGesturesHint;
+
+  /// No description provided for @feedbackWakeTwoFingerHold.
+  ///
+  /// In zh, this message translates to:
+  /// **'双指长按'**
+  String get feedbackWakeTwoFingerHold;
+
+  /// No description provided for @feedbackWakeThreeFingerSwipeUp.
+  ///
+  /// In zh, this message translates to:
+  /// **'三指上滑'**
+  String get feedbackWakeThreeFingerSwipeUp;
+
+  /// No description provided for @feedbackWakeTwoFingerDoubleTap.
+  ///
+  /// In zh, this message translates to:
+  /// **'双指双击'**
+  String get feedbackWakeTwoFingerDoubleTap;
+
+  /// No description provided for @feedbackSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败，请重试'**
+  String get feedbackSaveFailed;
 
   /// No description provided for @updateAvailable.
   ///

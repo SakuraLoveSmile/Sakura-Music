@@ -369,7 +369,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackEntry => 'Send feedback';
 
   @override
-  String get feedbackLauncherToggle => 'Show floating feedback button';
+  String get feedbackOrbStyle => 'Orb style';
+
+  @override
+  String get feedbackOrbStyleHandle => 'Handle';
+
+  @override
+  String get feedbackOrbStyleEdge => 'Docked to edge';
+
+  @override
+  String get feedbackOrbStyleHidden => 'Hidden';
+
+  @override
+  String get feedbackOrbStyleHint =>
+      'Pick how the floating orb idles. \"Hidden\" removes every floating entry and disables the wake gestures; Settings → Send feedback still opens the panel.';
+
+  @override
+  String get feedbackWakeGestures => 'Wake gestures';
+
+  @override
+  String get feedbackWakeGesturesOff => 'Off';
+
+  @override
+  String get feedbackWakeGesturesHint =>
+      'You can enable several; they apply only inside this app. A gesture only wakes the orb, it never takes a screenshot directly.';
+
+  @override
+  String get feedbackWakeTwoFingerHold => 'Two-finger hold';
+
+  @override
+  String get feedbackWakeThreeFingerSwipeUp => 'Three-finger swipe up';
+
+  @override
+  String get feedbackWakeTwoFingerDoubleTap => 'Two-finger double tap';
+
+  @override
+  String get feedbackSaveFailed => 'Could not save, please try again';
 
   @override
   String get updateAvailable => 'Update available';

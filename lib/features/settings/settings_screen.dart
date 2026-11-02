@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:feedback_widget/feedback_widget.dart'
+    show FeedbackOrbIdleStyle, FeedbackWakeGesture;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,10 +45,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final localeCode = ref.watch(localeCodeProvider);
     // Only offer the in-app feedback entry when the layer is actually mounted.
     final feedbackEnabled = ref.watch(feedbackServiceConfigProvider) != null;
-    // Orb visibility is independent of the entry above: the switch below only
-    // hides the floating orb, never the 问题反馈 entry or the panel.
-    final feedbackLauncherEnabled =
-        ref.watch(feedbackLauncherEnabledProvider).value ?? true;
+    // Host-owned orb settings: the style replaces the old on/off switch
+    // (`hidden` = off) and the wake gestures default to all off.
+    final FeedbackOrbIdleStyle orbIdleStyle =
+        ref.watch(feedbackOrbIdleStyleProvider).value ??
+        FeedbackOrbIdleStyle.handle;
+    final Set<FeedbackWakeGesture> wakeGestures =
+        ref.watch(feedbackWakeGesturesProvider).value ??
+        const <FeedbackWakeGesture>{};
     final downloadNetworkOptions = <String>[
       context.l10n.downloadWifiOnly,
       context.l10n.downloadAnyNetwork,
@@ -348,14 +354,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (feedbackEnabled) ...<Widget>[
                   _buildDivider(),
-                  // Sits right next to the 问题反馈 entry: it only hides the
-                  // floating orb, the entry below keeps working either way.
-                  _buildSwitchTile(
+                  // The concrete orb settings replace the old show/hide switch:
+                  // "hidden" is the off state, so a single source of truth is
+                  // shared with the in-panel settings.
+                  _buildActionTile(
                     icon: Icons.touch_app_rounded,
                     iconColor: const Color(0xFFFF9F0A),
-                    title: context.l10n.feedbackLauncherToggle,
-                    value: feedbackLauncherEnabled,
-                    onChanged: _setFeedbackLauncher,
+                    title: context.l10n.feedbackOrbStyle,
+                    trailingText: _orbStyleLabel(context, orbIdleStyle),
+                    onTap: _showOrbStyleDialog,
+                  ),
+                  _buildDivider(),
+                  _buildActionTile(
+                    icon: Icons.gesture_rounded,
+                    iconColor: const Color(0xFFFF9F0A),
+                    title: context.l10n.feedbackWakeGestures,
+                    trailingText: _wakeGestureSummary(context, wakeGestures),
+                    onTap: _showWakeGesturesDialog,
                   ),
                   _buildDivider(),
                   _buildActionTile(
@@ -519,14 +534,206 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// Persists the floating-orb preference. The notifier updates its own state
   /// first (the orb disappears immediately) and rolls it back on a write error.
-  Future<void> _setFeedbackLauncher(bool enabled) async {
-    try {
-      await ref
-          .read(feedbackLauncherEnabledProvider.notifier)
-          .setEnabled(enabled);
-    } catch (_) {
-      // Nothing else to restore: the notifier already reverted its state.
+  String _orbStyleLabel(BuildContext context, FeedbackOrbIdleStyle style) {
+    return switch (style) {
+      FeedbackOrbIdleStyle.handle => context.l10n.feedbackOrbStyleHandle,
+      FeedbackOrbIdleStyle.edge => context.l10n.feedbackOrbStyleEdge,
+      FeedbackOrbIdleStyle.hidden => context.l10n.feedbackOrbStyleHidden,
+    };
+  }
+
+  String _wakeGestureLabel(BuildContext context, FeedbackWakeGesture gesture) {
+    return switch (gesture) {
+      FeedbackWakeGesture.twoFingerHold =>
+        context.l10n.feedbackWakeTwoFingerHold,
+      FeedbackWakeGesture.threeFingerSwipeUp =>
+        context.l10n.feedbackWakeThreeFingerSwipeUp,
+      FeedbackWakeGesture.twoFingerDoubleTap =>
+        context.l10n.feedbackWakeTwoFingerDoubleTap,
+    };
+  }
+
+  String _wakeGestureSummary(
+    BuildContext context,
+    Set<FeedbackWakeGesture> gestures,
+  ) {
+    if (gestures.isEmpty) {
+      return context.l10n.feedbackWakeGesturesOff;
     }
+    return <String>[
+      for (final FeedbackWakeGesture gesture in FeedbackWakeGesture.values)
+        if (gestures.contains(gesture)) _wakeGestureLabel(context, gesture),
+    ].join(' · ');
+  }
+
+  /// Picks the orb's idle style. `hidden` is the former off switch; the panel
+  /// entry below stays reachable.
+  Future<void> _showOrbStyleDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => Consumer(
+        builder: (BuildContext context, WidgetRef ref, Widget? _) {
+          final FeedbackOrbIdleStyle current =
+              ref.watch(feedbackOrbIdleStyleProvider).value ??
+              FeedbackOrbIdleStyle.handle;
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E2028),
+            title: Text(
+              context.l10n.feedbackOrbStyle,
+              style: const TextStyle(color: Colors.white),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  child: Text(
+                    context.l10n.feedbackOrbStyleHint,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                for (final FeedbackOrbIdleStyle option
+                    in FeedbackOrbIdleStyle.values)
+                  ListTile(
+                    onTap: () async {
+                      final NavigatorState navigator = Navigator.of(
+                        dialogContext,
+                      );
+                      final ScaffoldMessengerState messenger =
+                          ScaffoldMessenger.of(context);
+                      final String failureMessage =
+                          context.l10n.feedbackSaveFailed;
+                      try {
+                        await ref
+                            .read(feedbackOrbIdleStyleProvider.notifier)
+                            .setStyle(option);
+                        if (navigator.mounted) {
+                          navigator.pop();
+                        }
+                      } catch (_) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(failureMessage)),
+                        );
+                      }
+                    },
+                    leading: Icon(
+                      current == option
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_off_rounded,
+                      color: current == option
+                          ? const Color(0xFFFF9F0A)
+                          : Colors.white38,
+                      size: 20,
+                    ),
+                    title: Text(
+                      _orbStyleLabel(context, option),
+                      style: TextStyle(
+                        color: current == option
+                            ? Colors.white
+                            : Colors.white70,
+                        fontSize: 14,
+                        fontWeight: current == option
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Toggles the orb's wake gestures (multi-select, default all off).
+  Future<void> _showWakeGesturesDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => Consumer(
+        builder: (BuildContext context, WidgetRef ref, Widget? _) {
+          final Set<FeedbackWakeGesture> current =
+              ref.watch(feedbackWakeGesturesProvider).value ??
+              const <FeedbackWakeGesture>{};
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E2028),
+            title: Text(
+              context.l10n.feedbackWakeGestures,
+              style: const TextStyle(color: Colors.white),
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  child: Text(
+                    context.l10n.feedbackWakeGesturesHint,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                for (final FeedbackWakeGesture option
+                    in FeedbackWakeGesture.values)
+                  ListTile(
+                    onTap: () async {
+                      final Set<FeedbackWakeGesture> next =
+                          Set<FeedbackWakeGesture>.of(current);
+                      if (!next.add(option)) {
+                        next.remove(option);
+                      }
+                      final ScaffoldMessengerState messenger =
+                          ScaffoldMessenger.of(context);
+                      final String failureMessage =
+                          context.l10n.feedbackSaveFailed;
+                      try {
+                        await ref
+                            .read(feedbackWakeGesturesProvider.notifier)
+                            .setGestures(next);
+                      } catch (_) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(failureMessage)),
+                        );
+                      }
+                    },
+                    leading: Icon(
+                      current.contains(option)
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
+                      color: current.contains(option)
+                          ? const Color(0xFFFF9F0A)
+                          : Colors.white38,
+                      size: 20,
+                    ),
+                    title: Text(
+                      _wakeGestureLabel(context, option),
+                      style: TextStyle(
+                        color: current.contains(option)
+                            ? Colors.white
+                            : Colors.white70,
+                        fontSize: 14,
+                        fontWeight: current.contains(option)
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildActionTile({

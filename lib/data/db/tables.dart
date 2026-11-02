@@ -142,11 +142,26 @@ class Settings extends Table {
   TextColumn get updateChannel =>
       text().withDefault(const Constant('stable'))();
 
-  /// Whether the right-edge floating feedback orb is shown. Only the orb is
-  /// affected: the Settings → 问题反馈 entry and the feedback panel stay
-  /// reachable either way. Defaults to on so upgraded installs keep it.
+  /// Legacy Settings → 关于 switch for the right-edge floating orb (v19).
+  ///
+  /// v20 replaced it with [feedbackOrbIdleStyle]; the column is kept only so
+  /// the upgrade can map an explicitly hidden orb to the component's `hidden`
+  /// style without losing the stored preference. Writes keep the stored value
+  /// unchanged (a downgraded build still reads its old switch).
   BoolColumn get feedbackLauncherEnabled =>
       boolean().withDefault(const Constant(true))();
+
+  /// Idle style of the floating feedback orb: `handle`, `edge` or `hidden`
+  /// (the feedback component's `FeedbackOrbIdleStyle` names). `hidden` is the
+  /// former "off" switch — no floating entry, while Settings → 问题反馈 and
+  /// the panel keep working.
+  TextColumn get feedbackOrbIdleStyle =>
+      text().withDefault(const Constant('handle'))();
+
+  /// Wake gestures for the floating feedback orb, stored as a JSON array of
+  /// the feedback component's gesture ids. Empty means every gesture off.
+  TextColumn get feedbackWakeGestures =>
+      text().withDefault(const Constant('[]'))();
 }
 
 class Downloads extends Table {

@@ -48,8 +48,12 @@ class SettingsRepository {
     return database.saveSettings(updateChannel: updateChannel);
   }
 
-  Future<void> updateFeedbackLauncher({required bool enabled}) {
-    return database.saveSettings(feedbackLauncherEnabled: enabled);
+  Future<void> updateFeedbackOrbIdleStyle({required String style}) {
+    return database.saveSettings(feedbackOrbIdleStyle: style);
+  }
+
+  Future<void> updateFeedbackWakeGestures({required String gesturesJson}) {
+    return database.saveSettings(feedbackWakeGestures: gesturesJson);
   }
 
   Future<void> updateMembership({

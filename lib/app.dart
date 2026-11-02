@@ -33,6 +33,8 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
   // feedback session (draft + login token) survives navigation.
   final GlobalKey<NavigatorState> _feedbackNavigatorKey =
       GlobalKey<NavigatorState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   final ValueNotifier<String> _feedbackPageLabel = ValueNotifier<String>('home');
   late final FeedbackController _feedbackController;
   GoRouter? _router;
@@ -87,6 +89,18 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
     );
   }
 
+  /// Surface a failed orb-settings write made from inside the feedback panel.
+  /// The notifier already rolled the value back; this only explains why.
+  void _showFeedbackSaveFailure() {
+    final BuildContext? messengerContext =
+        _scaffoldMessengerKey.currentContext;
+    if (messengerContext == null) return;
+    final AppLocalizations? l10n = AppLocalizations.of(messengerContext);
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text(l10n?.feedbackSaveFailed ?? '保存失败，请重试')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<UpdateState>(updateControllerProvider, (_, next) {
@@ -119,12 +133,17 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
     final String? feedbackAppVersion = packageInfo == null
         ? null
         : '${packageInfo.version}+${packageInfo.buildNumber}';
-    // Persisted Settings → 关于 switch; default on while the row loads so the
-    // orb never flashes in after the first frame.
-    final bool feedbackLauncherEnabled =
-        ref.watch(feedbackLauncherEnabledProvider).value ?? true;
+    // Host-owned orb settings (feedback_widget 0.8.4). Defaults are applied
+    // while the row loads: handle + no wake gestures = the pre-0.8.2 look.
+    final FeedbackOrbIdleStyle feedbackOrbIdleStyle =
+        ref.watch(feedbackOrbIdleStyleProvider).value ??
+        FeedbackOrbIdleStyle.handle;
+    final Set<FeedbackWakeGesture> feedbackWakeGestures =
+        ref.watch(feedbackWakeGesturesProvider).value ??
+        const <FeedbackWakeGesture>{};
     return MaterialApp.router(
       title: 'SakuraMusic',
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       // The app is dark-only by design; no light theme is provided.
       darkTheme: buildTheme(Brightness.dark, seedColor: seedColor),
       themeMode: ThemeMode.dark,
@@ -152,8 +171,28 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
                 service: feedbackService,
                 pageLabel: pageLabel,
                 appVersion: feedbackAppVersion,
-                showLauncher: feedbackLauncherEnabled,
               ),
+              orbIdleStyle: feedbackOrbIdleStyle,
+              onOrbIdleStyleChanged: (FeedbackOrbIdleStyle style) async {
+                try {
+                  await ref
+                      .read(feedbackOrbIdleStyleProvider.notifier)
+                      .setStyle(style);
+                } catch (_) {
+                  _showFeedbackSaveFailure();
+                }
+              },
+              wakeGestures: feedbackWakeGestures,
+              onWakeGesturesChanged:
+                  (Set<FeedbackWakeGesture> gestures) async {
+                    try {
+                      await ref
+                          .read(feedbackWakeGesturesProvider.notifier)
+                          .setGestures(gestures);
+                    } catch (_) {
+                      _showFeedbackSaveFailure();
+                    }
+                  },
               child: routerChild,
             );
           },

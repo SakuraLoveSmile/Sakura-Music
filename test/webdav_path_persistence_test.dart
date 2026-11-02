@@ -21,8 +21,8 @@ void main() {
 
     tearDown(() => database.close());
 
-    test('schema version is 19 and the table is created', () async {
-      expect(database.schemaVersion, 19);
+    test('schema version is 20 and the table is created', () async {
+      expect(database.schemaVersion, 20);
       expect(await database.select(database.webDavPaths).get(), isEmpty);
     });
 
@@ -106,6 +106,12 @@ void main() {
       );
       await seeded.customStatement(
         'ALTER TABLE settings DROP COLUMN feedback_launcher_enabled',
+      );
+      await seeded.customStatement(
+        'ALTER TABLE settings DROP COLUMN feedback_orb_idle_style',
+      );
+      await seeded.customStatement(
+        'ALTER TABLE settings DROP COLUMN feedback_wake_gestures',
       );
       await seeded.customStatement(
         'DROP TABLE ${seeded.webDavPaths.actualTableName}',

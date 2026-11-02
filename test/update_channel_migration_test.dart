@@ -68,6 +68,12 @@ void main() {
         await seeded.customStatement(
           'ALTER TABLE settings DROP COLUMN feedback_launcher_enabled',
         );
+        await seeded.customStatement(
+          'ALTER TABLE settings DROP COLUMN feedback_orb_idle_style',
+        );
+        await seeded.customStatement(
+          'ALTER TABLE settings DROP COLUMN feedback_wake_gestures',
+        );
         final expected = <String, List<Map<String, dynamic>>>{};
         for (final table in [
           'settings',
@@ -96,7 +102,9 @@ void main() {
                     (row) => Map<String, dynamic>.from(row.data)
                       ..remove('update_channel')
                       ..remove('lyrics_overlay_config')
-                      ..remove('feedback_launcher_enabled'),
+                      ..remove('feedback_launcher_enabled')
+                      ..remove('feedback_orb_idle_style')
+                      ..remove('feedback_wake_gestures'),
                   )
                   .toList();
           expect(
@@ -112,7 +120,7 @@ void main() {
         expect(
           (await upgraded.customSelect('PRAGMA user_version').getSingle())
               .read<int>('user_version'),
-          19,
+          20,
         );
       },
     );

@@ -1,5 +1,7 @@
+import 'dart:convert';
+
 import 'package:feedback_widget/feedback_widget.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, setEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/settings_repository.dart';
@@ -134,9 +136,10 @@ String feedbackPageLabelFromUri(Uri uri) {
 /// grabs host info on its own — and callers/tests may override it or pass
 /// `null` to attach nothing.
 ///
-/// [showLauncher] mirrors the persisted Settings → 关于 switch: `false` hides
-/// only the right-edge orb. The panel stays fully usable, because the host
-/// entry point opens it through the shared [feedbackControllerProvider].
+/// [showLauncher] stays `true` for this host: the orb is hidden through the
+/// host-owned idle style (`hidden`) instead, which keeps a single source of
+/// truth with the component's in-panel settings. The panel stays reachable
+/// from Settings → 问题反馈 either way.
 FeedbackConfig buildFeedbackConfig({
   required FeedbackServiceConfig service,
   required String pageLabel,
@@ -164,32 +167,70 @@ FeedbackConfig buildFeedbackConfig({
   );
 }
 
-/// Persisted switch for the right-edge floating orb (Settings → 关于).
+/// Persisted idle style of the right-edge floating orb (Settings → 关于).
 ///
-/// Off only hides the orb: the Settings → 问题反馈 entry still calls
-/// [FeedbackController.captureAndOpen] on the shared controller, so the panel
-/// and the whole capture → submit flow keep working.
-class FeedbackLauncherNotifier extends AsyncNotifier<bool> {
+/// `hidden` replaces the old on/off switch: it hides every floating entry,
+/// while Settings → 问题反馈 still opens the panel through the shared
+/// [feedbackControllerProvider]. The value is host-owned since
+/// feedback_widget 0.8.4, so changes made inside the panel come back here.
+FeedbackOrbIdleStyle decodeFeedbackOrbIdleStyle(String? raw) {
+  for (final FeedbackOrbIdleStyle style in FeedbackOrbIdleStyle.values) {
+    if (style.name == raw) {
+      return style;
+    }
+  }
+  return FeedbackOrbIdleStyle.handle;
+}
+
+/// Decodes the stored JSON array of wake-gesture ids.
+Set<FeedbackWakeGesture> decodeFeedbackWakeGestures(String? raw) {
+  if (raw == null || raw.isEmpty) {
+    return <FeedbackWakeGesture>{};
+  }
+  try {
+    final Object? decoded = jsonDecode(raw);
+    if (decoded is! List) {
+      return <FeedbackWakeGesture>{};
+    }
+    return <FeedbackWakeGesture>{
+      for (final FeedbackWakeGesture gesture in FeedbackWakeGesture.values)
+        if (decoded.contains(gesture.id)) gesture,
+    };
+  } on FormatException {
+    return <FeedbackWakeGesture>{};
+  }
+}
+
+/// Encodes wake gestures as a JSON array of the component's stable ids.
+String encodeFeedbackWakeGestures(Set<FeedbackWakeGesture> gestures) {
+  return jsonEncode(<String>[
+    for (final FeedbackWakeGesture gesture in FeedbackWakeGesture.values)
+      if (gestures.contains(gesture)) gesture.id,
+  ]);
+}
+
+/// Host-owned idle style for the floating feedback orb (Settings → 关于).
+class FeedbackOrbIdleStyleNotifier
+    extends AsyncNotifier<FeedbackOrbIdleStyle> {
   @override
-  Future<bool> build() async {
+  Future<FeedbackOrbIdleStyle> build() async {
     final row = await ref.watch(settingsRepositoryProvider).read();
-    // Default on: fresh installs and rows written before v19 both show the orb.
-    return row?.feedbackLauncherEnabled ?? true;
+    return decodeFeedbackOrbIdleStyle(row?.feedbackOrbIdleStyle);
   }
 
-  /// Flips the orb immediately (no restart) and stores it in the settings row.
-  /// A failed write rolls the state back, so the UI never shows a value that
-  /// will not survive a restart.
-  Future<void> setEnabled(bool enabled) async {
-    final previous = state.value ?? true;
-    if (previous == enabled) {
+  /// Applies the style immediately and persists it. A failed write rolls the
+  /// state back so the UI never shows a value that would not survive a restart.
+  Future<void> setStyle(FeedbackOrbIdleStyle style) async {
+    final FeedbackOrbIdleStyle previous =
+        state.value ?? FeedbackOrbIdleStyle.handle;
+    if (previous == style) {
       return;
     }
-    state = AsyncData(enabled);
+    state = AsyncData(style);
     try {
       await ref
           .read(settingsRepositoryProvider)
-          .updateFeedbackLauncher(enabled: enabled);
+          .updateFeedbackOrbIdleStyle(style: style.name);
     } catch (error, stackTrace) {
       state = AsyncData(previous);
       Error.throwWithStackTrace(error, stackTrace);
@@ -197,7 +238,45 @@ class FeedbackLauncherNotifier extends AsyncNotifier<bool> {
   }
 }
 
-final feedbackLauncherEnabledProvider =
-    AsyncNotifierProvider<FeedbackLauncherNotifier, bool>(
-      FeedbackLauncherNotifier.new,
+final feedbackOrbIdleStyleProvider =
+    AsyncNotifierProvider<FeedbackOrbIdleStyleNotifier, FeedbackOrbIdleStyle>(
+      FeedbackOrbIdleStyleNotifier.new,
     );
+
+/// Host-owned wake gestures for the floating feedback orb (Settings → 关于).
+class FeedbackWakeGesturesNotifier
+    extends AsyncNotifier<Set<FeedbackWakeGesture>> {
+  @override
+  Future<Set<FeedbackWakeGesture>> build() async {
+    final row = await ref.watch(settingsRepositoryProvider).read();
+    return decodeFeedbackWakeGestures(row?.feedbackWakeGestures);
+  }
+
+  /// Applies the gesture set immediately and persists it; a failed write rolls
+  /// the state back.
+  Future<void> setGestures(Set<FeedbackWakeGesture> gestures) async {
+    final Set<FeedbackWakeGesture> previous =
+        state.value ?? const <FeedbackWakeGesture>{};
+    final Set<FeedbackWakeGesture> next =
+        Set<FeedbackWakeGesture>.of(gestures);
+    if (setEquals(previous, next)) {
+      return;
+    }
+    state = AsyncData(next);
+    try {
+      await ref
+          .read(settingsRepositoryProvider)
+          .updateFeedbackWakeGestures(
+            gesturesJson: encodeFeedbackWakeGestures(next),
+          );
+    } catch (error, stackTrace) {
+      state = AsyncData(previous);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+}
+
+final feedbackWakeGesturesProvider = AsyncNotifierProvider<
+    FeedbackWakeGesturesNotifier,
+    Set<FeedbackWakeGesture>
+>(FeedbackWakeGesturesNotifier.new);
