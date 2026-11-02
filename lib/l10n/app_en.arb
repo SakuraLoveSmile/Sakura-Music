@@ -116,7 +116,7 @@
   "feedbackOrbStyleHandle": "Handle",
   "feedbackOrbStyleEdge": "Docked to edge",
   "feedbackOrbStyleHidden": "Hidden",
-  "feedbackOrbStyleHint": "Pick how the floating orb idles. \"Hidden\" removes every floating entry; Settings → Send feedback still opens the panel.",
+  "feedbackOrbStyleHint": "Pick how the floating orb idles. \"Hidden\" removes every floating entry and disables the wake gestures; Settings → Send feedback still opens the panel.",
   "feedbackWakeGestures": "Wake gestures",
   "feedbackWakeGesturesOff": "Off",
   "feedbackWakeGesturesHint": "You can enable several; they apply only inside this app. A gesture only wakes the orb, it never takes a screenshot directly.",

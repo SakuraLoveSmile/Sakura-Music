@@ -311,17 +311,18 @@ void main() {
             config: buildFeedbackConfig(
               service: _testService(),
               pageLabel: 'settings',
-              showLauncher: false,
               // Keeps the panel's automatic diagnostics out of the test.
               logProvider: null,
             ),
+            // The retired Settings switch is now the host-owned hidden style.
+            orbIdleStyle: FeedbackOrbIdleStyle.hidden,
             child: const Scaffold(body: Center(child: Text('page a'))),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Settings → 关于 switch off: no floating launcher at all.
+      // Settings → 关于 悬浮球样式 = 隐藏: no floating launcher at all.
       expect(find.byKey(const Key('feedback-orb')), findsNothing);
       expect(find.byKey(const Key('feedback-fab')), findsNothing);
 

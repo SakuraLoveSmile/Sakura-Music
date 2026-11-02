@@ -33,6 +33,8 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
   // feedback session (draft + login token) survives navigation.
   final GlobalKey<NavigatorState> _feedbackNavigatorKey =
       GlobalKey<NavigatorState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
   final ValueNotifier<String> _feedbackPageLabel = ValueNotifier<String>('home');
   late final FeedbackController _feedbackController;
   GoRouter? _router;
@@ -87,6 +89,18 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
     );
   }
 
+  /// Surface a failed orb-settings write made from inside the feedback panel.
+  /// The notifier already rolled the value back; this only explains why.
+  void _showFeedbackSaveFailure() {
+    final BuildContext? messengerContext =
+        _scaffoldMessengerKey.currentContext;
+    if (messengerContext == null) return;
+    final AppLocalizations? l10n = AppLocalizations.of(messengerContext);
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text(l10n?.feedbackSaveFailed ?? '保存失败，请重试')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<UpdateState>(updateControllerProvider, (_, next) {
@@ -129,6 +143,7 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
         const <FeedbackWakeGesture>{};
     return MaterialApp.router(
       title: 'SakuraMusic',
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       // The app is dark-only by design; no light theme is provided.
       darkTheme: buildTheme(Brightness.dark, seedColor: seedColor),
       themeMode: ThemeMode.dark,
@@ -158,19 +173,26 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
                 appVersion: feedbackAppVersion,
               ),
               orbIdleStyle: feedbackOrbIdleStyle,
-              onOrbIdleStyleChanged: (FeedbackOrbIdleStyle style) {
-                ref
-                    .read(feedbackOrbIdleStyleProvider.notifier)
-                    .setStyle(style)
-                    .ignore();
+              onOrbIdleStyleChanged: (FeedbackOrbIdleStyle style) async {
+                try {
+                  await ref
+                      .read(feedbackOrbIdleStyleProvider.notifier)
+                      .setStyle(style);
+                } catch (_) {
+                  _showFeedbackSaveFailure();
+                }
               },
               wakeGestures: feedbackWakeGestures,
-              onWakeGesturesChanged: (Set<FeedbackWakeGesture> gestures) {
-                ref
-                    .read(feedbackWakeGesturesProvider.notifier)
-                    .setGestures(gestures)
-                    .ignore();
-              },
+              onWakeGesturesChanged:
+                  (Set<FeedbackWakeGesture> gestures) async {
+                    try {
+                      await ref
+                          .read(feedbackWakeGesturesProvider.notifier)
+                          .setGestures(gestures);
+                    } catch (_) {
+                      _showFeedbackSaveFailure();
+                    }
+                  },
               child: routerChild,
             );
           },

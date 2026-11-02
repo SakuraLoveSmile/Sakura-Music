@@ -563,7 +563,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return <String>[
       for (final FeedbackWakeGesture gesture in FeedbackWakeGesture.values)
         if (gestures.contains(gesture)) _wakeGestureLabel(context, gesture),
-    ].join('、');
+    ].join(' · ');
   }
 
   /// Picks the orb's idle style. `hidden` is the former off switch; the panel

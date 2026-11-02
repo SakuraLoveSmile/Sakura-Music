@@ -147,13 +147,32 @@ class AppDatabase extends _$AppDatabase {
         // V20: the plain orb switch becomes the feedback component's idle
         // style plus host-owned wake gestures. An explicitly hidden orb maps
         // to `hidden`; visible or fresh rows keep the default `handle`.
-        await m.addColumn(settings, settings.feedbackOrbIdleStyle);
-        await m.addColumn(settings, settings.feedbackWakeGestures);
-        await customStatement(
-          "UPDATE settings SET feedback_orb_idle_style = CASE "
-          "WHEN feedback_launcher_enabled = 0 THEN 'hidden' "
-          "ELSE 'handle' END",
-        );
+        // Guard the column additions: opening a v20 database once with an
+        // older build resets user_version, and this migration then runs again
+        // with the columns already present.
+        final Set<String> existingColumns = <String>{
+          for (final row in await m.database
+              .customSelect('PRAGMA table_info(settings)')
+              .get())
+            row.read<String>('name'),
+        };
+        final bool addedIdleStyleColumn =
+            !existingColumns.contains('feedback_orb_idle_style');
+        if (addedIdleStyleColumn) {
+          await m.addColumn(settings, settings.feedbackOrbIdleStyle);
+        }
+        if (!existingColumns.contains('feedback_wake_gestures')) {
+          await m.addColumn(settings, settings.feedbackWakeGestures);
+        }
+        if (addedIdleStyleColumn) {
+          // Only when the column is new: a re-run after a downgrade must not
+          // overwrite the style the user picked in the meantime.
+          await customStatement(
+            "UPDATE settings SET feedback_orb_idle_style = CASE "
+            "WHEN feedback_launcher_enabled = 0 THEN 'hidden' "
+            "ELSE 'handle' END",
+          );
+        }
       }
     },
     beforeOpen: (details) async {

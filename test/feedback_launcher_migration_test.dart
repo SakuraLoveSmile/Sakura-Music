@@ -10,7 +10,7 @@ const _seededOverlayConfig =
     '"cornerRadiusDp":18.0,"showNextLine":true,"showCloseButton":true,'
     '"position":"top"}';
 
-Future<Map<String, Object?>> _seedFullRow(AppDatabase database) {
+Future<void> _seedFullRow(AppDatabase database) {
   return database.saveSettings(
     themeMode: 'dark',
     seedColorValue: 0xff123456,
@@ -27,7 +27,7 @@ Future<Map<String, Object?>> _seedFullRow(AppDatabase database) {
     membershipActive: true,
     membershipMethod: 'code',
     updateChannel: 'prerelease',
-  ).then((_) async => <String, Object?>{});
+  );
 }
 
 Future<List<Map<String, dynamic>>> _rows(AppDatabase database) async {
@@ -168,6 +168,29 @@ void main() {
       expect(row.feedbackWakeGestures, '[]');
       expect(row.localeCode, 'en');
       expect(row.membershipActive, isTrue);
+    },
+  );
+
+  test(
+    're-upgrading a database opened once by an older build is not a duplicate-column error',
+    () async {
+      final file = File('${tempDir.path}/regressed.sqlite');
+      final seeded = AppDatabase(NativeDatabase(file));
+      await seeded.saveSettings(
+        feedbackOrbIdleStyle: 'edge',
+        feedbackWakeGestures: '["two-finger-hold"]',
+      );
+      // A v20 database opened by a pre-v20 build: its drift user_version was
+      // reset to 19 while the v20 columns are still on disk.
+      await seeded.customStatement('PRAGMA user_version = 19');
+      await seeded.close();
+
+      final upgraded = AppDatabase(NativeDatabase(file));
+      addTearDown(upgraded.close);
+      expect(upgraded.schemaVersion, 20);
+      final row = await upgraded.getSettings();
+      expect(row!.feedbackOrbIdleStyle, 'edge');
+      expect(row.feedbackWakeGestures, '["two-finger-hold"]');
     },
   );
 

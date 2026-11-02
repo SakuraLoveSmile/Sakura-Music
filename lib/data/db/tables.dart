@@ -146,7 +146,8 @@ class Settings extends Table {
   ///
   /// v20 replaced it with [feedbackOrbIdleStyle]; the column is kept only so
   /// the upgrade can map an explicitly hidden orb to the component's `hidden`
-  /// style without losing the stored preference. New code must not write it.
+  /// style without losing the stored preference. Writes keep the stored value
+  /// unchanged (a downgraded build still reads its old switch).
   BoolColumn get feedbackLauncherEnabled =>
       boolean().withDefault(const Constant(true))();
 

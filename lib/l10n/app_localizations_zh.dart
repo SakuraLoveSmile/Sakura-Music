@@ -370,7 +370,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get feedbackOrbStyleHint =>
-      '选择悬浮入口闲置后的样式。「隐藏」不显示任何悬浮入口，仍可从下方「问题反馈」打开面板改回。';
+      '选择悬浮入口闲置后的样式。「隐藏」不显示任何悬浮入口，唤醒手势也不会触发；仍可从下方「问题反馈」打开面板改回。';
 
   @override
   String get feedbackWakeGestures => '唤醒手势';
