@@ -1,13 +1,13 @@
 # feedback-20261102d：升级 feedback 组件至 0.8.3 并发布 v0.3.6 正式版
 
 - 项目 / 任务编号：personal-music / feedback-20261102d
-- 状态：实现中
+- 状态：待体验
 - 创建日期（Asia/Taipei）：2026-11-02
 - 权威记录：本文件
 - 主仓库 / 当前工作目录：`/Users/sakurasep/Documents/Code/Project/Personal Project/Music`
 - 基线 / 分支 / 合入目标：`origin/main`（c27d64b）/ `feat/20261102-feedback-widget-0.8.3` → 合入 `main`
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-music/20261102-feat-feedback-widget-0.8.3`
-- 当前 HEAD / 未提交差异：实现提交 `35c0cd1`（PR #23）已推送，工作树干净
+- 当前 HEAD / 未提交差异：实现提交 `35c0cd1` 与文档修订 `8ba23e6` 已随 PR #23 合入 `main`（合并提交 `635fa8f`），渠道清单提交 `5ba3f1c`；本 closeout 只更新本记录
 
 ## 目标与范围
 
@@ -47,7 +47,7 @@
 | 步骤 | 用户效果 / 实现范围 | 验收情形与预期 | 当前结果及证据 | 状态 |
 | --- | --- | --- | --- | --- |
 | T1 | 组件升级到 0.8.3 | 解析到 0.8.3（ref = a1f1949）；`flutter analyze` 无问题；现有反馈测试与全量测试通过；macOS 构建产物版本、着色器与新组件文案正确 | 解析 0.8.3；analyze、404 项单测、47 项发布脚本测试、macOS debug 构建（0.3.6 / 1793626126，含 orb_lens 着色器与「一键已读」文案）均通过 | 已完成 |
-| T2 | 发布 v0.3.6 正式版 | 标签触发发布；Release 非预发布、9 资产；`latest.json`/`preview.json` 推进到 0.3.6；Release body 为用户向日志 | 待发布 | 未开始 |
+| T2 | 发布 v0.3.6 正式版 | 标签触发发布；Release 非预发布、9 资产；`latest.json`/`preview.json` 推进到 0.3.6；Release body 为用户向日志 | [Release v0.3.6](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.6) 已发布（非草稿、非预发布、Latest、9 资产，2026-11-02T14:10:16Z）；`latest.json` 与 `preview.json` 均推进到 `v0.3.6` / `0.3.6` / `1793626126` / prerelease=false（清单提交 `5ba3f1c`），body 为用户向日志 | 已完成 |
 | T3 | 新反馈体验随包生效 | 正式版渠道看到 v0.3.6；「我的反馈」有一键已读、状态颜色；反馈面板「设置」→「灵感球」可隐藏入口；入口无数字角标 | 尚未在真实安装包上验证 | 未开始 |
 
 ## 执行与验证记录
@@ -60,24 +60,31 @@
 | 2026-11-02 | 同上 | 同上 | `python3 -m unittest discover -s .github/scripts/tests -v` | 47 项通过（Python 3.10.10 / PyYAML 6.0.2） |
 | 2026-11-02 | 同上 | macOS arm64 debug | `flutter build macos --debug --build-name 0.3.6 --build-number 1793626126` | 构建成功；Info.plist `CFBundleShortVersionString=0.3.6`、`CFBundleVersion=1793626126`；产物含 `feedback_widget/shaders/orb_lens.frag`；kernel_blob 含 0.8.2 独有文案「一键已读」「已全部标记为已读」 |
 | 2026-11-02 | 生产反馈服务 | `https://feedback.xn--fhqths51enha.cn` | 未登录探测 `POST /api/feedback/read-all` | `401 unauthorized`（路由存在，服务端 ≥0.8.2） |
+| 2026-11-02 | `8ba23e6`（PR #23 分支） | GitHub Actions（ubuntu / macOS） | 推送分支与 PR CI：[41456769455](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41456769455)、[41456777806](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41456777806) | Analyze / Test / Release workflow checks 全部通过；PR #23 以合并提交 `635fa8f` 合入 `main` |
+| 2026-11-02 | `635fa8f`（合并后 main） | GitHub Actions（ubuntu / macOS） | main CI [41457241286](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41457241286) | Analyze / Test / Release workflow checks 全部通过，之后才创建标签 |
+| 2026-11-02 | `v0.3.6`（635fa8f） | GitHub Actions（ubuntu / macOS / windows） | 推送签名标签 `v0.3.6`，发布工作流 [41457694492](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41457694492)；标签 CI [41457694466](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41457694466) | 发布工作流全部作业成功（Validate / Test / Android / iOS / macOS / Windows / Publish）；Release 已发布（非预发布、Latest、9 资产）；标签对象 `1595ce1` 解析到 `635fa8f`，GitHub 验证 `verified=true` |
+| 2026-11-02 | v0.3.6 清单 | GitHub main（`5ba3f1c`） | 核对 `release/latest.json`、`release/preview.json` 与公开 raw 地址 | 两清单 tag/version/build/prerelease 与 Release 一致；body 为 `release/notes/v0.3.6.md` 内容；公开 raw 实测一致 |
+| 2026-11-02 | v0.3.6 发布包 | 下载 `SakuraMusic-macos.zip` 核对 | 解包检查 Info.plist、着色器与 AOT 快照 | `CFBundleShortVersionString=0.3.6`、`CFBundleVersion=1793626126`；含 `packages/feedback_widget/shaders/orb_lens.frag`（40880B）；AOT 快照含「一键已读」「已全部标记为已读」，确认发布包带 0.8.2+ 组件 |
+| 2026-11-02 | `35c0cd1` + `8ba23e6` | 独立只读复核（release-reviewer） | 复核范围、SHA 一致性、版本身份链、更新日志事实、更新比较与渠道推进 | 0 阻塞；建议项（任务记录状态措辞、内部能力不应称导出）已在本 closeout 前修正 |
 | — | — | — | 真实账号 E2E / 真机安装升级 | 未运行：需账号与真实安装包 |
 
 ## 提交与集成
 
 | 提交 | 行为变化与原因 | 验证 | 合并 / 发布情况 |
 | --- | --- | --- | --- |
-| 35c0cd1 | 组件 0.8.1 → 0.8.3；应用版本 0.3.6-beta.1 → 0.3.6；用户向更新日志 | 本机分析 + 404 项单测 + 47 项发布脚本测试 + macOS 构建核验；PR CI 全绿 | PR #23（待合并） |
-| 待定 | closeout：补记 v0.3.6 发布证据与状态 | 文档核对 | 发布完成后单独提交/PR 合入 main |
+| 35c0cd1 + 8ba23e6 | 组件 0.8.1 → 0.8.3；应用版本 0.3.6-beta.1 → 0.3.6；用户向更新日志 | 本机分析 + 404 项单测 + 47 项发布脚本测试 + macOS 构建核验；PR CI、main CI、发布工作流全部通过；发布包独立核验 | PR #23 合入 main（`635fa8f`）；标签 `v0.3.6`；Release 已发布；两渠道清单推进（`5ba3f1c`） |
+| 待定 | closeout：补记 v0.3.6 发布证据与状态 | 文档核对 | 本 PR 合入 main |
 
 ## 交付与恢复
 
-- 体验入口和操作步骤：安装 v0.3.6 正式包（或应用内 设置 → 关于 → 检查更新）→
+- 体验入口和操作步骤：安装 [v0.3.6 正式包](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.6)
+  （或应用内 设置 → 关于 → 检查更新；上一版测试渠道用户会收到本正式版）→
   「我的反馈」一键已读、状态颜色；反馈面板「设置」→「灵感球」可选「隐藏」。
-- 尚未完成 / 尚未验证：真实安装包升级路径与面板内新能力的点击体验；Android/iOS/
-  Windows 本机安装（发布流水线已构建）；真实服务端 E2E。
+- 尚未完成 / 尚未验证：真实安装包升级路径与面板内新能力的点击体验（需本机/真机安装）；
+  Android/iOS/Windows 本机安装（发布流水线已构建，未逐平台本机启动）；真实服务端 E2E。
 - 用户确认（明确确认后才改为已验收）：待体验。
 - 下一步：安装 v0.3.6 体验反馈面板新能力，确认后可改为已验收。
 - 回退方式：还原 `pubspec.yaml` ref/版本、`pubspec.lock` 的 feedback 块、
   `release-build.yml` vendoring SHA，删除 `release/notes/v0.3.6.md` 即可回到
   0.8.1/0.3.6-beta.1；已发布对象不回改。
-- 本任务 worktree 收尾：待发布与 closeout 合入后检查清理。
+- 本任务 worktree 收尾：closeout 合入后检查清理（实现与 closeout 均已合入 main，无独有成果）。
