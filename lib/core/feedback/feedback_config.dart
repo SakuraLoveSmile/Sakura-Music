@@ -136,10 +136,11 @@ String feedbackPageLabelFromUri(Uri uri) {
 /// grabs host info on its own — and callers/tests may override it or pass
 /// `null` to attach nothing.
 ///
-/// [showLauncher] stays `true` for this host: the orb is hidden through the
-/// host-owned idle style (`hidden`) instead, which keeps a single source of
-/// truth with the component's in-panel settings. The panel stays reachable
-/// from Settings → 问题反馈 either way.
+/// [showLauncher] stays `true` for this host: the floating entry is governed by
+/// the host-owned idle style instead, which keeps a single source of truth with
+/// the component's in-panel settings. Since feedback_widget 0.9.0 `hidden` only
+/// hides the idle entry (enabled wake gestures can still wake the full orb), so
+/// the panel stays reachable from Settings → 问题反馈 either way.
 FeedbackConfig buildFeedbackConfig({
   required FeedbackServiceConfig service,
   required String pageLabel,
@@ -169,9 +170,10 @@ FeedbackConfig buildFeedbackConfig({
 
 /// Persisted idle style of the right-edge floating orb (Settings → 关于).
 ///
-/// `hidden` replaces the old on/off switch: it hides every floating entry,
-/// while Settings → 问题反馈 still opens the panel through the shared
-/// [feedbackControllerProvider]. The value is host-owned since
+/// `hidden` only hides the idle (collapsed) entry since feedback_widget 0.9.0:
+/// the full orb is still shown after launch or waking, and enabled wake
+/// gestures can wake it again. Settings → 问题反馈 still opens the panel through
+/// the shared [feedbackControllerProvider]. The value is host-owned since
 /// feedback_widget 0.8.4, so changes made inside the panel come back here.
 FeedbackOrbIdleStyle decodeFeedbackOrbIdleStyle(String? raw) {
   for (final FeedbackOrbIdleStyle style in FeedbackOrbIdleStyle.values) {

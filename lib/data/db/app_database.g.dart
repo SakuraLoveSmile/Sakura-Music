@@ -2523,12 +2523,14 @@ class Setting extends DataClass implements Insertable<Setting> {
   ///
   /// v20 replaced it with [feedbackOrbIdleStyle]; the column is kept only so
   /// the upgrade can map an explicitly hidden orb to the component's `hidden`
-  /// style without losing the stored preference. New code must not write it.
+  /// style without losing the stored preference. Writes keep the stored value
+  /// unchanged (a downgraded build still reads its old switch).
   final bool feedbackLauncherEnabled;
 
   /// Idle style of the floating feedback orb: `handle`, `edge` or `hidden`
-  /// (the feedback component's `FeedbackOrbIdleStyle` names). `hidden` is the
-  /// former "off" switch — no floating entry, while Settings → 问题反馈 and
+  /// (the feedback component's `FeedbackOrbIdleStyle` names). `hidden` only
+  /// hides the idle (collapsed) entry — the full orb still shows after launch
+  /// or waking and enabled wake gestures can wake it; Settings → 问题反馈 and
   /// the panel keep working.
   final String feedbackOrbIdleStyle;
 

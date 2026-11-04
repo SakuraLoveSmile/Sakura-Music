@@ -152,8 +152,9 @@ class Settings extends Table {
       boolean().withDefault(const Constant(true))();
 
   /// Idle style of the floating feedback orb: `handle`, `edge` or `hidden`
-  /// (the feedback component's `FeedbackOrbIdleStyle` names). `hidden` is the
-  /// former "off" switch — no floating entry, while Settings → 问题反馈 and
+  /// (the feedback component's `FeedbackOrbIdleStyle` names). `hidden` only
+  /// hides the idle (collapsed) entry — the full orb still shows after launch
+  /// or waking and enabled wake gestures can wake it; Settings → 问题反馈 and
   /// the panel keep working.
   TextColumn get feedbackOrbIdleStyle =>
       text().withDefault(const Constant('handle'))();

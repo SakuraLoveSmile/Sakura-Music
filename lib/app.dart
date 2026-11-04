@@ -133,7 +133,7 @@ class _SakuraMusicAppState extends ConsumerState<SakuraMusicApp>
     final String? feedbackAppVersion = packageInfo == null
         ? null
         : '${packageInfo.version}+${packageInfo.buildNumber}';
-    // Host-owned orb settings (feedback_widget 0.8.4). Defaults are applied
+    // Host-owned orb settings (feedback_widget 0.8.4+). Defaults are applied
     // while the row loads: handle + no wake gestures = the pre-0.8.2 look.
     final FeedbackOrbIdleStyle feedbackOrbIdleStyle =
         ref.watch(feedbackOrbIdleStyleProvider).value ??
