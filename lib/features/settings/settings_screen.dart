@@ -45,8 +45,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final localeCode = ref.watch(localeCodeProvider);
     // Only offer the in-app feedback entry when the layer is actually mounted.
     final feedbackEnabled = ref.watch(feedbackServiceConfigProvider) != null;
-    // Host-owned orb settings: the style replaces the old on/off switch
-    // (`hidden` = off) and the wake gestures default to all off.
+    // Host-owned orb settings: `hidden` only hides the idle entry (the full orb
+    // can still be woken by gestures) and the wake gestures default to all off.
     final FeedbackOrbIdleStyle orbIdleStyle =
         ref.watch(feedbackOrbIdleStyleProvider).value ??
         FeedbackOrbIdleStyle.handle;
@@ -354,9 +354,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 if (feedbackEnabled) ...<Widget>[
                   _buildDivider(),
-                  // The concrete orb settings replace the old show/hide switch:
-                  // "hidden" is the off state, so a single source of truth is
-                  // shared with the in-panel settings.
+                  // The concrete orb settings replace the old show/hide switch;
+                  // "hidden" only hides the idle entry, so a single source of
+                  // truth is shared with the in-panel settings.
                   _buildActionTile(
                     icon: Icons.touch_app_rounded,
                     iconColor: const Color(0xFFFF9F0A),
@@ -566,7 +566,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ].join(' · ');
   }
 
-  /// Picks the orb's idle style. `hidden` is the former off switch; the panel
+  /// Picks the orb's idle style. `hidden` only hides the idle entry; the panel
   /// entry below stays reachable.
   Future<void> _showOrbStyleDialog() async {
     await showDialog<void>(

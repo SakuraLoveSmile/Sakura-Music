@@ -296,7 +296,7 @@ void main() {
       expect(find.byKey(const Key('feedback-orb')), findsOneWidget);
     });
 
-    testWidgets('hiding the orb leaves the panel reachable', (
+    testWidgets('hiding the idle entry leaves the panel reachable', (
       WidgetTester tester,
     ) async {
       final FeedbackController controller = FeedbackController();
@@ -322,12 +322,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Settings → 关于 悬浮球样式 = 隐藏: no floating launcher at all.
+      // feedback_widget 0.9.0: `hidden` only hides the idle entry. The full orb
+      // is shown first and disappears after the 5s idle timeout.
+      expect(find.byKey(const Key('feedback-orb')), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(milliseconds: 420));
       expect(find.byKey(const Key('feedback-orb')), findsNothing);
       expect(find.byKey(const Key('feedback-fab')), findsNothing);
 
       // The Settings → 问题反馈 entry shares this controller, so the panel must
-      // still open even though the orb is hidden.
+      // still open even though the idle entry is hidden.
       controller.open();
       await tester.pumpAndSettle();
       expect(controller.isOpen, isTrue);

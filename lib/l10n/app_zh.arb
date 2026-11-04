@@ -143,7 +143,7 @@
   "feedbackOrbStyleHandle": "小把手",
   "feedbackOrbStyleEdge": "球体贴边",
   "feedbackOrbStyleHidden": "隐藏",
-  "feedbackOrbStyleHint": "选择悬浮入口闲置后的样式。「隐藏」不显示任何悬浮入口，唤醒手势也不会触发；仍可从下方「问题反馈」打开面板改回。",
+  "feedbackOrbStyleHint": "选择悬浮入口闲置后的样式。「隐藏」只隐藏闲置后的悬浮入口；已开启的唤醒手势仍可唤醒完整球，唤醒后再次闲置会重新隐藏。仍可从下方「问题反馈」打开面板改回。",
   "feedbackWakeGestures": "唤醒手势",
   "feedbackWakeGesturesOff": "未开启",
   "feedbackWakeGesturesHint": "可同时开启，仅在当前应用内生效。手势只唤醒悬浮球，不会直接截图。",

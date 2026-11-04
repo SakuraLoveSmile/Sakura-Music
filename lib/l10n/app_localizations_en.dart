@@ -382,7 +382,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get feedbackOrbStyleHint =>
-      'Pick how the floating orb idles. \"Hidden\" removes every floating entry and disables the wake gestures; Settings → Send feedback still opens the panel.';
+      'Pick how the floating orb idles. \"Hidden\" only hides the idle entry; enabled wake gestures can still wake the full orb, which hides again after it idles. Settings → Send feedback still opens the panel.';
 
   @override
   String get feedbackWakeGestures => 'Wake gestures';
