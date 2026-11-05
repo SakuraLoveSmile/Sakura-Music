@@ -6,7 +6,7 @@
 
 用户要求参照 NEORUAA/Glasmio 改造 SakuraMusic，并在实验性分支实现。交付可运行的 Flutter 界面：玻璃导航与迷你播放器、发现页、全屏播放器和一致的基础控件；原有路由、播放、收藏、队列、服务器与离线数据行为保留。
 
-- 基线：本机 `main`，`3f7050027a087999c3ca5ef1b97af62b8ca01c58`；与远端有分歧，本任务不处理历史整合。
+- 初始基线：本机 `main`，`3f7050027a087999c3ca5ef1b97af62b8ca01c58`；发布基线改为正式 v0.3.8，`daa82d7e419a2740ac963d94a5ee7d680a574c7d`，原因和验证见 T5。本任务不处理主工作区与远端的历史整合。
 - 分支：`feat/20261104-mu-ui01-glasmio-experiment`。
 - 工作树：`/Users/sakurasep/Documents/Code/Project/Project Worktree/personal-music/20261104-feat-mu-ui01-glasmio-experiment`。
 - 主工作区已有未跟踪 `AGENTS.md`，原样保留；工作树带一份相同指导文件，不归入功能提交。
@@ -61,9 +61,9 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 - 原六带渐进模糊在滚动位置出现水平接缝。改为上述 24 带，并在同一原生滚动场景对照修复前后，接缝明显改善、前景文字清晰。仍为 Gaussian 分带近似，未引入仅支持部分渲染后端的 shader；Android 性能尚未验证。
 - 独立 reviewer 已只读核查共享材质、渐进模糊接入、高对比/减少动画行为、导航和预览隔离；后续布局修复及最终组合态由主 agent 核对并运行回归。审查结论不代替原生操作及性能验证。
 
-## 验证与证据
+## 界面实现阶段验证与证据（初始基线）
 
-环境：Flutter 3.41.3 / Dart 3.11.1，macOS 27.0.1 arm64。基线仍为 `3f7050027a087999c3ca5ef1b97af62b8ca01c58`，本任务修改尚未提交。最终 10 个改动 Dart 文件的 SHA-256 记录在 `build/mu-ui01-evidence/final-source-manifest.json`，组合指纹为 `0828b33eed29239707bdceba06d697413e8f25edcf8b5a1b05cc8ef7385d812a`；以下检查针对同一份文件内容执行。旧 `final-*.log` 与溢出截图仅保留调试历史，最新通过证据使用 `verified-*.log`。
+环境：Flutter 3.41.3 / Dart 3.11.1，macOS 27.0.1 arm64。以下为 2026-11-04 初始基线 `3f7050027a087999c3ca5ef1b97af62b8ca01c58` 上的验证，当时改动尚未提交，不作为移植后全部发布检查的替代。10 个改动 Dart 文件的 SHA-256 记录在 `build/mu-ui01-evidence/final-source-manifest.json`，组合指纹为 `0828b33eed29239707bdceba06d697413e8f25edcf8b5a1b05cc8ef7385d812a`；下表针对同一份文件内容执行。旧 `final-*.log` 与溢出截图仅保留调试历史，该阶段通过证据使用 `verified-*.log`。
 
 | 检查 | 本次结果 | 证据（工作树内） |
 | --- | --- | --- |
@@ -92,18 +92,20 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 
 在本工作树运行 `flutter run -d macos -t tool/glasmio_preview.dart`。macOS 菜单“预览”提供桌面 1280×800、手机 390×844、手机 320×740、桌面 960×640 以及首页/播放器切换。手机预设仅切换 Android UI 分支，不模拟 Android 设备。无服务器页面可通过 `--dart-define=GLASS_PREVIEW_EMPTY=true` 启动。
 
-预览构建副本：`build/glass-preview/SakuraMusic.app`，bundle ID `local.sakuramusic.mu-ui01.preview`，已更新为最终代码。最终预览进程 PID 20401 留在 1280×800 首页供用户体验；本轮观察它仅有 loopback TCP 监听端口 49630、49645，供调试与合成服务使用，重启会变化，退出此应用即停止。旧预览、设置预览 PID 18928、空资料库预览 PID 19384 均在核对完整路径后停止，没有留下这些副本的进程。
+初始基线预览构建副本：`build/glass-preview/SakuraMusic.app`，bundle ID `local.sakuramusic.mu-ui01.preview`。2026-11-04 预览进程 PID 20401 曾留在 1280×800 首页，loopback TCP 监听端口为 49630、49645；2026-11-05 发布准备时核对已退出。旧预览、设置预览 PID 18928、空资料库预览 PID 19384 均在核对完整路径后停止。后续发布基线的原生核验另记 T5。
 
 设置与空资料库副本分别为 `build/glass-settings/SakuraMusic.app`（`local.sakuramusic.mu-ui01.settings`）和 `build/glass-empty/SakuraMusic.app`（`local.sakuramusic.mu-ui01.empty`）；基线副本 `build/glass-baseline/SakuraMusic.app` 仅用于比较。它们都位于本任务构建目录，没有安装到正式应用位置。普通入口仍为 `lib/main.dart`，连接自己的音乐服务时应使用该入口；普通 Android debug APK 使用项目原有应用标识，本轮未覆盖安装到任何设备。
 
-下一步为用户体验视觉与操作，并在有 Android 设备和隔离音乐服务时核验真实渲染性能、音频及系统媒体控制。状态为“待体验”，没有用户确认前不标“已验收”。未提交、未推送、未合入或发布。
+界面实现阶段已达到“待体验”；用户随后要求发布测试版，当前发布步骤见 T5。Android 设备和隔离音乐服务上的真实渲染性能、音频及系统媒体控制仍待体验，没有用户确认前不标“已验收”。
 
 实验尚未合入，因此保留本任务工作树供体验，不触发合入后清理。其他任务工作树与归档不操作；以后合入且验证完成后按既有规则清理本工作树，先保存所需忽略证据。
 
 ## T5 · 发布 Glasmio 测试版（2026-11-05）
 
-- 拟发布 `v0.3.9-glasmio.1`，沿用既有 `release.yml` 的多平台安装包与签名，使用普通 `lib/main.dart`；合成数据预览入口不作为公开安装包入口。
+- 拟发布 `v0.3.9-glasmio.1`，冻结版本 `0.3.9-glasmio.1+1793850934`，沿用既有 `release.yml` 的多平台安装包与签名，使用普通 `lib/main.dart`；合成数据预览入口不作为公开安装包入口。构建号大于正式版所有 ABI 实际 code 的最大值 `1793787648`，并为 ABI 偏移预留范围。
 - 发布前查明：初始实验基线数据库为 schema 17，已发布 v0.3.8 为 schema 20。直接沿旧基线覆盖安装有数据降级风险，因此先保存本任务提交，再仅把本任务 UI、预览、测试和记录移植到 v0.3.8 的冻结提交 `daa82d7e419a2740ac963d94a5ee7d680a574c7d`。这不整合或重写主工作区 main 的分歧历史。
-- 原 UI 提交通过本地 `refs/task-snapshots/mu-ui01/pre-release-port` 保留恢复点。移植后检查实际差异与数据契约，重新执行当前发布流程所需检查；先前 58 项结果仅证明旧基线的组合态。
+- 原 UI 签名提交 `29b28c6` 通过本地 `refs/task-snapshots/mu-ui01/pre-release-port` 保留恢复点；移植后的签名 UI 提交为 `fe69d3d`。`git range-diff` 确认补丁等价，全部原 UI 文件与 v0.3.8 均无同文件上游差异。保留 schema 20、凭据、服务器、下载和稳定版反馈/歌词/WebDAV 契约；只读兼容性分析也确认这一方向。先前 58 项结果仅证明旧基线的组合态，发布前重新执行检查。
 - prerelease 必须为 true、make_latest 为 false，仅允许 `release/preview.json` 单调推进；正式版 latest 与 `release/latest.json` 保持原有候选。
-- 当前步骤：保存实现并移植到发布基线，之后冻结版本/构建号、验证、推送分支与标签、等待全部平台打包和发布，并校验下载包、标签及测试清单。
+- 发布前本地检查：47 项发布工作流离线测试通过（任务内 Python 3.12 环境、PyYAML 6.0.2），`source-version` 解析为 numeric version `0.3.9`、build `1793850934`、prerelease=true、draft=false；`git diff --check` 通过，10 个 UI/test 文件仍与既有指纹完全一致。证据在 `build/mu-ui01-release/`。
+- 本机 Flutter 3.41.3 的 SDK 固定依赖与 v0.3.8 的锁文件不一致，`pub get --enforce-lockfile` 明确拒绝改写 7 个依赖。锁文件保持发布基线原值，不为本机降级依赖。当前完整代码验证和打包使用项目既有 GitHub CI 与 Release workflow 的 stable SDK；只有全部必要检查通过才认为发布完成。
+- 当前步骤：冻结版本/构建号已完成，接下来推送候选分支，待 CI 通过后推送签名预发布标签，等待全部平台打包与发布，并校验下载包、标签及测试清单。
