@@ -11,7 +11,9 @@ This experimental branch interprets [Glasmio](https://github.com/NEORUAA/Glasmio
 floating capsules, continuous corners, and layered glass in Flutter. Shared
 materials live in `lib/core/widgets/glass.dart`; the shell, discovery screen,
 and player use them without replacing the playback or data layers. Backdrop
-blur samples real content. Progressive edge blur uses 24 Gaussian bands; native
+blur samples detailed content where needed; static chrome keeps its translucent
+face and highlights. Android uses a single light header frost and cover-colored
+player glows. Other platforms retain the 24-band progressive edge blur. Native
 refraction and an exact reproduction of Glasmio's shaders are not implemented.
 The existing dark appearance and accent color are retained. No Compose runtime,
 new Flutter dependency, Apple font, or upstream wallpaper is bundled.

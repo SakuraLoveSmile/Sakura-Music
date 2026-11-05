@@ -127,9 +127,30 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 - 主 agent 独占全部实现、测试、记录与运行环境。只读 researcher 核验本机 Flutter 3.41.3 的框架和 Impeller：ShaderMask 包着空 BackdropFilter 会先创建透明 saveLayer，不能保证采到外部背景；不同 sigma 或不同 alpha 的复合滤镜共享 key 也不能保证复用一次 Gaussian。未采用这些未经验证的捷径。两名 agent 自行完成有界查证，没有继续派发。
 - 修正范围：Android 首页用一个 sigma 8 的裁剪磨砂层，叠加既有渐变染色，明确不是渐变 sigma；其他平台保留原分带效果。静态画布上的顶栏、底栏、迷你播放器、分类、统计、44px玻璃按钮，以及本已模糊背景上的播放器 dock/控件保留半透明渐变、圆角和高光，显式关闭独立 backdrop 采样。每日推荐封面上的真实采样保留，Android sigma 为 8；进度条加局部重绘边界。没有改路由、音频、数据、服务器、签名或依赖锁。
 - 验证目标：Android header 至多一次 backdrop；全局导航的独立测试不包含 backdrop；高对比仍关闭效果；44px触摸与既有窄屏/大字、首页推荐、播放器操作保持。真机需在同一设备/数据/渲染器下比较首页滚动、列表切换、迷你播放器进度和全屏播放器，不以 widget 测试替代 GPU 性能。
-- 用户已回复“已连接”真机；截至当前 adb 列表仍为空，正在核对 USB/调试连接。仅使用真机，不启动模拟器。原公开安装包和用户应用数据不清除。
+- 用户最初回复“已连接”时 adb 列表为空；再次连接后已识别 Mi 10，后续真机结果见下文。仅使用真机，不启动模拟器。原公开安装包和用户应用数据不清除。
 - 原导航测试在改动前使用本机 Flutter 3.41.3 / 已有 package_config（历史缓存）通过；这不是当前发布锁文件下的检查。最终检查将分别标明本地缓存与 CI 发布 SDK 的结果，锁文件保持原值。
 
 - 本机依赖核对发现 `.dart_tool/package_config.json` 仍指向初始实验的旧 Feedback，因此第一次全仓分析和 macOS 预览构建出现既有依赖不匹配；没有改业务源码规避。仅把生成配置中的 Feedback URI 对齐到本机已缓存、pubspec.lock 已固定的 `7201756`，备份原生成文件后重试成功：`flutter analyze --no-pub` 无问题，45 项受影响测试通过，macOS Android主题预览构建通过。日志为 `build/mu-ui01-android-{analyze-aligned,widget-aligned,macos-preview-aligned}.log`。本机其余 SDK 固定包仍与 CI 的3.47.9锁解析不同，本地结果属于独立工具链冒烟，不冒充发布工具链验证。
 - 独立 reviewer 只读检查实际 diff，未发现实质正确性或交互问题；指出单层磨砂的底边以及原播放器全屏动画需原生核验，未把滤镜数当作 FPS 证据。
 - 用户再次连接后识别到实际 Mi 10，serial `8085d06e`、Android16、1080×2340/440dpi。手机正式包实际为0.3.3，并非反馈中的测试版；因此在忽略目录 `build/mu-ui01-android-perf/` 准备两份同配置的源码快照和独立包 `local.sakuramusic.muui01.perf`，用合成库、模拟播放、profile模式测 Flutter FrameTiming。基线取已发布tag，候选只覆盖本轮5个生产Dart文件；相同本机SDK/缓存/测试计时扩展，保留正式安装与真实资料。快照与测量数据不纳入产品源码。
+- 首轮滤镜修正已签名提交、推送为 `409131b9bfb499137ca597f7c50eebd30dc46845`。[CI 41974150868](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41974150868) 四项作业全部通过，实读 Flutter 3.47.9；应用419项、协议11项测试以及两处分析通过，macOS/Linux各47项发布工作流测试通过。此结果只绑定首轮代码，追加播放器修正须重新运行最终源码 CI。
+- 真机继续发现窄屏播放器整个控制区随进度逐帧重建。将 `SmoothPositionBuilder` 收窄到进度条和时间戳，歌词预览加局部重绘边界；播放、循环、速度等按钮继续由外层 distinct 状态快照更新。新增连续快照回归，检查暂停/下一首回调、循环、速度、拖动进度和换无封面曲目后的标题/状态更新，保留原断言。只读 reviewer 核对换歌、封面、尺寸和状态更新，无实质问题。
+- 全屏图片 sigma45 模糊在该90Hz真机上仍超过渲染预算；尝试静态图片缓存也未消除开销，已撤掉该尝试。最终 Android 保留实际封面、封面 palette 动态环境光与遮罩，跳过整屏图片模糊；其他平台保持原结构。已向用户说明此视觉取舍，未修改音频/数据行为。
+- 两份隔离快照各执行 `flutter pub get --offline` 生成完整本机配置，解决仅复制配置时预览出现的 JNI 初始化失败；不将该隔离启动问题视为产品 bug。两份临时锁文件逐字节相同（SHA256 `7c746ad75fb22be33b1f0f539dc5b7d430577b38cb2fb0b3f9e918a838c1860c`），与生产锁仅7项SDK固定包版本不同；生产 `pubspec.lock` 未改。两份 APK 的 Flutter engine 相同（SHA256 `d42cfe4e7f60cfad84dd3db00661e7d99db4caa2162621d14d65ba3b4448b9b7`）。5个生产UI文件与最终被测候选逐字节一致，指纹、APK条目比较、快照来源及逐帧数据在 `final-ui-fingerprints.json`、`snapshot-provenance.json`、`profile-apk-entry-diff.json` 和 `final-comparison.json`。
+- 最终本地工具链冒烟：`flutter test --no-pub test/player_widgets_test.dart --reporter expanded` 28项通过；`flutter analyze --no-pub` 无问题，格式检查和 `git diff --check` 通过。日志为 `build/mu-ui01-player-palette-{tests,analyze}.log`。正式发布工具链仍须以最终源码的云端检查为准。
+
+### T6 真机最终组合态（2026-11-05）
+
+同一台 Mi 10、Android16、90Hz、同一 SDK/依赖/合成库；基线为已发布 `.1`，候选为本节最终5个UI文件。滚动3组上下滑、五目的地切换2轮、迷你/全屏各8秒稳态，先预热再采集。下表为 Flutter raster 耗时（中位数 / p95，毫秒），不是整机FPS承诺。
+
+| 场景 | `.1` 基线 | 最终候选 | 候选样本数 |
+| --- | --- | --- | --- |
+| 首页滚动 | 52.458 / 55.929 | 3.730 / 5.711 | 493 |
+| 页面切换 | 16.115 / 52.877 | 2.449 / 6.083 | 194 |
+| 迷你播放 | 52.853 / 54.464 | 2.920 / 5.172 | 860 |
+| 全屏播放 | 16.034 / 21.037 | 2.054 / 2.317 | 837 |
+
+- 最终全屏 build 中位数/p95 为5.199/6.372ms；837帧中7帧build超过16.667ms，total p95为9.604ms，因此不宣称完全无掉帧或所有手机稳定90fps。最终播放场景的raster均无超过11.111ms的样本。首页raster有6帧超过11.111ms，切页有1帧。
+- 主 agent 直接检查真机截图和交互：暂停、下一首标题/队列序号、拖动到02:58、循环高亮、速度1.5x、封面/黑胶/歌词切换、折叠返回与首页滚动磨砂边缘正常。没有溢出或未捕获异常标记。证据为 `candidate-ui-*.png` 和 `candidate-native-regression.log`；早期采样另存 `stage1/`、`stage2/`，不将中间实现的数据冒充最终结果。
+- 真机结果属于本机3.41.3 profile模式、合成音乐和模拟播放，未覆盖最终公开3.47.9安装包、真实音乐服务/音频或系统媒体控件；原手机0.3.3安装与真实数据保持。Android原生渲染缺口已补充本节证据，真实音乐体验仍待用户确认。
+- 下一步：发布修正测试版 `v0.3.9-glasmio.2`，构建号 `1793858280` 大于 `.1` 所有ABI实际code的最大值1793854934；提交后重新执行最终源码CI、既有多平台Release，检查9个公开资产身份/签名/摘要、preview推进与stable不变，收尾停止并移除本任务合成测试包与ADB转发。未合入main，活跃实验工作树继续保留。

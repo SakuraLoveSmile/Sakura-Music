@@ -138,8 +138,10 @@ class _AmbientPlayerBackgroundState extends State<_AmbientPlayerBackground>
             // Base dark backdrop
             Positioned.fill(child: Container(color: const Color(0xFF0E0F13))),
 
-            // Blurred Artwork Image
-            if (widget.item.artworkUrl != null)
+            // Palette glows retain the cover's atmosphere on Android without
+            // filtering a full-screen image on every animation frame.
+            if (Theme.of(context).platform != TargetPlatform.android &&
+                widget.item.artworkUrl != null)
               Positioned.fill(
                 child: IgnorePointer(
                   child: ClipRect(
@@ -1289,16 +1291,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             // Compact Lyrics Preview Card
             Expanded(
               child: Center(
-                child: SmoothPositionBuilder(
-                  service: service,
-                  builder: (context, position, controls) =>
-                      CompactLyricsPreview(
-                        item: item,
-                        position: position,
-                        onTap: () => setState(
-                          () => _mobileMode = _MobileStageMode.lyrics,
+                child: RepaintBoundary(
+                  child: SmoothPositionBuilder(
+                    service: service,
+                    builder: (context, position, controls) =>
+                        CompactLyricsPreview(
+                          item: item,
+                          position: position,
+                          onTap: () => setState(
+                            () => _mobileMode = _MobileStageMode.lyrics,
+                          ),
                         ),
-                      ),
+                  ),
                 ),
               ),
             ),
@@ -1772,299 +1776,305 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required bool isStarred,
     required Duration duration,
   }) {
-    return SmoothPositionBuilder(
-      service: service,
-      duration: duration,
-      builder: (context, position, controls) {
-        final maxMs = duration.inMilliseconds > 0
-            ? duration.inMilliseconds.toDouble()
-            : 1.0;
-        final posMs = position.inMilliseconds
-            .clamp(0, maxMs.toInt())
-            .toDouble();
-        final sliderTheme = SliderTheme.of(context).copyWith(
-          trackHeight: 3.0,
-          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.0),
-          overlayShape: const RoundSliderOverlayShape(overlayRadius: 9.0),
-          activeTrackColor: Theme.of(context).colorScheme.primary,
-          inactiveTrackColor: const Color(0xFF2A2C37),
-          thumbColor: Colors.white,
-        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          // Only the slider and timestamps change on every frame.
+          RepaintBoundary(
+            child: SmoothPositionBuilder(
+              service: service,
+              duration: duration,
+              builder: (context, position, controls) {
+                final maxMs = duration.inMilliseconds > 0
+                    ? duration.inMilliseconds.toDouble()
+                    : 1.0;
+                final posMs = position.inMilliseconds
+                    .clamp(0, maxMs.toInt())
+                    .toDouble();
+                final sliderTheme = SliderTheme.of(context).copyWith(
+                  trackHeight: 3.0,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 5.0,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 9.0,
+                  ),
+                  activeTrackColor: Theme.of(context).colorScheme.primary,
+                  inactiveTrackColor: const Color(0xFF2A2C37),
+                  thumbColor: Colors.white,
+                );
 
-        return Container(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              // Progress Slider & Timestamps
-              SizedBox(
-                height: 28,
-                child: Row(
-                  children: <Widget>[
-                    Text(
-                      _formatDuration(position),
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    Expanded(
-                      child: SliderTheme(
-                        data: sliderTheme,
-                        child: Slider(
-                          value: posMs,
-                          max: maxMs,
-                          onChanged: duration == Duration.zero
-                              ? null
-                              : (value) => controls.seek(
-                                  Duration(milliseconds: value.round()),
-                                ),
-                          onChangeEnd: duration == Duration.zero
-                              ? null
-                              : (_) => controls.seekEnd(),
+                return SizedBox(
+                  height: 28,
+                  child: Row(
+                    children: <Widget>[
+                      Text(
+                        _formatDuration(position),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.white.withValues(alpha: 0.5),
                         ),
                       ),
-                    ),
-                    Text(
-                      _formatDuration(duration),
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: Colors.white.withValues(alpha: 0.5),
+                      Expanded(
+                        child: SliderTheme(
+                          data: sliderTheme,
+                          child: Slider(
+                            value: posMs,
+                            max: maxMs,
+                            onChanged: duration == Duration.zero
+                                ? null
+                                : (value) => controls.seek(
+                                    Duration(milliseconds: value.round()),
+                                  ),
+                            onChangeEnd: duration == Duration.zero
+                                ? null
+                                : (_) => controls.seekEnd(),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        _formatDuration(duration),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
+          // Main Hero Playback Controls: Loop, Prev, Play/Pause, Next, Queue
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              IconButton(
+                tooltip: _loopModeLabel(context, state.loopMode),
+                onPressed: () {
+                  final next = switch (state.loopMode) {
+                    AppLoopMode.off => AppLoopMode.all,
+                    AppLoopMode.all => AppLoopMode.one,
+                    AppLoopMode.one => AppLoopMode.off,
+                  };
+                  service.setLoopMode(next);
+                },
+                icon: Icon(
+                  _loopModeIcon(state.loopMode),
+                  size: 22,
+                  color: state.loopMode == AppLoopMode.off
+                      ? Colors.white60
+                      : Theme.of(context).colorScheme.primary,
                 ),
               ),
-
-              const SizedBox(height: 4),
-
-              // Main Hero Playback Controls: Loop, Prev, Play/Pause, Next, Queue
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  IconButton(
-                    tooltip: _loopModeLabel(context, state.loopMode),
-                    onPressed: () {
-                      final next = switch (state.loopMode) {
-                        AppLoopMode.off => AppLoopMode.all,
-                        AppLoopMode.all => AppLoopMode.one,
-                        AppLoopMode.one => AppLoopMode.off,
-                      };
-                      service.setLoopMode(next);
-                    },
-                    icon: Icon(
-                      _loopModeIcon(state.loopMode),
-                      size: 22,
-                      color: state.loopMode == AppLoopMode.off
-                          ? Colors.white60
-                          : Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: context.l10n.previousTrack,
-                    onPressed: service.previous,
-                    icon: const Icon(
-                      Icons.skip_previous_rounded,
-                      size: 28,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(26),
-                      onTap: () async {
-                        if (state.playing) {
-                          await service.pause();
-                        } else {
-                          await service.play();
-                        }
-                      },
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.primary,
-                          boxShadow: <BoxShadow>[
-                            BoxShadow(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.5),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          state.playing
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          size: 32,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: context.l10n.nextTrack,
-                    onPressed: service.next,
-                    icon: const Icon(
-                      Icons.skip_next_rounded,
-                      size: 28,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: context.l10n.queueTitle,
-                    onPressed: () => showQueuePanel(context, service),
-                    icon: Badge(
-                      isLabelVisible: state.queueLength > 0,
-                      label: Text(
-                        state.currentIndex != null
-                            ? '${state.currentIndex! + 1}'
-                            : '${state.queueLength}',
-                        style: const TextStyle(fontSize: 9),
-                      ),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: const Icon(
-                        Icons.queue_music_rounded,
-                        size: 22,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ),
-                ],
+              IconButton(
+                tooltip: context.l10n.previousTrack,
+                onPressed: service.previous,
+                icon: const Icon(
+                  Icons.skip_previous_rounded,
+                  size: 28,
+                  color: Colors.white,
+                ),
               ),
-
-              const SizedBox(height: 6),
-
-              // Secondary Quick Action Row: Shuffle, Speed, Add to Playlist, Discovery, Sleep Timer
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  IconButton(
-                    tooltip: state.shuffle
-                        ? context.l10n.shuffleOff
-                        : context.l10n.shuffleOn,
-                    padding: EdgeInsets.zero,
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      minimumSize: const Size(44, 44),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(26),
+                  onTap: () async {
+                    if (state.playing) {
+                      await service.pause();
+                    } else {
+                      await service.play();
+                    }
+                  },
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).colorScheme.primary,
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.5),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    constraints: const BoxConstraints.tightFor(
-                      width: 44,
-                      height: 44,
-                    ),
-                    onPressed: () => service.setShuffle(!state.shuffle),
-                    icon: Icon(
-                      Icons.shuffle_rounded,
-                      size: 20,
-                      color: state.shuffle
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.white60,
-                    ),
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () =>
-                        _showPlaybackSpeedModal(context, service, state.speed),
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 44),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          const Icon(
-                            Icons.speed_rounded,
-                            size: 14,
-                            color: Colors.white70,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${state.speed}x',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: Icon(
+                      state.playing
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      size: 32,
+                      color: Colors.white,
                     ),
                   ),
-                  IconButton(
-                    tooltip: context.l10n.addToPlaylist,
-                    padding: EdgeInsets.zero,
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      minimumSize: const Size(44, 44),
-                    ),
-                    constraints: const BoxConstraints.tightFor(
-                      width: 44,
-                      height: 44,
-                    ),
-                    onPressed: () =>
-                        showQuickAddToPlaylistSheet(context, item: item),
-                    icon: const Icon(
-                      Icons.playlist_add_rounded,
-                      size: 20,
-                      color: Colors.white60,
-                    ),
+                ),
+              ),
+              IconButton(
+                tooltip: context.l10n.nextTrack,
+                onPressed: service.next,
+                icon: const Icon(
+                  Icons.skip_next_rounded,
+                  size: 28,
+                  color: Colors.white,
+                ),
+              ),
+              IconButton(
+                tooltip: context.l10n.queueTitle,
+                onPressed: () => showQueuePanel(context, service),
+                icon: Badge(
+                  isLabelVisible: state.queueLength > 0,
+                  label: Text(
+                    state.currentIndex != null
+                        ? '${state.currentIndex! + 1}'
+                        : '${state.queueLength}',
+                    style: const TextStyle(fontSize: 9),
                   ),
-                  IconButton(
-                    tooltip: context.l10n.discovery,
-                    padding: EdgeInsets.zero,
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      minimumSize: const Size(44, 44),
-                    ),
-                    constraints: const BoxConstraints.tightFor(
-                      width: 44,
-                      height: 44,
-                    ),
-                    onPressed: () => showTrackDiscoverySheet(
-                      context,
-                      item: item,
-                      service: service,
-                    ),
-                    icon: const Icon(
-                      Icons.explore_outlined,
-                      size: 20,
-                      color: Colors.white60,
-                    ),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(
+                    Icons.queue_music_rounded,
+                    size: 22,
+                    color: Colors.white70,
                   ),
-                  IconButton(
-                    tooltip: context.l10n.sleepTimer,
-                    padding: EdgeInsets.zero,
-                    style: IconButton.styleFrom(
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      minimumSize: const Size(44, 44),
-                    ),
-                    constraints: const BoxConstraints.tightFor(
-                      width: 44,
-                      height: 44,
-                    ),
-                    onPressed: () => showSleepTimerSheet(context),
-                    icon: const Icon(
-                      Icons.timer_outlined,
-                      size: 20,
-                      color: Colors.white60,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
-        );
-      },
+
+          const SizedBox(height: 6),
+
+          // Secondary Quick Action Row: Shuffle, Speed, Add to Playlist, Discovery, Sleep Timer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              IconButton(
+                tooltip: state.shuffle
+                    ? context.l10n.shuffleOff
+                    : context.l10n.shuffleOn,
+                padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(44, 44),
+                ),
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
+                onPressed: () => service.setShuffle(!state.shuffle),
+                icon: Icon(
+                  Icons.shuffle_rounded,
+                  size: 20,
+                  color: state.shuffle
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.white60,
+                ),
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () =>
+                    _showPlaybackSpeedModal(context, service, state.speed),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Icon(
+                        Icons.speed_rounded,
+                        size: 14,
+                        color: Colors.white70,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${state.speed}x',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: context.l10n.addToPlaylist,
+                padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(44, 44),
+                ),
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
+                onPressed: () =>
+                    showQuickAddToPlaylistSheet(context, item: item),
+                icon: const Icon(
+                  Icons.playlist_add_rounded,
+                  size: 20,
+                  color: Colors.white60,
+                ),
+              ),
+              IconButton(
+                tooltip: context.l10n.discovery,
+                padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(44, 44),
+                ),
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
+                onPressed: () => showTrackDiscoverySheet(
+                  context,
+                  item: item,
+                  service: service,
+                ),
+                icon: const Icon(
+                  Icons.explore_outlined,
+                  size: 20,
+                  color: Colors.white60,
+                ),
+              ),
+              IconButton(
+                tooltip: context.l10n.sleepTimer,
+                padding: EdgeInsets.zero,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(44, 44),
+                ),
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 44,
+                ),
+                onPressed: () => showSleepTimerSheet(context),
+                icon: const Icon(
+                  Icons.timer_outlined,
+                  size: 20,
+                  color: Colors.white60,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

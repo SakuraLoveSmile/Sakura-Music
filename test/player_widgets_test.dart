@@ -123,6 +123,89 @@ void main() {
     duration: Duration(minutes: 3, seconds: 45),
   );
 
+  testWidgets(
+    'narrow player controls follow snapshots while progress advances',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioPlayerProvider.overrideWithValue(service),
+            databaseProvider.overrideWithValue(database),
+            serversProvider.overrideWithValue(const AsyncData(<Server>[])),
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: MaterialApp(
+            theme: buildTheme(Brightness.dark),
+            locale: const Locale('zh'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const PlayerScreen(),
+          ),
+        ),
+      );
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: false,
+          currentItem: sampleItem,
+          duration: Duration(minutes: 3, seconds: 45),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: true,
+          currentItem: sampleItem,
+          position: Duration(seconds: 35),
+          duration: Duration(minutes: 3, seconds: 45),
+          shuffle: true,
+          loopMode: AppLoopMode.one,
+          speed: 1.5,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.repeat_one_rounded), findsOneWidget);
+      expect(find.text('1.5x'), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.pause_rounded));
+      expect(service.pauseCount, 1);
+      await tester.tap(find.byIcon(Icons.skip_next_rounded));
+      expect(service.nextCount, 1);
+      await tester.drag(find.byType(Slider), const Offset(60, 0));
+      await tester.pump();
+      expect(service.lastSeek, isNotNull);
+
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: false,
+          currentItem: PlayableItem(
+            id: 'next-track',
+            title: 'Next track without artwork',
+            streamUrl: 'http://localhost/next',
+          ),
+          duration: Duration(minutes: 2),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Next track without artwork'), findsWidgets);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(find.text('1.0x'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('MiniPlayerBar renders item information and controls', (
     WidgetTester tester,
   ) async {
