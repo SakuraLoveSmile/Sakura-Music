@@ -6,6 +6,7 @@ import 'package:subsonic_api/subsonic_api.dart';
 
 import '../../audio/audio_player_service.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/glass.dart';
 import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'queue_panel.dart';
@@ -41,8 +42,10 @@ class _PlaybackProgressBar extends StatelessWidget {
         return LinearProgressIndicator(
           value: progress,
           minHeight: 2.5,
-          backgroundColor: const Color(0xFF242632),
-          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1E7BF6)),
+          backgroundColor: Colors.white.withValues(alpha: 0.07),
+          valueColor: AlwaysStoppedAnimation<Color>(
+            Theme.of(context).colorScheme.primary,
+          ),
         );
       },
     );
@@ -56,6 +59,7 @@ class MiniPlayerBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final primary = Theme.of(context).colorScheme.primary;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < 600;
     final isMedium = screenWidth >= 780;
@@ -104,28 +108,15 @@ class MiniPlayerBar extends ConsumerWidget {
 
         return Padding(
           padding: EdgeInsets.fromLTRB(
-            isCompact ? 8 : 14,
-            0,
-            isCompact ? 8 : 14,
+            isCompact ? 12 : 14,
+            4,
+            isCompact ? 12 : 14,
             isCompact ? 4 : 10,
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF181A22),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF282A36), width: 1.0),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
+          child: GlassSurface(
             child: isCompact
                 ? InkWell(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(26),
                     onTap: () => context.push('/player'),
                     child: _buildCompactContent(
                       context: context,
@@ -276,42 +267,37 @@ class MiniPlayerBar extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 4),
 
-                                  // Big Blue Circular Play/Pause Button
-                                  Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(20),
-                                      onTap: () async {
-                                        if (state.playing) {
-                                          await service.pause();
-                                        } else {
-                                          await service.play();
-                                        }
-                                      },
-                                      child: Container(
-                                        width: 38,
-                                        height: 38,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: const Color(0xFF1E7BF6),
-                                          boxShadow: <BoxShadow>[
-                                            BoxShadow(
-                                              color: const Color(
-                                                0xFF1E7BF6,
-                                              ).withValues(alpha: 0.4),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(
-                                          state.playing
-                                              ? Icons.pause_rounded
-                                              : Icons.play_arrow_rounded,
-                                          size: 24,
-                                          color: Colors.white,
+                                  // A glass-highlighted transport control.
+                                  IconButton.filled(
+                                    tooltip: state.playing
+                                        ? context.l10n.pause
+                                        : context.l10n.play,
+                                    style: IconButton.styleFrom(
+                                      minimumSize: const Size.square(44),
+                                      maximumSize: const Size.square(44),
+                                      padding: EdgeInsets.zero,
+                                      backgroundColor: primary.withValues(
+                                        alpha: 0.22,
+                                      ),
+                                      foregroundColor: Colors.white,
+                                      side: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.20,
                                         ),
                                       ),
+                                    ),
+                                    onPressed: () async {
+                                      if (state.playing) {
+                                        await service.pause();
+                                      } else {
+                                        await service.play();
+                                      }
+                                    },
+                                    icon: Icon(
+                                      state.playing
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      size: 26,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -395,7 +381,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                             : Icons.repeat_rounded,
                                         size: 18,
                                         color: state.loopMode != AppLoopMode.off
-                                            ? const Color(0xFF1E7BF6)
+                                            ? primary
                                             : Colors.white.withValues(
                                                 alpha: 0.55,
                                               ),
@@ -419,7 +405,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                         Icons.all_inclusive_rounded,
                                         size: 18,
                                         color: state.shuffle
-                                            ? const Color(0xFF1E7BF6)
+                                            ? primary
                                             : Colors.white.withValues(
                                                 alpha: 0.55,
                                               ),
@@ -533,9 +519,7 @@ class MiniPlayerBar extends ConsumerWidget {
                                               const RoundSliderOverlayShape(
                                                 overlayRadius: 8.0,
                                               ),
-                                          activeTrackColor: const Color(
-                                            0xFF1E7BF6,
-                                          ),
+                                          activeTrackColor: primary,
                                           inactiveTrackColor: const Color(
                                             0xFF2C2E38,
                                           ),
@@ -664,8 +648,8 @@ class MiniPlayerBar extends ConsumerWidget {
                 tooltip: playing ? context.l10n.pause : context.l10n.play,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
-                  width: 38,
-                  height: 38,
+                  width: 44,
+                  height: 44,
                 ),
                 onPressed: () async {
                   if (playing) {
@@ -684,8 +668,8 @@ class MiniPlayerBar extends ConsumerWidget {
                 tooltip: context.l10n.nextTrack,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints.tightFor(
-                  width: 38,
-                  height: 38,
+                  width: 44,
+                  height: 44,
                 ),
                 onPressed: service.next,
                 icon: const Icon(

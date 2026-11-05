@@ -13,6 +13,7 @@ import '../../audio/audio_player_provider.dart';
 import '../../audio/audio_player_service.dart';
 import '../../core/artwork_palette.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/glass.dart';
 import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import 'audio_stream_inspector_sheet.dart';
@@ -92,20 +93,25 @@ class _AmbientPlayerBackgroundState extends State<_AmbientPlayerBackground>
       vsync: this,
       duration: const Duration(seconds: 18),
     );
-    if (widget.playing) {
-      _flowController.repeat();
-    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncFlowAnimation();
   }
 
   @override
   void didUpdateWidget(covariant _AmbientPlayerBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.playing != oldWidget.playing) {
-      if (widget.playing) {
-        _flowController.repeat();
-      } else {
-        _flowController.stop(canceled: false);
-      }
+    if (widget.playing != oldWidget.playing) _syncFlowAnimation();
+  }
+
+  void _syncFlowAnimation() {
+    if (widget.playing && !MediaQuery.disableAnimationsOf(context)) {
+      if (!_flowController.isAnimating) _flowController.repeat();
+    } else {
+      _flowController.stop(canceled: false);
     }
   }
 
@@ -378,12 +384,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     ),
 
                     // Bottom Playback Dock
-                    _buildBottomDock(
-                      context: context,
-                      service: service,
-                      state: state,
-                      item: item,
-                      isStarred: isStarred,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      child: GlassSurface(
+                        child: _buildBottomDock(
+                          context: context,
+                          service: service,
+                          state: state,
+                          item: item,
+                          isStarred: isStarred,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -403,310 +414,299 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required AudioPlayerService service,
     required _PlayerControlsState state,
   }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+    final showModeSwitcher = !isWide && _isMobilePlatform;
+    final modeSwitcher = GlassSurface(
+      clear: true,
+      borderRadius: BorderRadius.circular(28),
+      padding: const EdgeInsets.all(4),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          // Collapse button
-          Container(
-            height: 36,
-            width: 36,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              tooltip: context.l10n.collapsePlayer,
-              padding: EdgeInsets.zero,
-              icon: const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 26,
-                color: Colors.white,
-              ),
-              onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/home');
-                }
-              },
-            ),
-          ),
-
-          const Spacer(),
-
-          // Mobile Mode Switcher Pill (Cover / Lyrics / OLED)
-          if (!isWide && _isMobilePlatform)
-            Container(
-              height: 32,
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  _buildSegmentButton(
-                    title: context.l10n.coverView,
-                    icon: Icons.album_rounded,
-                    isSelected: _mobileMode == _MobileStageMode.cover,
-                    onTap: () {
-                      if (_mobileMode != _MobileStageMode.cover) {
-                        setState(() => _mobileMode = _MobileStageMode.cover);
-                      }
-                    },
-                  ),
-                  _buildSegmentButton(
-                    title: context.l10n.vinylView,
-                    icon: Icons.radio_rounded,
-                    isSelected: _mobileMode == _MobileStageMode.vinyl,
-                    onTap: () {
-                      if (_mobileMode != _MobileStageMode.vinyl) {
-                        setState(() => _mobileMode = _MobileStageMode.vinyl);
-                      }
-                    },
-                  ),
-                  _buildSegmentButton(
-                    title: context.l10n.lyrics,
-                    icon: Icons.lyrics_rounded,
-                    isSelected: _mobileMode == _MobileStageMode.lyrics,
-                    onTap: () {
-                      if (_mobileMode != _MobileStageMode.lyrics) {
-                        setState(() => _mobileMode = _MobileStageMode.lyrics);
-                      }
-                    },
-                  ),
-                  _buildSegmentButton(
-                    title: context.l10n.oledLyricsView,
-                    icon: Icons.dark_mode_rounded,
-                    isSelected: _mobileMode == _MobileStageMode.oled,
-                    onTap: () {
-                      if (_mobileMode != _MobileStageMode.oled) {
-                        setState(() => _mobileMode = _MobileStageMode.oled);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-          const Spacer(),
-
-          // Equalizer button
-          Container(
-            height: 36,
-            width: 36,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              tooltip: context.l10n.equalizerTitle,
-              padding: EdgeInsets.zero,
-              icon: const Icon(
-                Icons.equalizer_rounded,
-                size: 20,
-                color: Colors.white,
-              ),
-              onPressed: () => showEqualizerPanel(context),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // More Options Popup Menu
-          PopupMenuButton<String>(
-            tooltip: context.l10n.more,
-            offset: const Offset(0, 42),
-            color: const Color(0xFF22252E),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            onSelected: (value) {
-              switch (value) {
-                case 'discovery':
-                  showTrackDiscoverySheet(
-                    context,
-                    item: item,
-                    service: service,
-                  );
-                case 'playlist':
-                  showQuickAddToPlaylistSheet(context, item: item);
-                case 'inspector':
-                  showAudioStreamInspectorSheet(context, item: item);
-                case 'details':
-                  _showSongDetailsDialog(context, item);
-                case 'speed':
-                  _showPlaybackSpeedModal(context, service, state.speed);
-                case 'sleep':
-                  showSleepTimerSheet(context);
-                case 'artist':
-                  if (item.artistId != null && item.artistId!.isNotEmpty) {
-                    context.go(
-                      '/artists/${Uri.encodeComponent(item.artistId!)}',
-                    );
-                  } else if (item.artist != null && item.artist!.isNotEmpty) {
-                    context.go(
-                      '/search?q=${Uri.encodeComponent(item.artist!)}',
-                    );
-                  }
-                case 'album':
-                  if (item.albumId != null && item.albumId!.isNotEmpty) {
-                    context.go('/albums/${Uri.encodeComponent(item.albumId!)}');
-                  } else if (item.album != null && item.album!.isNotEmpty) {
-                    context.go('/search?q=${Uri.encodeComponent(item.album!)}');
-                  }
+          _buildSegmentButton(
+            title: context.l10n.coverView,
+            icon: Icons.album_rounded,
+            isSelected: _mobileMode == _MobileStageMode.cover,
+            onTap: () {
+              if (_mobileMode != _MobileStageMode.cover) {
+                setState(() => _mobileMode = _MobileStageMode.cover);
               }
             },
-            itemBuilder: (context) => <PopupMenuEntry<String>>[
-              PopupMenuItem<String>(
-                value: 'discovery',
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.explore_rounded,
-                      size: 18,
-                      color: Color(0xFF5BA4FF),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      context.l10n.discovery,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF5BA4FF),
-                      ),
-                    ),
-                  ],
+          ),
+          _buildSegmentButton(
+            title: context.l10n.vinylView,
+            icon: Icons.radio_rounded,
+            isSelected: _mobileMode == _MobileStageMode.vinyl,
+            onTap: () {
+              if (_mobileMode != _MobileStageMode.vinyl) {
+                setState(() => _mobileMode = _MobileStageMode.vinyl);
+              }
+            },
+          ),
+          _buildSegmentButton(
+            title: context.l10n.lyrics,
+            icon: Icons.lyrics_rounded,
+            isSelected: _mobileMode == _MobileStageMode.lyrics,
+            onTap: () {
+              if (_mobileMode != _MobileStageMode.lyrics) {
+                setState(() => _mobileMode = _MobileStageMode.lyrics);
+              }
+            },
+          ),
+          _buildSegmentButton(
+            title: context.l10n.oledLyricsView,
+            icon: Icons.dark_mode_rounded,
+            isSelected: _mobileMode == _MobileStageMode.oled,
+            onTap: () {
+              if (_mobileMode != _MobileStageMode.oled) {
+                setState(() => _mobileMode = _MobileStageMode.oled);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              // Collapse button
+              GlassIconButton(
+                tooltip: context.l10n.collapsePlayer,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 26,
+                  color: Colors.white,
                 ),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                },
               ),
-              PopupMenuItem<String>(
-                value: 'playlist',
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.playlist_add_rounded,
-                      size: 18,
-                      color: Color(0xFF5BA4FF),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      context.l10n.addToPlaylist,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
+
+              const Spacer(),
+
+              // Equalizer button
+              GlassIconButton(
+                tooltip: context.l10n.equalizerTitle,
+                icon: const Icon(
+                  Icons.equalizer_rounded,
+                  size: 20,
+                  color: Colors.white,
                 ),
+                onPressed: () => showEqualizerPanel(context),
               ),
-              PopupMenuItem<String>(
-                value: 'inspector',
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.graphic_eq_rounded,
-                      size: 18,
-                      color: Color(0xFF5BA4FF),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      context.l10n.audioStreamInspector,
-                      style: const TextStyle(
-                        color: Color(0xFF5BA4FF),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 8),
+
+              // More Options Popup Menu
+              PopupMenuButton<String>(
+                tooltip: context.l10n.more,
+                offset: const Offset(0, 42),
+                color: const Color(0xFF22252E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ),
-              PopupMenuItem<String>(
-                value: 'details',
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      size: 18,
-                      color: Colors.white70,
+                onSelected: (value) {
+                  switch (value) {
+                    case 'discovery':
+                      showTrackDiscoverySheet(
+                        context,
+                        item: item,
+                        service: service,
+                      );
+                    case 'playlist':
+                      showQuickAddToPlaylistSheet(context, item: item);
+                    case 'inspector':
+                      showAudioStreamInspectorSheet(context, item: item);
+                    case 'details':
+                      _showSongDetailsDialog(context, item);
+                    case 'speed':
+                      _showPlaybackSpeedModal(context, service, state.speed);
+                    case 'sleep':
+                      showSleepTimerSheet(context);
+                    case 'artist':
+                      if (item.artistId != null && item.artistId!.isNotEmpty) {
+                        context.go(
+                          '/artists/${Uri.encodeComponent(item.artistId!)}',
+                        );
+                      } else if (item.artist != null &&
+                          item.artist!.isNotEmpty) {
+                        context.go(
+                          '/search?q=${Uri.encodeComponent(item.artist!)}',
+                        );
+                      }
+                    case 'album':
+                      if (item.albumId != null && item.albumId!.isNotEmpty) {
+                        context.go(
+                          '/albums/${Uri.encodeComponent(item.albumId!)}',
+                        );
+                      } else if (item.album != null && item.album!.isNotEmpty) {
+                        context.go(
+                          '/search?q=${Uri.encodeComponent(item.album!)}',
+                        );
+                      }
+                  }
+                },
+                itemBuilder: (context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'discovery',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.explore_rounded,
+                          size: 18,
+                          color: Color(0xFF5BA4FF),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          context.l10n.discovery,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF5BA4FF),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Text(context.l10n.songInfo),
-                  ],
-                ),
-              ),
-              if ((item.artistId != null && item.artistId!.isNotEmpty) ||
-                  (item.artist != null && item.artist!.isNotEmpty))
-                PopupMenuItem<String>(
-                  value: 'artist',
-                  child: Row(
-                    children: <Widget>[
-                      const Icon(
-                        Icons.person_rounded,
-                        size: 18,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(context.l10n.viewArtist),
-                    ],
                   ),
-                ),
-              if ((item.albumId != null && item.albumId!.isNotEmpty) ||
-                  (item.album != null && item.album!.isNotEmpty))
-                PopupMenuItem<String>(
-                  value: 'album',
-                  child: Row(
-                    children: <Widget>[
-                      const Icon(
-                        Icons.album_rounded,
-                        size: 18,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(context.l10n.viewAlbum),
-                    ],
+                  PopupMenuItem<String>(
+                    value: 'playlist',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.playlist_add_rounded,
+                          size: 18,
+                          color: Color(0xFF5BA4FF),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          context.l10n.addToPlaylist,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              const PopupMenuDivider(height: 1),
-              PopupMenuItem<String>(
-                value: 'speed',
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.speed_rounded,
-                      size: 18,
-                      color: Colors.white70,
+                  PopupMenuItem<String>(
+                    value: 'inspector',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.graphic_eq_rounded,
+                          size: 18,
+                          color: Color(0xFF5BA4FF),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          context.l10n.audioStreamInspector,
+                          style: const TextStyle(
+                            color: Color(0xFF5BA4FF),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Text('${context.l10n.playbackSpeed} (${state.speed}x)'),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'sleep',
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.timer_outlined,
-                      size: 18,
-                      color: Colors.white70,
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'details',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(context.l10n.songInfo),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Text(context.l10n.sleepTimer),
-                  ],
+                  ),
+                  if ((item.artistId != null && item.artistId!.isNotEmpty) ||
+                      (item.artist != null && item.artist!.isNotEmpty))
+                    PopupMenuItem<String>(
+                      value: 'artist',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(
+                            Icons.person_rounded,
+                            size: 18,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(context.l10n.viewArtist),
+                        ],
+                      ),
+                    ),
+                  if ((item.albumId != null && item.albumId!.isNotEmpty) ||
+                      (item.album != null && item.album!.isNotEmpty))
+                    PopupMenuItem<String>(
+                      value: 'album',
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(
+                            Icons.album_rounded,
+                            size: 18,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(context.l10n.viewAlbum),
+                        ],
+                      ),
+                    ),
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem<String>(
+                    value: 'speed',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.speed_rounded,
+                          size: 18,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 10),
+                        Text('${context.l10n.playbackSpeed} (${state.speed}x)'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'sleep',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.timer_outlined,
+                          size: 18,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(context.l10n.sleepTimer),
+                      ],
+                    ),
+                  ),
+                ],
+                child: GlassSurface(
+                  clear: true,
+                  borderRadius: BorderRadius.circular(22),
+                  child: const SizedBox.square(
+                    dimension: 44,
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
-            child: Container(
-              height: 36,
-              width: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.more_vert_rounded,
-                size: 20,
-                color: Colors.white,
-              ),
-            ),
           ),
+          if (showModeSwitcher)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: modeSwitcher,
+            ),
         ],
       ),
     );
@@ -718,41 +718,52 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Tooltip(
-      message: title,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(
-            horizontal: isSelected ? 9 : 7,
-            vertical: 4,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF1E7BF6) : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                icon,
-                size: 14,
-                color: isSelected ? Colors.white : Colors.white60,
-              ),
-              if (isSelected) ...[
-                const SizedBox(width: 4),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+    final primary = Theme.of(context).colorScheme.primary;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: Tooltip(
+        message: title,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 200),
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            alignment: Alignment.center,
+            padding: EdgeInsets.symmetric(horizontal: isSelected ? 12 : 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? primary.withValues(alpha: 0.32)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(24),
+              border: isSelected
+                  ? Border.all(color: primary.withValues(alpha: 0.42))
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  icon,
+                  size: 18,
+                  color: isSelected ? Colors.white : Colors.white60,
                 ),
+                if (isSelected) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -781,62 +792,64 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               // Big Album Artwork with breathing scale and glowing shadow
-              AnimatedScale(
-                scale: playing ? 1.0 : 0.91,
-                duration: const Duration(milliseconds: 340),
-                curve: Curves.easeOutBack,
-                child: AnimatedContainer(
+              Flexible(
+                child: AnimatedScale(
+                  scale: playing ? 1.0 : 0.91,
                   duration: const Duration(milliseconds: 340),
-                  constraints: const BoxConstraints(
-                    maxWidth: 360,
-                    maxHeight: 360,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: glowColor,
-                        blurRadius: playing ? 32 : 12,
-                        spreadRadius: playing ? -2 : -6,
-                        offset: const Offset(0, 8),
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: playing ? 0.55 : 0.3,
-                        ),
-                        blurRadius: playing ? 20 : 10,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 1.0,
-                    child: ClipRRect(
+                  curve: Curves.easeOutBack,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 340),
+                    constraints: const BoxConstraints(
+                      maxWidth: 360,
+                      maxHeight: 360,
+                    ),
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      child: item.artworkUrl == null
-                          ? Container(
-                              color: const Color(0xFF22242D),
-                              child: const Icon(
-                                Icons.album_rounded,
-                                size: 100,
-                                color: Colors.white24,
-                              ),
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: item.artworkUrl!,
-                              cacheKey: item.artworkCacheKey,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 600,
-                              memCacheHeight: 600,
-                              errorWidget: (context, url, error) => Container(
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: glowColor,
+                          blurRadius: playing ? 32 : 12,
+                          spreadRadius: playing ? -2 : -6,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: playing ? 0.55 : 0.3,
+                          ),
+                          blurRadius: playing ? 20 : 10,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: item.artworkUrl == null
+                            ? Container(
                                 color: const Color(0xFF22242D),
                                 child: const Icon(
                                   Icons.album_rounded,
                                   size: 100,
                                   color: Colors.white24,
                                 ),
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: item.artworkUrl!,
+                                cacheKey: item.artworkCacheKey,
+                                fit: BoxFit.cover,
+                                memCacheWidth: 600,
+                                memCacheHeight: 600,
+                                errorWidget: (context, url, error) => Container(
+                                  color: const Color(0xFF22242D),
+                                  child: const Icon(
+                                    Icons.album_rounded,
+                                    size: 100,
+                                    color: Colors.white24,
+                                  ),
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   ),
                 ),
@@ -1327,12 +1340,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         return Container(
           height: 84,
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF14151B).withValues(alpha: 0.95),
-            border: const Border(
-              top: BorderSide(color: Color(0xFF22242D), width: 1.0),
-            ),
-          ),
           child: Row(
             children: <Widget>[
               // Left Playback Controls: Prev, Big Blue Play/Pause, Next
@@ -1367,12 +1374,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFF1E7BF6),
+                      color: Theme.of(context).colorScheme.primary,
                       boxShadow: <BoxShadow>[
                         BoxShadow(
-                          color: const Color(
-                            0xFF1E7BF6,
-                          ).withValues(alpha: 0.45),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.45),
                           blurRadius: 12,
                           offset: const Offset(0, 3),
                         ),
@@ -1491,7 +1498,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           overlayShape: const RoundSliderOverlayShape(
                             overlayRadius: 9.0,
                           ),
-                          activeTrackColor: const Color(0xFF1E7BF6),
+                          activeTrackColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                           inactiveTrackColor: const Color(0xFF2A2C37),
                           thumbColor: Colors.white,
                         ),
@@ -1598,7 +1607,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   _loopModeIcon(state.loopMode),
                   size: 18,
                   color: state.loopMode != AppLoopMode.off
-                      ? const Color(0xFF1E7BF6)
+                      ? Theme.of(context).colorScheme.primary
                       : Colors.white60,
                 ),
               ),
@@ -1618,7 +1627,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   Icons.shuffle_rounded,
                   size: 18,
                   color: state.shuffle
-                      ? const Color(0xFF1E7BF6)
+                      ? Theme.of(context).colorScheme.primary
                       : Colors.white60,
                 ),
               ),
@@ -1640,7 +1649,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         : '${state.queueLength}',
                     style: const TextStyle(fontSize: 9),
                   ),
-                  backgroundColor: const Color(0xFF1E7BF6),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(
                     Icons.queue_music_rounded,
                     size: 19,
@@ -1735,7 +1744,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     overlayShape: const RoundSliderOverlayShape(
                       overlayRadius: 8.0,
                     ),
-                    activeTrackColor: const Color(0xFF1E7BF6),
+                    activeTrackColor: Theme.of(context).colorScheme.primary,
                     inactiveTrackColor: const Color(0xFF2C2E38),
                     thumbColor: Colors.white,
                   ),
@@ -1774,19 +1783,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           trackHeight: 3.0,
           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.0),
           overlayShape: const RoundSliderOverlayShape(overlayRadius: 9.0),
-          activeTrackColor: const Color(0xFF1E7BF6),
+          activeTrackColor: Theme.of(context).colorScheme.primary,
           inactiveTrackColor: const Color(0xFF2A2C37),
           thumbColor: Colors.white,
         );
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF14151B).withValues(alpha: 0.96),
-            border: const Border(
-              top: BorderSide(color: Color(0xFF22242D), width: 1),
-            ),
-          ),
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -1851,7 +1854,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       size: 22,
                       color: state.loopMode == AppLoopMode.off
                           ? Colors.white60
-                          : const Color(0xFF1E7BF6),
+                          : Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   IconButton(
@@ -1879,12 +1882,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         height: 52,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFF1E7BF6),
+                          color: Theme.of(context).colorScheme.primary,
                           boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: const Color(
-                                0xFF1E7BF6,
-                              ).withValues(alpha: 0.5),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.5),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -1920,7 +1923,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             : '${state.queueLength}',
                         style: const TextStyle(fontSize: 9),
                       ),
-                      backgroundColor: const Color(0xFF1E7BF6),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       child: const Icon(
                         Icons.queue_music_rounded,
                         size: 22,
@@ -1942,16 +1945,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         ? context.l10n.shuffleOff
                         : context.l10n.shuffleOn,
                     padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size(44, 44),
+                    ),
                     constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 32,
+                      width: 44,
+                      height: 44,
                     ),
                     onPressed: () => service.setShuffle(!state.shuffle),
                     icon: Icon(
                       Icons.shuffle_rounded,
                       size: 20,
                       color: state.shuffle
-                          ? const Color(0xFF1E7BF6)
+                          ? Theme.of(context).colorScheme.primary
                           : Colors.white60,
                     ),
                   ),
@@ -1960,6 +1967,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     onTap: () =>
                         _showPlaybackSpeedModal(context, service, state.speed),
                     child: Container(
+                      constraints: const BoxConstraints(minHeight: 44),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -1992,9 +2000,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   IconButton(
                     tooltip: context.l10n.addToPlaylist,
                     padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size(44, 44),
+                    ),
                     constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 32,
+                      width: 44,
+                      height: 44,
                     ),
                     onPressed: () =>
                         showQuickAddToPlaylistSheet(context, item: item),
@@ -2007,9 +2019,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   IconButton(
                     tooltip: context.l10n.discovery,
                     padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size(44, 44),
+                    ),
                     constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 32,
+                      width: 44,
+                      height: 44,
                     ),
                     onPressed: () => showTrackDiscoverySheet(
                       context,
@@ -2025,9 +2041,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   IconButton(
                     tooltip: context.l10n.sleepTimer,
                     padding: EdgeInsets.zero,
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size(44, 44),
+                    ),
                     constraints: const BoxConstraints.tightFor(
-                      width: 36,
-                      height: 32,
+                      width: 44,
+                      height: 44,
                     ),
                     onPressed: () => showSleepTimerSheet(context),
                     icon: const Icon(

@@ -9,6 +9,7 @@ import 'package:subsonic_api/subsonic_api.dart';
 
 import '../../audio/audio_player_provider.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/glass.dart';
 import '../../data/db/app_database.dart';
 import '../../data/server_repository.dart';
 import '../../l10n/l10n.dart';
@@ -146,93 +147,185 @@ class AppShell extends ConsumerWidget {
           await SystemNavigator.pop();
         }
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF131418),
-        body: Row(
-          children: <Widget>[
-            if (isWide)
-              _DesktopSidebar(
-                currentIndex: currentIndex,
-                navigationShell: navigationShell,
-                playlistsAsync: playlistsAsync,
-                activeServer: activeServer,
-                serversAsync: serversAsync,
-                onSwitchServer: (server) {
-                  ref.read(selectedServerIdProvider.notifier).state = server.id;
-                },
-              ),
-            Expanded(
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  children: <Widget>[
-                    // Top Global Action Header (only on non-home tabs on mobile, or on wide screens)
-                    if (isWide || currentIndex != 0)
-                      _TopActionBar(
-                        isWide: isWide,
-                        activeServer: activeServer,
-                        serversAsync: serversAsync,
-                        onSwitchServer: (server) {
-                          ref.read(selectedServerIdProvider.notifier).state =
-                              server.id;
-                        },
-                      ),
-                    Expanded(child: navigationShell),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: GlassBackdrop(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Row(
             children: <Widget>[
-              MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
-              if (!isWide)
-                NavigationBar(
-                  // The bar shows a subset of the shell branches: favorites
-                  // lives at branch 6 and artists at branch 3, so destination
-                  // indexes must map through _bottomNavBranches.
-                  selectedIndex: bottomNavIndex < 0 ? 0 : bottomNavIndex,
-                  onDestinationSelected: (index) {
-                    final branch = _bottomNavBranches[index];
-                    navigationShell.goBranch(
-                      branch,
-                      initialLocation: branch == navigationShell.currentIndex,
-                    );
+              if (isWide)
+                _DesktopSidebar(
+                  currentIndex: currentIndex,
+                  navigationShell: navigationShell,
+                  playlistsAsync: playlistsAsync,
+                  activeServer: activeServer,
+                  serversAsync: serversAsync,
+                  onSwitchServer: (server) {
+                    ref.read(selectedServerIdProvider.notifier).state =
+                        server.id;
                   },
-                  destinations: <NavigationDestination>[
-                    NavigationDestination(
-                      icon: const Icon(Icons.explore_outlined),
-                      selectedIcon: const Icon(Icons.explore_rounded),
-                      label: context.l10n.navDiscover,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.music_note_outlined),
-                      selectedIcon: const Icon(Icons.music_note_rounded),
-                      label: context.l10n.navSongs,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.album_outlined),
-                      selectedIcon: const Icon(Icons.album_rounded),
-                      label: context.l10n.navAlbums,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.favorite_border_rounded),
-                      selectedIcon: const Icon(Icons.favorite_rounded),
-                      label: context.l10n.navLiked,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.person_outline_rounded),
-                      selectedIcon: const Icon(Icons.person_rounded),
-                      label: context.l10n.navArtists,
-                    ),
-                  ],
                 ),
+              Expanded(
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    children: <Widget>[
+                      // Top Global Action Header (only on non-home tabs on mobile, or on wide screens)
+                      if (isWide || currentIndex != 0)
+                        _TopActionBar(
+                          isWide: isWide,
+                          activeServer: activeServer,
+                          serversAsync: serversAsync,
+                          onSwitchServer: (server) {
+                            ref.read(selectedServerIdProvider.notifier).state =
+                                server.id;
+                          },
+                        ),
+                      Expanded(child: navigationShell),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                MiniPlayerBar(service: ref.watch(audioPlayerProvider)),
+                if (!isWide)
+                  _GlassNavigationBar(
+                    // The bar shows a subset of the shell branches: favorites
+                    // lives at branch 6 and artists at branch 3, so destination
+                    // indexes must map through _bottomNavBranches.
+                    selectedIndex: bottomNavIndex < 0 ? 0 : bottomNavIndex,
+                    onDestinationSelected: (index) {
+                      final branch = _bottomNavBranches[index];
+                      navigationShell.goBranch(
+                        branch,
+                        initialLocation: branch == navigationShell.currentIndex,
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassNavigationBar extends StatelessWidget {
+  const _GlassNavigationBar({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final labels = <String>[
+      context.l10n.navDiscover,
+      context.l10n.navSongs,
+      context.l10n.navAlbums,
+      context.l10n.navLiked,
+      context.l10n.navArtists,
+    ];
+    const icons = <IconData>[
+      Icons.explore_outlined,
+      Icons.music_note_outlined,
+      Icons.album_outlined,
+      Icons.favorite_border_rounded,
+      Icons.person_outline_rounded,
+    ];
+    const selectedIcons = <IconData>[
+      Icons.explore_rounded,
+      Icons.music_note_rounded,
+      Icons.album_rounded,
+      Icons.favorite_rounded,
+      Icons.person_rounded,
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(100),
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: <Widget>[
+            for (var index = 0; index < labels.length; index++)
+              Expanded(
+                child: Semantics(
+                  selected: selectedIndex == index,
+                  button: true,
+                  onTap: () => onDestinationSelected(index),
+                  label: labels[index],
+                  excludeSemantics: true,
+                  child: Tooltip(
+                    message: labels[index],
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(100),
+                      onTap: () => onDestinationSelected(index),
+                      child: AnimatedContainer(
+                        duration: MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        constraints: const BoxConstraints(minHeight: 54),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selectedIndex == index
+                              ? primary.withValues(alpha: 0.16)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(
+                            color: selectedIndex == index
+                                ? Colors.white.withValues(alpha: 0.14)
+                                : Colors.transparent,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Icon(
+                              selectedIndex == index
+                                  ? selectedIcons[index]
+                                  : icons[index],
+                              size: 23,
+                              color: selectedIndex == index
+                                  ? primary
+                                  : Colors.white70,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              labels[index],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                height: 1.1,
+                                fontWeight: selectedIndex == index
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: selectedIndex == index
+                                    ? primary
+                                    : Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -264,15 +357,15 @@ class _TopActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final serverNameMaxWidth = isWide
+        ? 140.0
+        : (MediaQuery.sizeOf(context).width - 246)
+              .clamp(32.0, 140.0)
+              .toDouble();
     return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF131418),
-        border: Border(
-          bottom: BorderSide(color: Color(0xFF1F2128), width: 0.8),
-        ),
-      ),
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      color: Colors.transparent,
       child: Row(
         children: <Widget>[
           if (!isWide)
@@ -342,20 +435,16 @@ class _TopActionBar extends StatelessWidget {
                   ),
                 ),
               ],
-              child: Container(
-                height: 34,
-                width: 34,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E2028),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+              child: GlassSurface(
+                clear: true,
+                borderRadius: BorderRadius.circular(22),
+                child: const SizedBox.square(
+                  dimension: 44,
+                  child: Icon(
+                    Icons.explore_outlined,
+                    size: 20,
+                    color: Colors.white70,
                   ),
-                ),
-                child: const Icon(
-                  Icons.explore_outlined,
-                  size: 18,
-                  color: Colors.white70,
                 ),
               ),
             ),
@@ -542,119 +631,74 @@ class _TopActionBar extends StatelessWidget {
                 ),
               ];
             },
-            child: Container(
-              height: 34,
+            child: GlassSurface(
+              clear: true,
+              borderRadius: BorderRadius.circular(24),
               padding: const EdgeInsets.symmetric(horizontal: 11),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E2028),
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(
-                  color: activeServer != null
-                      ? const Color(0xFF1E7BF6).withValues(alpha: 0.25)
-                      : Colors.white.withValues(alpha: 0.08),
-                  width: 1.0,
-                ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: activeServer != null
-                          ? const Color(0xFF34C759)
-                          : const Color(0xFFFF9500),
-                      shape: BoxShape.circle,
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color:
-                              (activeServer != null
-                                      ? const Color(0xFF34C759)
-                                      : const Color(0xFFFF9500))
-                                  .withValues(alpha: 0.6),
-                          blurRadius: 4,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 7),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 140),
-                    child: Text(
-                      activeServer?.name ?? context.l10n.notConnected,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
+              child: SizedBox(
+                height: 44,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: activeServer != null
+                            ? const Color(0xFF34C759)
+                            : const Color(0xFFFF9500),
+                        shape: BoxShape.circle,
+                        boxShadow: <BoxShadow>[
+                          BoxShadow(
+                            color:
+                                (activeServer != null
+                                        ? const Color(0xFF34C759)
+                                        : const Color(0xFFFF9500))
+                                    .withValues(alpha: 0.6),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 16,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                ],
+                    const SizedBox(width: 7),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: serverNameMaxWidth),
+                      child: Text(
+                        activeServer?.name ?? context.l10n.notConnected,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
 
-          // Search Button
-          Container(
-            height: 34,
-            width: 34,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E2028),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.search_rounded,
-                size: 18,
-                color: Colors.white70,
-              ),
-              tooltip: context.l10n.search,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 34, height: 34),
-              onPressed: () => context.go('/search'),
-            ),
+          // Search and settings retain their routes and keyboard semantics.
+          GlassIconButton(
+            icon: const Icon(Icons.search_rounded, size: 20),
+            tooltip: context.l10n.search,
+            onPressed: () => context.go('/search'),
           ),
           const SizedBox(width: 8),
-
-          // Settings Button
-          Container(
-            height: 34,
-            width: 34,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E2028),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.settings_outlined,
-                size: 18,
-                color: Colors.white70,
-              ),
-              tooltip: context.l10n.settings,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 34, height: 34),
-              onPressed: () => context.go('/settings'),
-            ),
+          GlassIconButton(
+            icon: const Icon(Icons.settings_outlined, size: 20),
+            tooltip: context.l10n.settings,
+            onPressed: () => context.go('/settings'),
           ),
         ],
       ),
@@ -681,207 +725,213 @@ class _DesktopSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 236,
-      decoration: const BoxDecoration(
-        color: Color(0xFF141519),
-        border: Border(right: BorderSide(color: Color(0xFF22242B), width: 1.0)),
-      ),
-      child: SafeArea(
-        right: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // macOS already renders these controls in the native title bar.
-            // Keep the same breathing room without drawing a second set of
-            // traffic lights inside the Flutter content area.
-            if (Platform.isMacOS)
-              const SizedBox(height: 37)
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                child: Row(
-                  children: <Widget>[
-                    const Icon(
-                      Icons.music_note_rounded,
-                      color: Color(0xFF1E7BF6),
-                      size: 22,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        child: GlassSurface(
+          child: SafeArea(
+            right: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // macOS already renders these controls in the native title bar.
+                // Keep the same breathing room without drawing a second set of
+                // traffic lights inside the Flutter content area.
+                if (Platform.isMacOS)
+                  const SizedBox(height: 37)
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.music_note_rounded,
+                          color: Color(0xFF1E7BF6),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.appName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.l10n.appName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
+                  ),
+
+                // Search Box (Rounded Dark Gray)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => context.go('/search'),
+                    child: Container(
+                      height: 34,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22242D),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.search_rounded,
+                            size: 17,
+                            color: Colors.white.withValues(alpha: 0.45),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            context.l10n.search,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.4),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
 
-            // Search Box (Rounded Dark Gray)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () => context.go('/search'),
-                child: Container(
-                  height: 34,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF22242D),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.05),
+                const SizedBox(height: 10),
+
+                // Scrollable Menu Groups
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    children: <Widget>[
+                      // 1. 发现 Group
+                      _buildNavTile(
+                        context: context,
+                        item: _discoverItem,
+                        isSelected: currentIndex == _discoverItem.index,
+                        onTap: () =>
+                            navigationShell.goBranch(_discoverItem.index),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // 2. 音乐库 Group
+                      _buildSectionHeader(context.l10n.librarySection),
+                      ..._libraryItems.map(
+                        (item) => _buildNavTile(
+                          context: context,
+                          item: item,
+                          isSelected: currentIndex == item.index,
+                          onTap: () => navigationShell.goBranch(item.index),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // 3. 个人 Group
+                      _buildSectionHeader(context.l10n.personalSection),
+                      ..._personalItems.map(
+                        (item) => _buildNavTile(
+                          context: context,
+                          item: item,
+                          isSelected: currentIndex == item.index,
+                          onTap: () => navigationShell.goBranch(item.index),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // 4. 我的歌单 Group
+                      _buildPlaylistsSection(context),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+
+                // Bottom Server Info & Settings
+                Container(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFF1F2128), width: 1.0),
                     ),
                   ),
                   child: Row(
                     children: <Widget>[
-                      Icon(
-                        Icons.search_rounded,
-                        size: 17,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        context.l10n.search,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.4),
-                          fontWeight: FontWeight.w400,
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => context.go('/welcome'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: <Widget>[
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: activeServer != null
+                                        ? const Color(0xFF34C759)
+                                        : const Color(0xFFFF9500),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    activeServer?.name ??
+                                        context.l10n.notConnected,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.unfold_more_rounded,
+                                  size: 15,
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          size: 18,
+                          color: Colors.white60,
+                        ),
+                        tooltip: context.l10n.settings,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 32,
+                          height: 32,
+                        ),
+                        onPressed: () => context.go('/settings'),
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-
-            const SizedBox(height: 10),
-
-            // Scrollable Menu Groups
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                children: <Widget>[
-                  // 1. 发现 Group
-                  _buildNavTile(
-                    context: context,
-                    item: _discoverItem,
-                    isSelected: currentIndex == _discoverItem.index,
-                    onTap: () => navigationShell.goBranch(_discoverItem.index),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 2. 音乐库 Group
-                  _buildSectionHeader(context.l10n.librarySection),
-                  ..._libraryItems.map(
-                    (item) => _buildNavTile(
-                      context: context,
-                      item: item,
-                      isSelected: currentIndex == item.index,
-                      onTap: () => navigationShell.goBranch(item.index),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 3. 个人 Group
-                  _buildSectionHeader(context.l10n.personalSection),
-                  ..._personalItems.map(
-                    (item) => _buildNavTile(
-                      context: context,
-                      item: item,
-                      isSelected: currentIndex == item.index,
-                      onTap: () => navigationShell.goBranch(item.index),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 4. 我的歌单 Group
-                  _buildPlaylistsSection(context),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-
-            // Bottom Server Info & Settings
-            Container(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0xFF1F2128), width: 1.0),
-                ),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () => context.go('/welcome'),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: activeServer != null
-                                    ? const Color(0xFF34C759)
-                                    : const Color(0xFFFF9500),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                activeServer?.name ?? context.l10n.notConnected,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white70,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.unfold_more_rounded,
-                              size: 15,
-                              color: Colors.white.withValues(alpha: 0.35),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.settings_outlined,
-                      size: 18,
-                      color: Colors.white60,
-                    ),
-                    tooltip: context.l10n.settings,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 32,
-                      height: 32,
-                    ),
-                    onPressed: () => context.go('/settings'),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -911,8 +961,15 @@ class _DesktopSidebar extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF1E7BF6) : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
+        color: isSelected
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.20)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.transparent,
+        ),
       ),
       child: Material(
         color: Colors.transparent,

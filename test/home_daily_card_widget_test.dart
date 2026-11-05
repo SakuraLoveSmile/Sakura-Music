@@ -10,9 +10,11 @@ import 'package:sakuramusic/audio/audio_player_provider.dart';
 import 'package:sakuramusic/audio/audio_player_service.dart';
 import 'package:sakuramusic/audio/equalizer_models.dart';
 import 'package:sakuramusic/core/providers.dart';
+import 'package:sakuramusic/core/theme.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
 import 'package:sakuramusic/features/home/home_screen.dart';
+import 'package:sakuramusic/features/shared/media_widgets.dart';
 import 'package:sakuramusic/l10n/app_localizations.dart';
 import 'package:subsonic_api/subsonic_api.dart';
 
@@ -28,6 +30,48 @@ import 'package:subsonic_api/subsonic_api.dart';
 /// the widget tree stays deterministic; the last one wires the REAL notifier to
 /// an isolated data source to prove production refresh logic and the UI meet.
 void main() {
+  for (final size in <Size>[const Size(320, 740), const Size(390, 844)]) {
+    for (final textScale in <double>[1, 1.4]) {
+      testWidgets(
+        'recent albums keep title artist and year visible at ${size.width.toInt()}px ${textScale}x',
+        (tester) async {
+          tester.view.devicePixelRatio = 1;
+          tester.view.physicalSize = size;
+          addTearDown(tester.view.resetDevicePixelRatio);
+          addTearDown(tester.view.resetPhysicalSize);
+
+          await _pumpHome(
+            tester,
+            theme: buildTheme(Brightness.dark),
+            textScaler: TextScaler.linear(textScale),
+            albums: const <Album>[
+              Album(
+                id: 'album-1',
+                name: 'Midnight Tides',
+                artist: '星河回声',
+                year: 2026,
+              ),
+            ],
+          );
+          await tester.scrollUntilVisible(
+            find.byType(AlbumCard),
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Midnight Tides'), findsOneWidget);
+          expect(find.text('星河回声'), findsOneWidget);
+          expect(find.text('2026'), findsOneWidget);
+          final cardBounds = tester.getRect(find.byType(AlbumCard).first);
+          final yearBounds = tester.getRect(find.text('2026'));
+          expect(yearBounds.bottom, lessThanOrEqualTo(cardBounds.bottom));
+        },
+      );
+    }
+  }
+
   for (final key in <LogicalKeyboardKey>[
     LogicalKeyboardKey.space,
     LogicalKeyboardKey.enter,
@@ -334,6 +378,9 @@ Future<_Harness> _pumpHome(
   String baseUrl = 'http://127.0.0.1:4533',
   bool useRealNotifier = false,
   SubsonicClient? client,
+  List<Album> albums = const <Album>[],
+  ThemeData? theme,
+  TextScaler? textScaler,
 }) async {
   final database = AppDatabase(NativeDatabase.memory());
   addTearDown(database.close);
@@ -397,11 +444,18 @@ Future<_Harness> _pumpHome(
         // widget tree is disposed, tripping the pending-timer invariant.
         recentPlaysProvider.overrideWithValue(AsyncValue.data(<RecentPlay>[])),
         randomSongsProvider.overrideWith((ref) async => const <Song>[]),
-        newestAlbumsProvider.overrideWith((ref) async => const <Album>[]),
+        newestAlbumsProvider.overrideWith((ref) async => albums),
         playlistsProvider.overrideWith((ref) async => const <Playlist>[]),
         libraryStatsProvider.overrideWith((ref) async => const LibraryStats()),
       ],
       child: MaterialApp(
+        theme: theme,
+        builder: textScaler == null
+            ? null
+            : (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('zh'),

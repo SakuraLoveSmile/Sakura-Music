@@ -10,6 +10,7 @@ import 'package:sakuramusic/audio/audio_player_service.dart';
 import 'package:sakuramusic/audio/equalizer_models.dart';
 import 'package:sakuramusic/audio/playable_item_builder.dart';
 import 'package:sakuramusic/core/providers.dart';
+import 'package:sakuramusic/core/theme.dart';
 import 'package:sakuramusic/data/db/app_database.dart';
 import 'package:sakuramusic/data/server_repository.dart';
 import 'package:sakuramusic/features/player/audio_stream_inspector_sheet.dart';
@@ -275,6 +276,79 @@ void main() {
   );
 
   testWidgets(
+    'PlayerScreen fits artwork and metadata in a compact desktop window',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(960, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final database = AppDatabase(NativeDatabase.memory());
+      addTearDown(database.close);
+      final service = _TestAudioPlayerService();
+      addTearDown(service.dispose);
+      const item = PlayableItem(
+        id: 'compact-desktop-song',
+        title: 'A long title that remains readable in a compact desktop window',
+        artist: 'Test Artist',
+        album: 'Test Album',
+        streamUrl: 'http://localhost/compact-desktop.flac',
+        duration: Duration(minutes: 3, seconds: 45),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            audioPlayerProvider.overrideWithValue(service),
+            databaseProvider.overrideWithValue(database),
+            serversProvider.overrideWithValue(
+              const AsyncValue.data(<Server>[]),
+            ),
+            starredProvider.overrideWith(() => _FakeStarredNotifier()),
+          ],
+          child: MaterialApp(
+            theme: buildTheme(Brightness.dark),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('zh'),
+            home: const PlayerScreen(),
+          ),
+        ),
+      );
+      service.emit(
+        const PlayerSnapshot(
+          status: PlayerStatus.ready,
+          playing: true,
+          currentItem: item,
+          duration: Duration(minutes: 3, seconds: 45),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      final artwork = find.ancestor(
+        of: find.byIcon(Icons.album_rounded),
+        matching: find.byType(ClipRRect),
+      );
+      final artworkSize = tester.getSize(artwork);
+      expect(artworkSize.width, greaterThan(120));
+      expect(artworkSize.height, closeTo(artworkSize.width, 0.01));
+      expect(find.text(item.title), findsAtLeastNWidgets(1));
+      expect(find.text('Test Artist · Test Album'), findsAtLeastNWidgets(1));
+      expect(find.text('Lossless • FLAC'), findsOneWidget);
+      expect(
+        tester.getBottomLeft(find.byType(AudioStreamQualityBadge)).dy,
+        lessThan(tester.getTopLeft(find.byIcon(Icons.pause_rounded)).dy),
+      );
+      expect(find.byIcon(Icons.queue_music_rounded), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
     'PlayerScreen fits narrow mobile widths and exposes secondary controls',
     (WidgetTester tester) async {
       tester.view.devicePixelRatio = 1.0;
@@ -288,7 +362,7 @@ void main() {
       final service = _TestAudioPlayerService();
       addTearDown(service.dispose);
 
-      for (final width in <double>[360, 390, 430]) {
+      for (final width in <double>[320, 360, 390, 430]) {
         tester.view.physicalSize = Size(width, 800);
         await tester.pumpWidget(
           ProviderScope(

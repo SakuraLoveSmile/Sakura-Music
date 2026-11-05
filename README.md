@@ -5,6 +5,39 @@ servers. It is designed for desktop and mobile, with a lightweight interface
 for browsing a library, searching, managing playback, and keeping selected
 music available offline.
 
+## Glasmio visual experiment
+
+This experimental branch interprets [Glasmio](https://github.com/NEORUAA/Glasmio)'s
+floating capsules, continuous corners, and layered glass in Flutter. Shared
+materials live in `lib/core/widgets/glass.dart`; the shell, discovery screen,
+and player use them without replacing the playback or data layers. Backdrop
+blur samples real content. Progressive edge blur uses 24 Gaussian bands; native
+refraction and an exact reproduction of Glasmio's shaders are not implemented.
+The existing dark appearance and accent color are retained. No Compose runtime,
+new Flutter dependency, Apple font, or upstream wallpaper is bundled.
+
+To explore the actual screens with synthetic music and a simulated player:
+
+```sh
+flutter run -d macos -t tool/glasmio_preview.dart
+# Phone-sized desktop window; this does not emulate Android rendering.
+flutter run -d macos -t tool/glasmio_preview.dart \
+  --dart-define=GLASS_PREVIEW_WIDTH=390 \
+  --dart-define=GLASS_PREVIEW_HEIGHT=844 \
+  --dart-define=GLASS_PREVIEW_MOBILE=true
+```
+
+The preview uses an in-memory database and credentials plus a loopback-only
+synthetic music server. It skips the production bootstrap, credential migration,
+real audio, downloads, feedback, and update checks. Image caching still uses the
+platform cache. Optional defines are `GLASS_PREVIEW_ROUTE=/player` and
+`GLASS_PREVIEW_EMPTY=true`. On macOS, the Preview menu switches between desktop
+and phone layouts (Cmd+1 through Cmd+4), Home (Cmd+0), and Player (Cmd+5).
+Phone presets simulate the Android UI branch on macOS; they do not emulate an
+Android device. Use the regular `lib/main.dart` entry point to run
+the app normally with a music server. Task scope and verification are recorded
+in [MU-UI01](docs/tasks/mu-ui01-glasmio-experiment.md).
+
 ## Features
 
 - Home discovery sections for recent, frequent, random, and recently played
