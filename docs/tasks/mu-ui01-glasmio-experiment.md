@@ -1,6 +1,6 @@
 # MU-UI01 · Glasmio 风格实验界面
 
-状态：待体验（Android 卡顿修正及真机对照已完成，v0.3.9-glasmio.2 已发布）。创建于 2026-11-04（Asia/Taipei）。
+状态：实现中（v0.3.9-glasmio.2 已发布，正在移除首页大标题）。创建于 2026-11-04（Asia/Taipei）。
 
 ## 目标与现场
 
@@ -166,3 +166,13 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 - 真机运行资源已收尾：停止并卸载本任务独立合成测试包 `local.sakuramusic.muui01.perf`，移除host端口55829转发，当前ADB转发为空。手机原应用仍为0.3.3 / 1793215802，lastUpdateTime仍为2026-10-29 10:28:32；核对前后包身份完全一致。结果在 `build/mu-ui01-android-perf/cleanup-result.json`。真机逐帧JSON、截图、源码快照和APK继续保留作证据。
 - 收尾提交仅更新本权威记录，采用仓库已有 `[skip ci]` 约定；应用源码、版本和发布说明仍对应已完成检查的冻结标签。主工作区HEAD仍为3f705002，只有原有未跟踪AGENTS.md；实验工作树的AGENTS.md也保持未暂存。
 - 当前为“待体验”：Android隔离真机界面性能与主要交互已补齐；最终公开安装包的真实音乐库、音频和系统媒体控件仍待用户体验。UI继续保留在实验分支，未合入main；活跃工作树及所需忽略证据保留，后续合入且验证后按保全规则清理。下一步处理用户对 `.2` 的实际体验反馈。
+
+## T7 · 移除首页大标题（2026-11-05）
+
+- 用户要求去掉首页顶部醒目的“SakuraMusic”大标题。复用现有实验工作树，恢复HEAD为 `a2d3eb6e8fe27329d106e9d91d6faeabb9c44912`，开始时仅原有未跟踪AGENTS.md，索引为空。
+- 主 agent 串行处理同一页头中的文字、测量和布局：删除标题及专用TextStyle/TextPainter，页头收为78px的一行快捷操作，搜索/设置/切换音乐库保留并靠右。其他首页区块与操作沿用现状。本项为单文件耦合的小改动，无独立并行子任务，不新增镜像实现的测试。
+- 验证：复用首页现有320/390px与1.0/1.4倍文字及推荐卡片交互测试，分析受影响文件；用隔离合成预览检查安卓真机首页和页头操作。使用 `build/mu-ui01-title/` 保存本项证据，独立包 `local.sakuramusic.muui01.header`；T6被测源码快照和发布资产保留原值。
+- 本地Flutter3.41.3检查：`flutter test --no-pub test/home_daily_card_widget_test.dart --reporter expanded` 14项通过；受影响文件 `flutter analyze --no-pub lib/features/home/home_screen.dart` 无问题，格式及diff检查通过。日志为 `build/mu-ui01-title-{tests,analyze}.log`。
+- 预览命令最初误在实验工作树根目录执行 `pub get --offline`，重算了7个本机SDK固定依赖；已保存临时解析结果并将生产锁逐字节恢复到原HEAD，工作区核对无锁文件差异。该次普通应用ID的预览APK未安装。之后使用独立源码目录构建；原生库下载握手失败后，按依赖构建脚本的MD5校验复用4个已缓存JAR，隔离Android profile构建通过。代码指纹、JAR摘要及构建日志保留于本项证据目录。
+- 独立预览已安装、启动，未覆盖手机原应用。手机当前停留在锁屏页，已请求用户解锁，原生画面及按钮检查待完成；对应锁屏/熄屏截图与启动日志保留在本项证据目录。
+- 当前代码尚未重新发布安装包；本项完成后记录实际检查与剩余体验范围。

@@ -15,14 +15,6 @@ import '../../l10n/l10n.dart';
 import '../shared/media_widgets.dart';
 import '../webdav/webdav_browse_screen.dart';
 
-const _homeTitleStyle = TextStyle(
-  fontSize: 32,
-  fontWeight: FontWeight.w800,
-  color: Colors.white,
-  letterSpacing: -1,
-  height: 1.2,
-);
-
 /// Formats audio specification details (Hi-Res / Lossless / Bitrate / Format / Duration).
 String formatAudioSpecs(Song song) {
   final parts = <String>[];
@@ -103,63 +95,42 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   slivers: <Widget>[
                     // 1. Top Header Bar
-                    SliverLayoutBuilder(
-                      builder: (context, constraints) {
-                        final title = TextPainter(
-                          text: const TextSpan(
-                            text: 'SakuraMusic',
-                            style: _homeTitleStyle,
-                          ),
-                          textScaler: MediaQuery.textScalerOf(context),
-                          textDirection: Directionality.of(context),
-                        )..layout();
-                        // The action group is 148 wide and 52 high. Match the
-                        // Wrap below so large text and phone widths get two rows.
-                        final stacked =
-                            title.width + 12 + 148 >
-                            constraints.crossAxisExtent - 40;
-                        final height = stacked
-                            ? title.height + 90
-                            : title.height.clamp(52.0, double.infinity) + 26;
-                        title.dispose();
-                        return SliverAppBar(
-                          pinned: true,
-                          primary: false,
-                          automaticallyImplyLeading: false,
-                          toolbarHeight: height,
-                          titleSpacing: 20,
-                          backgroundColor: Colors.transparent,
-                          surfaceTintColor: Colors.transparent,
-                          scrolledUnderElevation: 0,
-                          flexibleSpace: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              ProgressiveGlassBlur(height: height),
-                              DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: MediaQuery.highContrastOf(context)
-                                        ? const [
-                                            Color(0xFF08090D),
-                                            Color(0xFF08090D),
-                                          ]
-                                        : const [
-                                            Color(0xB308090D),
-                                            Color(0x0008090D),
-                                          ],
-                                  ),
-                                ),
+                    SliverAppBar(
+                      pinned: true,
+                      primary: false,
+                      automaticallyImplyLeading: false,
+                      toolbarHeight: 78,
+                      titleSpacing: 20,
+                      backgroundColor: Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
+                      scrolledUnderElevation: 0,
+                      flexibleSpace: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          const ProgressiveGlassBlur(height: 78),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: MediaQuery.highContrastOf(context)
+                                    ? const [
+                                        Color(0xFF08090D),
+                                        Color(0xFF08090D),
+                                      ]
+                                    : const [
+                                        Color(0xB308090D),
+                                        Color(0x0008090D),
+                                      ],
                               ),
-                            ],
+                            ),
                           ),
-                          title: SizedBox(
-                            width: double.infinity,
-                            child: _TopHeaderBar(server: server),
-                          ),
-                        );
-                      },
+                        ],
+                      ),
+                      title: SizedBox(
+                        width: double.infinity,
+                        child: _TopHeaderBar(server: server),
+                      ),
                     ),
 
                     // 2. 5-Button Category Navigation
@@ -242,7 +213,7 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// 1. Top Header with title and quick actions.
+/// 1. Compact top header with quick actions.
 class _TopHeaderBar extends ConsumerWidget {
   const _TopHeaderBar({required this.server});
 
@@ -253,146 +224,138 @@ class _TopHeaderBar extends ConsumerWidget {
     final serversAsync = ref.watch(serversProvider);
     final primary = Theme.of(context).colorScheme.primary;
 
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 12,
-      runSpacing: 12,
-      children: <Widget>[
-        const Text('SakuraMusic', style: _homeTitleStyle),
-        // Actions Container
-        GlassSurface(
-          blur: false,
-          clear: true,
-          padding: const EdgeInsets.all(4),
-          borderRadius: BorderRadius.circular(30),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              // Search
-              _HeaderIconButton(
-                icon: Icons.search_rounded,
-                tooltip: context.l10n.search,
-                onTap: () => context.go('/search'),
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GlassSurface(
+        blur: false,
+        clear: true,
+        padding: const EdgeInsets.all(4),
+        borderRadius: BorderRadius.circular(30),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            // Search
+            _HeaderIconButton(
+              icon: Icons.search_rounded,
+              tooltip: context.l10n.search,
+              onTap: () => context.go('/search'),
+            ),
+            const SizedBox(width: 4),
+            // Settings
+            _HeaderIconButton(
+              icon: Icons.settings_outlined,
+              tooltip: context.l10n.settings,
+              onTap: () => context.go('/settings'),
+            ),
+            const SizedBox(width: 4),
+            // Server Switcher Disc
+            PopupMenuButton<dynamic>(
+              tooltip: context.l10n.switchLibrary,
+              offset: const Offset(0, 44),
+              color: const Color(0xFF22252E),
+              elevation: 10,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(width: 4),
-              // Settings
-              _HeaderIconButton(
-                icon: Icons.settings_outlined,
-                tooltip: context.l10n.settings,
-                onTap: () => context.go('/settings'),
-              ),
-              const SizedBox(width: 4),
-              // Server Switcher Disc
-              PopupMenuButton<dynamic>(
-                tooltip: context.l10n.switchLibrary,
-                offset: const Offset(0, 44),
-                color: const Color(0xFF22252E),
-                elevation: 10,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                onSelected: (value) {
-                  if (value is Server) {
-                    ref.read(selectedServerIdProvider.notifier).state =
-                        value.id;
-                  } else if (value == 'manage_servers') {
-                    context.go('/welcome');
-                  }
-                },
-                itemBuilder: (context) {
-                  final servers = serversAsync.value ?? <Server>[];
-                  return <PopupMenuEntry<dynamic>>[
-                    PopupMenuItem<dynamic>(
-                      enabled: false,
-                      child: Row(
-                        children: <Widget>[
-                          Icon(Icons.album_rounded, size: 16, color: primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            context.l10n.connectedLibraries,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: primary,
-                            ),
+              onSelected: (value) {
+                if (value is Server) {
+                  ref.read(selectedServerIdProvider.notifier).state = value.id;
+                } else if (value == 'manage_servers') {
+                  context.go('/welcome');
+                }
+              },
+              itemBuilder: (context) {
+                final servers = serversAsync.value ?? <Server>[];
+                return <PopupMenuEntry<dynamic>>[
+                  PopupMenuItem<dynamic>(
+                    enabled: false,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(Icons.album_rounded, size: 16, color: primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.connectedLibraries,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: primary,
                           ),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(height: 1),
-                    ...servers.map((s) {
-                      final isCurrent = server.id == s.id;
-                      return PopupMenuItem<dynamic>(
-                        value: s,
-                        child: Row(
-                          children: <Widget>[
-                            Icon(
-                              isCurrent
-                                  ? Icons.check_circle_rounded
-                                  : Icons.circle_outlined,
-                              size: 16,
-                              color: isCurrent ? primary : Colors.white38,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                s.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isCurrent ? primary : Colors.white,
-                                  fontWeight: isCurrent
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
-                      );
-                    }),
-                    const PopupMenuDivider(height: 1),
-                    PopupMenuItem<dynamic>(
-                      value: 'manage_servers',
-                      child: Row(
-                        children: <Widget>[
-                          const Icon(
-                            Icons.tune_rounded,
-                            size: 16,
-                            color: Colors.white70,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            context.l10n.serverManagement,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ];
-                },
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: primary.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: primary.withValues(alpha: 0.6),
-                      width: 1.2,
+                      ],
                     ),
                   ),
-                  child: Icon(Icons.album_rounded, size: 18, color: primary),
+                  const PopupMenuDivider(height: 1),
+                  ...servers.map((s) {
+                    final isCurrent = server.id == s.id;
+                    return PopupMenuItem<dynamic>(
+                      value: s,
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            isCurrent
+                                ? Icons.check_circle_rounded
+                                : Icons.circle_outlined,
+                            size: 16,
+                            color: isCurrent ? primary : Colors.white38,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              s.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isCurrent ? primary : Colors.white,
+                                fontWeight: isCurrent
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const PopupMenuDivider(height: 1),
+                  PopupMenuItem<dynamic>(
+                    value: 'manage_servers',
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.tune_rounded,
+                          size: 16,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.serverManagement,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ];
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: primary.withValues(alpha: 0.6),
+                    width: 1.2,
+                  ),
                 ),
+                child: Icon(Icons.album_rounded, size: 18, color: primary),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
