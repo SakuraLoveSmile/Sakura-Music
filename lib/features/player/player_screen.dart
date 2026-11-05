@@ -387,6 +387,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       child: GlassSurface(
+                        blur: false,
                         child: _buildBottomDock(
                           context: context,
                           service: service,
@@ -416,6 +417,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }) {
     final showModeSwitcher = !isWide && _isMobilePlatform;
     final modeSwitcher = GlassSurface(
+      blur: false,
       clear: true,
       borderRadius: BorderRadius.circular(28),
       padding: const EdgeInsets.all(4),
@@ -688,6 +690,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                 ],
                 child: GlassSurface(
+                  blur: false,
                   clear: true,
                   borderRadius: BorderRadius.circular(22),
                   child: const SizedBox.square(

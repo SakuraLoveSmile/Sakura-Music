@@ -1,6 +1,6 @@
 # MU-UI01 · Glasmio 风格实验界面
 
-状态：待体验（测试版已发布）。创建于 2026-11-04（Asia/Taipei）。
+状态：实现中（测试版已发布，正在修正 Android 全界面卡顿）。创建于 2026-11-04（Asia/Taipei）。
 
 ## 目标与现场
 
@@ -17,14 +17,14 @@
 
 参考 Glasmio `700a611f9024c8f3bd9f0b8dd26d939a0dcbeb72` 的 [设计说明](https://github.com/NEORUAA/Glasmio/blob/700a611f9024c8f3bd9f0b8dd26d939a0dcbeb72/docs/design-reference.md)、[材质说明](https://github.com/NEORUAA/Glasmio/blob/700a611f9024c8f3bd9f0b8dd26d939a0dcbeb72/docs/native-materials.md) 和 `GlassTokens.kt` / `GlassBottomBar.kt`。它是 Android Compose 库（Apache-2.0、min API 33），不直接引入 Flutter，不复制字体、壁纸、图标或上游渲染源码，不抬高本应用 Android 最低版本。
 
-本轮为 Flutter 视觉移植，不宣称 1:1 复刻或实现上游折射 shader。真实背景采样用裁剪的 `BackdropFilter`，叠加染色、渐变高光边框和阴影；渐进模糊用分带 Gaussian 近似。Flutter 的 sigma 独立调整，不套用上游 shader 单位。
+本轮为 Flutter 视觉移植，不宣称 1:1 复刻或实现上游折射 shader。真实背景采样用裁剪的 `BackdropFilter`，叠加染色、渐变高光边框和阴影；非 Android 的渐进模糊用分带 Gaussian 近似。Android 性能修正见 T6：单层轻量磨砂配页头渐变染色，不宣称 sigma 渐变。Flutter 的 sigma 独立调整，不套用上游 shader 单位。
 
 - 沿用深色模式和用户强调色。底色接近 `#08090D`，提升表面 `#1C1C1E`，正文白色、次级文字约 60% 白；不引入新字体或 UI 依赖。
 - 共享圆角：紧凑 16、普通 26、sheet 38，胶囊完整圆角。移动端图标按钮触摸框至少 44；保留 tooltip、键盘与语义能力。新增循环动画与导航过渡遵守 Flutter `disableAnimations`；高对比模式关闭共享表面的背景模糊并使用不透明底色。Flutter 未提供可直接读取的系统“降低透明度”信号，不宣称已支持该独立设置。
 - 窄屏五目的地映射继续为 `[0,1,2,6,3]`；720 起显示侧栏。底部胶囊高 62、内边距 4、选中胶囊高 54，窄屏必要时随文字缩放增长，不能裁字。迷你播放器在其上方，以独立玻璃岛呈现。
 - 发现页保持区块顺序、数据来源与全部操作：标题/服务器、分类、每日推荐、随机、最近播放、最近添加、歌单、统计。改进材质、层级与间距，不重新定义每日推荐刷新/播放语义。
 - 全屏播放器保留封面环境光、封面/黑胶/歌词模式、进度、队列、音量、循环、随机及现有操作；顶部按钮与模式切换、底部 dock 使用一致玻璃材质。
-- 共享组件位于 `lib/core/widgets/glass.dart`，由主 agent 独占：`GlassSurface(child, borderRadius, padding, clear, tint)`、`GlassIconButton(icon, tooltip, onPressed, selected, size, color)`、`GlassBackdrop(child)`、`ProgressiveGlassBlur(height, bottom)`。图标参数为 Widget，onPressed 可空，size 默认 44。
+- 共享组件位于 `lib/core/widgets/glass.dart`，由主 agent 独占：`GlassSurface(child, borderRadius, padding, clear, tint, blur)`、`GlassIconButton(icon, tooltip, onPressed, selected, size, color)`、`GlassBackdrop(child)`、`ProgressiveGlassBlur(height, bottom)`。图标参数为 Widget，onPressed 可空，size 默认 44；`blur` 默认 true，静态画布上的控件显式关闭独立背景采样，保留玻璃表面与高光。
 
 ## 实现与分工
 
@@ -118,3 +118,18 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 - GitHub Release 已确认 prerelease=true、draft=false，远端标签仍解引用至冻结 SHA，发布说明与源码中的说明文件一致。`release/preview.json` 已推进，应用实际主源 `https://raw.githubusercontent.com/SakuraLoveSmile/Sakura-Music/main/release/preview.json` 也读取到新 tag 和构建号；GitHub latest 仍为 v0.3.8，正式清单与发布前逐字节一致。综合结果为 `build/mu-ui01-release/verification-result.json`，另存 `release-api.json`、`preview-after.json`、`latest-after.json`、`public-preview.json`。
 - 收尾提交只更新本任务记录，采用仓库已有 `[skip ci]` 约定，避免对纯发布证据重复执行代码 CI；冻结标签的源码检查已全部完成，未更改测试或工作流门禁。分支与标签已推送，没有合入 UI 到正式主线、没有移动标签，也没有覆盖安装到本机或设备。
 - 发布工作已完成，仍待用户体验与 Android 实机性能、真实音频、系统媒体控件核验；iOS 资产未签名。工作树保留在本文件顶部的路径，供本次实验反馈和后续调整；尚未合入，因此不清理该活跃实验工作树，后续合入且验证后依既有规则收尾。
+
+
+## T6 · 修正 Android 全界面卡顿（2026-11-05）
+
+- 用户在 v0.3.9-glasmio.1 反馈“安卓上特别卡”，进一步明确“整个界面都卡”。恢复基线为 `85b81fe9e1eba1c2d03b22a8e4e6d8bcf8a4ebf0`，发布代码为 `0b8a528`；继续复用本任务分支和工作树。主区仍为原 main，仅原有未跟踪 AGENTS.md；没有暂存或覆盖用户工作。
+- 只读 analyst 独立确认：原首页 pinned header 生成 23 个独立、各自裁剪的 BackdropFilter；全局顶栏、底栏和迷你播放器对静态画布重复采样。播放器的封面模糊及背景动画来自 v0.3.8，本次新加的控件滤镜会放大持续动画的成本。没有帧耗时数据前不宣称量化根因或提升幅度。
+- 主 agent 独占全部实现、测试、记录与运行环境。只读 researcher 核验本机 Flutter 3.41.3 的框架和 Impeller：ShaderMask 包着空 BackdropFilter 会先创建透明 saveLayer，不能保证采到外部背景；不同 sigma 或不同 alpha 的复合滤镜共享 key 也不能保证复用一次 Gaussian。未采用这些未经验证的捷径。两名 agent 自行完成有界查证，没有继续派发。
+- 修正范围：Android 首页用一个 sigma 8 的裁剪磨砂层，叠加既有渐变染色，明确不是渐变 sigma；其他平台保留原分带效果。静态画布上的顶栏、底栏、迷你播放器、分类、统计、44px玻璃按钮，以及本已模糊背景上的播放器 dock/控件保留半透明渐变、圆角和高光，显式关闭独立 backdrop 采样。每日推荐封面上的真实采样保留，Android sigma 为 8；进度条加局部重绘边界。没有改路由、音频、数据、服务器、签名或依赖锁。
+- 验证目标：Android header 至多一次 backdrop；全局导航的独立测试不包含 backdrop；高对比仍关闭效果；44px触摸与既有窄屏/大字、首页推荐、播放器操作保持。真机需在同一设备/数据/渲染器下比较首页滚动、列表切换、迷你播放器进度和全屏播放器，不以 widget 测试替代 GPU 性能。
+- 用户已回复“已连接”真机；截至当前 adb 列表仍为空，正在核对 USB/调试连接。仅使用真机，不启动模拟器。原公开安装包和用户应用数据不清除。
+- 原导航测试在改动前使用本机 Flutter 3.41.3 / 已有 package_config（历史缓存）通过；这不是当前发布锁文件下的检查。最终检查将分别标明本地缓存与 CI 发布 SDK 的结果，锁文件保持原值。
+
+- 本机依赖核对发现 `.dart_tool/package_config.json` 仍指向初始实验的旧 Feedback，因此第一次全仓分析和 macOS 预览构建出现既有依赖不匹配；没有改业务源码规避。仅把生成配置中的 Feedback URI 对齐到本机已缓存、pubspec.lock 已固定的 `7201756`，备份原生成文件后重试成功：`flutter analyze --no-pub` 无问题，45 项受影响测试通过，macOS Android主题预览构建通过。日志为 `build/mu-ui01-android-{analyze-aligned,widget-aligned,macos-preview-aligned}.log`。本机其余 SDK 固定包仍与 CI 的3.47.9锁解析不同，本地结果属于独立工具链冒烟，不冒充发布工具链验证。
+- 独立 reviewer 只读检查实际 diff，未发现实质正确性或交互问题；指出单层磨砂的底边以及原播放器全屏动画需原生核验，未把滤镜数当作 FPS 证据。
+- 用户再次连接后识别到实际 Mi 10，serial `8085d06e`、Android16、1080×2340/440dpi。手机正式包实际为0.3.3，并非反馈中的测试版；因此在忽略目录 `build/mu-ui01-android-perf/` 准备两份同配置的源码快照和独立包 `local.sakuramusic.muui01.perf`，用合成库、模拟播放、profile模式测 Flutter FrameTiming。基线取已发布tag，候选只覆盖本轮5个生产Dart文件；相同本机SDK/缓存/测试计时扩展，保留正式安装与真实资料。快照与测量数据不纳入产品源码。

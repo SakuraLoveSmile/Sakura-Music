@@ -262,6 +262,7 @@ class _TopHeaderBar extends ConsumerWidget {
         const Text('SakuraMusic', style: _homeTitleStyle),
         // Actions Container
         GlassSurface(
+          blur: false,
           clear: true,
           padding: const EdgeInsets.all(4),
           borderRadius: BorderRadius.circular(30),
@@ -455,6 +456,7 @@ class _CategoryNavBar extends StatelessWidget {
     ];
 
     return GlassSurface(
+      blur: false,
       clear: true,
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
@@ -523,7 +525,8 @@ class _FeaturedHeroCard extends ConsumerWidget {
     final primary = Theme.of(context).colorScheme.primary;
 
     return dailySongs.when(
-      loading: () => const GlassSurface(child: SizedBox(height: 116)),
+      loading: () =>
+          const GlassSurface(blur: false, child: SizedBox(height: 116)),
       error: (_, _) => const SizedBox.shrink(),
       data: (songs) {
         if (songs.isEmpty) return const SizedBox.shrink();
@@ -1441,6 +1444,7 @@ class _LibraryStatsGrid extends ConsumerWidget {
           children: <Widget>[
             // 2x3 Grid
             GlassSurface(
+              blur: false,
               clear: true,
               padding: const EdgeInsets.all(10),
               child: GridView.builder(

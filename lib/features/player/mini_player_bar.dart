@@ -30,24 +30,26 @@ class _PlaybackProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SmoothPositionBuilder(
-      service: service,
-      duration: duration,
-      builder: (context, position, controls) {
-        final progress = duration == null || duration! <= Duration.zero
-            ? null
-            : (position.inMilliseconds / duration!.inMilliseconds)
-                  .clamp(0, 1)
-                  .toDouble();
-        return LinearProgressIndicator(
-          value: progress,
-          minHeight: 2.5,
-          backgroundColor: Colors.white.withValues(alpha: 0.07),
-          valueColor: AlwaysStoppedAnimation<Color>(
-            Theme.of(context).colorScheme.primary,
-          ),
-        );
-      },
+    return RepaintBoundary(
+      child: SmoothPositionBuilder(
+        service: service,
+        duration: duration,
+        builder: (context, position, controls) {
+          final progress = duration == null || duration! <= Duration.zero
+              ? null
+              : (position.inMilliseconds / duration!.inMilliseconds)
+                    .clamp(0, 1)
+                    .toDouble();
+          return LinearProgressIndicator(
+            value: progress,
+            minHeight: 2.5,
+            backgroundColor: Colors.white.withValues(alpha: 0.07),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).colorScheme.primary,
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -114,6 +116,7 @@ class MiniPlayerBar extends ConsumerWidget {
             isCompact ? 4 : 10,
           ),
           child: GlassSurface(
+            blur: false,
             child: isCompact
                 ? InkWell(
                     borderRadius: BorderRadius.circular(26),

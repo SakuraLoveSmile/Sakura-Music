@@ -110,6 +110,11 @@ void main() {
             destination.path,
           );
           expect(find.text('page:${destination.path}'), findsOneWidget);
+          expect(
+            find.byType(BackdropFilter),
+            findsNothing,
+            reason: 'Shell chrome has no scrolling detail behind it to blur',
+          );
           expect(tester.takeException(), isNull);
         }
       }

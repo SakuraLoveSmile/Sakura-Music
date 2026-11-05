@@ -252,6 +252,7 @@ class _GlassNavigationBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
       child: GlassSurface(
+        blur: false,
         borderRadius: BorderRadius.circular(100),
         padding: const EdgeInsets.all(4),
         child: Row(
@@ -436,6 +437,7 @@ class _TopActionBar extends StatelessWidget {
                 ),
               ],
               child: GlassSurface(
+                blur: false,
                 clear: true,
                 borderRadius: BorderRadius.circular(22),
                 child: const SizedBox.square(
@@ -632,6 +634,7 @@ class _TopActionBar extends StatelessWidget {
               ];
             },
             child: GlassSurface(
+              blur: false,
               clear: true,
               borderRadius: BorderRadius.circular(24),
               padding: const EdgeInsets.symmetric(horizontal: 11),
@@ -730,6 +733,7 @@ class _DesktopSidebar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
         child: GlassSurface(
+          blur: false,
           child: SafeArea(
             right: false,
             child: Column(

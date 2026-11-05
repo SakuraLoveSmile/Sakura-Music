@@ -10,6 +10,7 @@ class GlassSurface extends StatelessWidget {
     this.borderRadius = const BorderRadius.all(Radius.circular(26)),
     this.padding = EdgeInsets.zero,
     this.clear = false,
+    this.blur = true,
     this.tint,
     super.key,
   });
@@ -18,12 +19,18 @@ class GlassSurface extends StatelessWidget {
   final BorderRadius borderRadius;
   final EdgeInsetsGeometry padding;
   final bool clear;
+
+  /// Sample the backdrop only when there is detail behind this surface.
+  /// Chrome over the app canvas already has a smooth background and can keep
+  /// its translucent face and rim without a separate offscreen blur pass.
+  final bool blur;
   final Color? tint;
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final opaque = MediaQuery.highContrastOf(context);
+    final android = Theme.of(context).platform == TargetPlatform.android;
     final face =
         tint ?? (dark ? const Color(0xFF1C1C1E) : const Color(0xFFF8F8FA));
     final shape = RoundedSuperellipseBorder(borderRadius: borderRadius);
@@ -59,12 +66,12 @@ class GlassSurface extends StatelessWidget {
       ),
       child: ClipRSuperellipse(
         borderRadius: borderRadius,
-        child: opaque
+        child: opaque || !blur
             ? content
             : BackdropFilter(
                 filter: ImageFilter.blur(
-                  sigmaX: clear ? 12 : 24,
-                  sigmaY: clear ? 12 : 24,
+                  sigmaX: android ? 8 : (clear ? 12 : 24),
+                  sigmaY: android ? 8 : (clear ? 12 : 24),
                 ),
                 child: content,
               ),
@@ -125,6 +132,7 @@ class GlassIconButton extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     final dimension = size < 44 ? 44.0 : size;
     return GlassSurface(
+      blur: false,
       clear: !selected,
       tint: selected ? Color.lerp(const Color(0xFF1C1C1E), primary, 0.3) : null,
       borderRadius: BorderRadius.circular(dimension / 2),
@@ -189,9 +197,10 @@ class GlassBackdrop extends StatelessWidget {
   }
 }
 
-/// Narrow clipped blur bands approximate a progressive edge blur. Unlike the
-/// upstream per-pixel Gaussian shader, sigma is constant inside each band.
 /// Place above scrolling content and below sharp foreground controls.
+/// Android uses one light, clipped blur with the header's gradient tint rather
+/// than many offscreen filter passes. Other platforms retain the banded
+/// approximation; neither path implements the upstream per-pixel shader.
 class ProgressiveGlassBlur extends StatelessWidget {
   const ProgressiveGlassBlur({
     this.height = 96,
@@ -205,6 +214,19 @@ class ProgressiveGlassBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (MediaQuery.highContrastOf(context)) return const SizedBox.shrink();
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      return IgnorePointer(
+        child: SizedBox(
+          height: height,
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      );
+    }
     const bandCount = 24;
     return IgnorePointer(
       child: SizedBox(
