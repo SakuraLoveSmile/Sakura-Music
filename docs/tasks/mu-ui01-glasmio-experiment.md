@@ -1,6 +1,6 @@
 # MU-UI01 · Glasmio 风格实验界面
 
-状态：实现中（v0.3.9-glasmio.2 已发布，正在移除首页大标题）。创建于 2026-11-04（Asia/Taipei）。
+状态：待体验（v0.3.9-glasmio.2 已发布；首页大标题已移除并完成检查，此项尚未重新发布安装包）。创建于 2026-11-04（Asia/Taipei）。
 
 ## 目标与现场
 
@@ -22,7 +22,7 @@
 - 沿用深色模式和用户强调色。底色接近 `#08090D`，提升表面 `#1C1C1E`，正文白色、次级文字约 60% 白；不引入新字体或 UI 依赖。
 - 共享圆角：紧凑 16、普通 26、sheet 38，胶囊完整圆角。移动端图标按钮触摸框至少 44；保留 tooltip、键盘与语义能力。新增循环动画与导航过渡遵守 Flutter `disableAnimations`；高对比模式关闭共享表面的背景模糊并使用不透明底色。Flutter 未提供可直接读取的系统“降低透明度”信号，不宣称已支持该独立设置。
 - 窄屏五目的地映射继续为 `[0,1,2,6,3]`；720 起显示侧栏。底部胶囊高 62、内边距 4、选中胶囊高 54，窄屏必要时随文字缩放增长，不能裁字。迷你播放器在其上方，以独立玻璃岛呈现。
-- 发现页保持区块顺序、数据来源与全部操作：标题/服务器、分类、每日推荐、随机、最近播放、最近添加、歌单、统计。改进材质、层级与间距，不重新定义每日推荐刷新/播放语义。
+- 发现页保持区块顺序、数据来源与全部操作：服务器快捷操作、分类、每日推荐、随机、最近播放、最近添加、歌单、统计；顶部大标题按 T7 的用户要求移除。改进材质、层级与间距，不重新定义每日推荐刷新/播放语义。
 - 全屏播放器保留封面环境光、封面/黑胶/歌词模式、进度、队列、音量、循环、随机及现有操作；顶部按钮与模式切换、底部 dock 使用一致玻璃材质。
 - 共享组件位于 `lib/core/widgets/glass.dart`，由主 agent 独占：`GlassSurface(child, borderRadius, padding, clear, tint, blur)`、`GlassIconButton(icon, tooltip, onPressed, selected, size, color)`、`GlassBackdrop(child)`、`ProgressiveGlassBlur(height, bottom)`。图标参数为 Widget，onPressed 可空，size 默认 44；`blur` 默认 true，静态画布上的控件显式关闭独立背景采样，保留玻璃表面与高光。
 
@@ -174,5 +174,8 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 - 验证：复用首页现有320/390px与1.0/1.4倍文字及推荐卡片交互测试，分析受影响文件；用隔离合成预览检查安卓真机首页和页头操作。使用 `build/mu-ui01-title/` 保存本项证据，独立包 `local.sakuramusic.muui01.header`；T6被测源码快照和发布资产保留原值。
 - 本地Flutter3.41.3检查：`flutter test --no-pub test/home_daily_card_widget_test.dart --reporter expanded` 14项通过；受影响文件 `flutter analyze --no-pub lib/features/home/home_screen.dart` 无问题，格式及diff检查通过。日志为 `build/mu-ui01-title-{tests,analyze}.log`。
 - 预览命令最初误在实验工作树根目录执行 `pub get --offline`，重算了7个本机SDK固定依赖；已保存临时解析结果并将生产锁逐字节恢复到原HEAD，工作区核对无锁文件差异。该次普通应用ID的预览APK未安装。之后使用独立源码目录构建；原生库下载握手失败后，按依赖构建脚本的MD5校验复用4个已缓存JAR，隔离Android profile构建通过。代码指纹、JAR摘要及构建日志保留于本项证据目录。
-- 独立预览已安装、启动，未覆盖手机原应用。手机当前停留在锁屏页，已请求用户解锁，原生画面及按钮检查待完成；对应锁屏/熄屏截图与启动日志保留在本项证据目录。
-- 当前代码尚未重新发布安装包；本项完成后记录实际检查与剩余体验范围。
+- 实现已签名提交并推送至实验分支，源码提交为 `178b0308aeb11427b848331efa22a2ac09980acd`。[CI 42047717615](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/42047717615) 的 Test、Analyze、Ubuntu/macOS 两项 Release workflow checks 共4项作业全部成功；已用运行及作业API核对相同源码SHA，证据为 `ci-list-api.json` 与 `ci-jobs-api.json`。两种完整日志下载接口均返回EOF，停止重复获取；不据此引用本次完整测试数量或精确CI SDK版本。
+- 主 agent 已在 Mi 10 / Android16 / 1080×2340 / 440dpi 的独立合成预览中直接核验：首页大标题消失、页头收紧且按钮靠右，搜索、音乐库菜单、设置入口及滚动后的固定页头均正常，无布局溢出或未捕获异常标记。此前确认为无需凭据的普通滑动锁屏，经正常唤醒和上滑进入预览后完成检查，不再等待解锁。截图为 `header-{home,search,library,settings,scrolled}.png`，日志为 `native-ui-final.log`。
+- 生产首页源码与独立快照逐字节一致，SHA256为 `dc05910e0c8eadb4e257521cf7f9082c10da777c35ff49f0eba82f62651cee1b`；生产锁文件与源码提交无差异。`provenance.json` 记录源码、APK、工具链、真机和CI来源；误在根目录构建的两个普通应用ID预览APK已移至 `wrong-directory-apk/` 诊断目录，未安装。
+- 本轮独立包已停止并卸载，手机原应用的版本号、构建号及安装更新时间与检查前一致；没有创建ADB转发。结果为 `cleanup-result.json`，合成数据和模拟播放不作为真实音乐库、音频或系统媒体控件验证。
+- 当前为“待体验”：源码与本地/CI/隔离真机页头检查完成，改动保留于实验分支，未合入main。公开测试版仍为 `v0.3.9-glasmio.2`，不包含此次标题删除；没有创建新标签、Release或推进更新清单。工作树及忽略证据仍供后续实验使用，待合入并验证后按保全规则清理。
