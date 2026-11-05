@@ -1,6 +1,6 @@
 # MU-UI01 · Glasmio 风格实验界面
 
-状态：实现中（测试版发布准备）。创建于 2026-11-04（Asia/Taipei）。
+状态：待体验（测试版已发布）。创建于 2026-11-04（Asia/Taipei）。
 
 ## 目标与现场
 
@@ -102,10 +102,19 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 
 ## T5 · 发布 Glasmio 测试版（2026-11-05）
 
-- 拟发布 `v0.3.9-glasmio.1`，冻结版本 `0.3.9-glasmio.1+1793850934`，沿用既有 `release.yml` 的多平台安装包与签名，使用普通 `lib/main.dart`；合成数据预览入口不作为公开安装包入口。构建号大于正式版所有 ABI 实际 code 的最大值 `1793787648`，并为 ABI 偏移预留范围。
+- 已发布 [v0.3.9-glasmio.1](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.9-glasmio.1)，发布时间为 2026-11-05 12:16:45（Asia/Taipei）。冻结版本 `0.3.9-glasmio.1+1793850934`，沿用既有 `release.yml` 的多平台安装包与签名，使用普通 `lib/main.dart`；合成数据预览入口不作为公开安装包入口。构建号大于正式版所有 ABI 实际 code 的最大值 `1793787648`，并为 ABI 偏移预留范围。
 - 发布前查明：初始实验基线数据库为 schema 17，已发布 v0.3.8 为 schema 20。直接沿旧基线覆盖安装有数据降级风险，因此先保存本任务提交，再仅把本任务 UI、预览、测试和记录移植到 v0.3.8 的冻结提交 `daa82d7e419a2740ac963d94a5ee7d680a574c7d`。这不整合或重写主工作区 main 的分歧历史。
 - 原 UI 签名提交 `29b28c6` 通过本地 `refs/task-snapshots/mu-ui01/pre-release-port` 保留恢复点；移植后的签名 UI 提交为 `fe69d3d`。`git range-diff` 确认补丁等价，全部原 UI 文件与 v0.3.8 均无同文件上游差异。保留 schema 20、凭据、服务器、下载和稳定版反馈/歌词/WebDAV 契约；只读兼容性分析也确认这一方向。先前 58 项结果仅证明旧基线的组合态，发布前重新执行检查。
 - prerelease 必须为 true、make_latest 为 false，仅允许 `release/preview.json` 单调推进；正式版 latest 与 `release/latest.json` 保持原有候选。
 - 发布前本地检查：47 项发布工作流离线测试通过（任务内 Python 3.12 环境、PyYAML 6.0.2），`source-version` 解析为 numeric version `0.3.9`、build `1793850934`、prerelease=true、draft=false；`git diff --check` 通过，10 个 UI/test 文件仍与既有指纹完全一致。证据在 `build/mu-ui01-release/`。
 - 本机 Flutter 3.41.3 的 SDK 固定依赖与 v0.3.8 的锁文件不一致，`pub get --enforce-lockfile` 明确拒绝改写 7 个依赖。锁文件保持发布基线原值，不为本机降级依赖。当前完整代码验证和打包使用项目既有 GitHub CI 与 Release workflow 的 stable SDK；只有全部必要检查通过才认为发布完成。
-- 当前步骤：冻结版本/构建号已完成，接下来推送候选分支，待 CI 通过后推送签名预发布标签，等待全部平台打包与发布，并校验下载包、标签及测试清单。
+- 发布源码冻结为签名提交 `0b8a528f7aac26419c1140c98df2ba585e56695b`，分支已推送；签名标签 `v0.3.9-glasmio.1` 对应标签对象 `4df3eb49af1f1a9e1b0dca2bd90b00d5a2af4f85`，解引用提交与冻结源码一致，已验证本地 GPG 签名和远端引用。
+- 候选 [CI 41965238107](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41965238107) 四项作业全部通过：Flutter 3.47.9 stable，根目录和协议库分析无问题，应用 416 项及协议库 11 项测试通过，macOS/Linux 各 47 项发布工作流检查通过。日志与 API 快照为 `build/mu-ui01-release/{ci-run.json,ci-full.log,ci-summary.txt}`。
+- `git diff --exit-code v0.3.8 v0.3.9-glasmio.1 -- lib/data lib/audio lib/main.dart lib/app.dart pubspec.lock android ios macos windows` 通过，确认发布相对 v0.3.8 没有改动数据、音频、启动入口、锁文件和平台签名/应用标识配置。初始原生截图仍对应同一份 UI 补丁，但 SDK 为 3.41.3，不作为最终公开安装包已经实机验收的证据。
+- [Release 41965619505](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41965619505) 的 8 个作业全部通过，按同一 SHA 构建并发布 Android、Windows、macOS、iOS；发布流程内分析和完整应用测试也通过。版本身份、原始快照与正式清单哈希见 `build/mu-ui01-release/frozen-release.json`，作业与日志为 `release-run.json`、`release-full.log`。
+- 标签 [CI 41965619452](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41965619452) 首轮为 415 项通过、1 项失败：既有 `webdav_client_test.dart` A1 的服务端写入计数达到 8MiB，512KiB 返回值上限断言仍通过；同一源码的分支 CI 和 Release 测试均完整通过。该测试和 WebDAV 实现与 v0.3.8 无差异，服务端计数发生在 `add/flush` 返回后，并不等于客户端实际接收量，存在传输观测与调度敏感性；具体触发机制尚未确认。仅对失败 Test 作业重跑一次，第 2 次完整通过。未为重跑改源码、断言或门禁，不宣称已修复该既有非确定性；首次失败与重跑证据保留在 `tag-ci-{failed,rerun}.log`、`tag-ci-final-api.json`。全部冻结源码的 CI/Release 当前均为 success，见 `all-source-runs.json`。
+- 9 个公开资产已下载并逐个核对大小与 GitHub SHA-256：4 个 Android APK、Windows ZIP、macOS ZIP/DMG、iOS unsigned IPA/Runner.app ZIP。首次 GitHub API 下载有一个 iOS 资源发生 EOF，其余 8 个文件完整；用公开下载地址补取该资源后，9 个全部通过校验，没有替换或重传已发布资产。
+- 四种新 APK 的应用 ID 均为 `com.sakuramusic.app`，平台数字版本均为 `0.3.9`，实际 code 分别为 universal `1793850934`、armeabi-v7a `1793851934`、arm64-v8a `1793852934`、x86_64 `1793854934`。全部 APK 签名证书 SHA-256 与实际下载的正式 v0.3.8 arm64 APK 一致：`b2bb4810ec0074fe6e2341689fde03755f5be7567d779d2cce9d9318d0fc7a8d`。macOS ZIP 和两个 iOS 包的 Info.plist 同样确认正式应用 ID、数字版本 `0.3.9` 与构建号 `1793850934`；预发布身份由 tag 与 prerelease 标志表达，符合既有更新契约。
+- GitHub Release 已确认 prerelease=true、draft=false，远端标签仍解引用至冻结 SHA，发布说明与源码中的说明文件一致。`release/preview.json` 已推进，应用实际主源 `https://raw.githubusercontent.com/SakuraLoveSmile/Sakura-Music/main/release/preview.json` 也读取到新 tag 和构建号；GitHub latest 仍为 v0.3.8，正式清单与发布前逐字节一致。综合结果为 `build/mu-ui01-release/verification-result.json`，另存 `release-api.json`、`preview-after.json`、`latest-after.json`、`public-preview.json`。
+- 收尾提交只更新本任务记录，采用仓库已有 `[skip ci]` 约定，避免对纯发布证据重复执行代码 CI；冻结标签的源码检查已全部完成，未更改测试或工作流门禁。分支与标签已推送，没有合入 UI 到正式主线、没有移动标签，也没有覆盖安装到本机或设备。
+- 发布工作已完成，仍待用户体验与 Android 实机性能、真实音频、系统媒体控件核验；iOS 资产未签名。工作树保留在本文件顶部的路径，供本次实验反馈和后续调整；尚未合入，因此不清理该活跃实验工作树，后续合入且验证后依既有规则收尾。
