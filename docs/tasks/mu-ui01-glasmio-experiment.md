@@ -1,6 +1,6 @@
 # MU-UI01 · Glasmio 风格实验界面
 
-状态：实现中（测试版已发布，正在修正 Android 全界面卡顿）。创建于 2026-11-04（Asia/Taipei）。
+状态：待体验（Android 卡顿修正及真机对照已完成，v0.3.9-glasmio.2 已发布）。创建于 2026-11-04（Asia/Taipei）。
 
 ## 目标与现场
 
@@ -153,4 +153,16 @@ T4：主 agent 检查集成 diff、执行 `flutter analyze` 和受影响既有 w
 - 最终全屏 build 中位数/p95 为5.199/6.372ms；837帧中7帧build超过16.667ms，total p95为9.604ms，因此不宣称完全无掉帧或所有手机稳定90fps。最终播放场景的raster均无超过11.111ms的样本。首页raster有6帧超过11.111ms，切页有1帧。
 - 主 agent 直接检查真机截图和交互：暂停、下一首标题/队列序号、拖动到02:58、循环高亮、速度1.5x、封面/黑胶/歌词切换、折叠返回与首页滚动磨砂边缘正常。没有溢出或未捕获异常标记。证据为 `candidate-ui-*.png` 和 `candidate-native-regression.log`；早期采样另存 `stage1/`、`stage2/`，不将中间实现的数据冒充最终结果。
 - 真机结果属于本机3.41.3 profile模式、合成音乐和模拟播放，未覆盖最终公开3.47.9安装包、真实音乐服务/音频或系统媒体控件；原手机0.3.3安装与真实数据保持。Android原生渲染缺口已补充本节证据，真实音乐体验仍待用户确认。
-- 下一步：发布修正测试版 `v0.3.9-glasmio.2`，构建号 `1793858280` 大于 `.1` 所有ABI实际code的最大值1793854934；提交后重新执行最终源码CI、既有多平台Release，检查9个公开资产身份/签名/摘要、preview推进与stable不变，收尾停止并移除本任务合成测试包与ADB转发。未合入main，活跃实验工作树继续保留。
+- 修正测试版 `v0.3.9-glasmio.2` 已完成最终源码CI、既有多平台Release和公开包校验，发布及收尾证据见下文。构建号 `1793858280` 大于 `.1` 所有ABI实际code的最大值1793854934。
+
+### T6 发布与收尾
+
+- 已发布 [v0.3.9-glasmio.2](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.9-glasmio.2)，发布时间2026-11-05 14:21:39（Asia/Taipei）。冻结源码为签名提交 `6aa0804e4ed4b0dc920d45f7e1960e5c6ed4fa3f`；签名标签对象 `c2db147c5fe28859d7049615f32a34264eb0b011`，本地GPG验证通过，远端解引用与冻结源码一致。版本 `0.3.9-glasmio.2+1793858280`；公开安装包使用正常 `lib/main.dart`。
+- 最终 [分支CI 41978274775](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41978274775) 与 [标签CI 41978684022](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41978684022) 各4项作业首次全部通过：Flutter3.47.9，应用420项、协议11项测试，根/协议两处分析无问题，macOS/Linux各47项发布工作流测试。新增播放器回归已包含在420项中；这些结果绑定最终源码，替代首轮409131b的对应发布依据。
+- [Release 41978684051](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/41978684051) 8项作业全部成功；发布流程内分析及420项应用测试也通过，按同一SHA生成Android、Windows、macOS和iOS包。`git diff --exit-code v0.3.8 HEAD -- lib/data lib/audio lib/main.dart lib/app.dart pubspec.lock android ios macos windows` 通过，保持正式基线的数据、音频、启动入口、依赖锁和平台配置。
+- 9个公开资产全部下载并与发布API逐项核对大小及SHA-256。下载期间出现TLS/HTTP2连接中断，保留完整文件及断点，用公开地址补齐缺失范围后进行全文件校验；下载过程及恢复证据保留在 `build/mu-ui01-glasmio2-release/download-{initial,final}-results.json`、`universal-range-verification.json` 与 `range-recovery/`。
+- 4个Android APK均为 `com.sakuramusic.app` / `0.3.9`；实际code为universal `1793858280`、armeabi-v7a `1793859280`、arm64-v8a `1793860280`、x86_64 `1793862280`。全部签名证书SHA256与实际正式v0.3.8包一致：`b2bb4810ec0074fe6e2341689fde03755f5be7567d779d2cce9d9318d0fc7a8d`。macOS ZIP及两个iOS包的Info.plist确认应用ID、数字版本0.3.9、构建号1793858280；iOS沿用未签名资产。
+- GitHub Release确认prerelease=true、draft=false，发布说明与冻结源码一致。`release/preview.json` 已推进，应用实际raw主源也读取到 `.2` / 1793858280。GitHub Latest仍为v0.3.8，正式 `release/latest.json` 与发布前逐字节一致。综合结果在 `build/mu-ui01-glasmio2-release/verification-result.json`；同目录保留 `frozen-release.json`、两次CI及Release的API/日志、`all-source-runs.json`、`release-api.json`、`public-preview.json` 和9个资产。
+- 真机运行资源已收尾：停止并卸载本任务独立合成测试包 `local.sakuramusic.muui01.perf`，移除host端口55829转发，当前ADB转发为空。手机原应用仍为0.3.3 / 1793215802，lastUpdateTime仍为2026-10-29 10:28:32；核对前后包身份完全一致。结果在 `build/mu-ui01-android-perf/cleanup-result.json`。真机逐帧JSON、截图、源码快照和APK继续保留作证据。
+- 收尾提交仅更新本权威记录，采用仓库已有 `[skip ci]` 约定；应用源码、版本和发布说明仍对应已完成检查的冻结标签。主工作区HEAD仍为3f705002，只有原有未跟踪AGENTS.md；实验工作树的AGENTS.md也保持未暂存。
+- 当前为“待体验”：Android隔离真机界面性能与主要交互已补齐；最终公开安装包的真实音乐库、音频和系统媒体控件仍待用户体验。UI继续保留在实验分支，未合入main；活跃工作树及所需忽略证据保留，后续合入且验证后按保全规则清理。下一步处理用户对 `.2` 的实际体验反馈。
