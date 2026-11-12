@@ -43,14 +43,11 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
       _index = (value as Playlist).index;
       _emit();
     });
-    addSubscription(_subscriptions, _player.stream.volume, (value) {
-      if (_ignoreVolumeStream) {
-        return;
-      }
-      _volume = (value as double) / 100;
-      _appliedVolume = _volume;
-      _emit();
-    });
+    // `_player.stream.volume` is intentionally not subscribed: it reports what
+    // the backend currently has (envelope steps, late events from a previous
+    // track), not what the user asked for. The target lives in `_volume` and is
+    // only moved by `setVolume`, so a fade or a stale event can never rewrite
+    // the volume the user chose.
     addSubscription(_subscriptions, _player.stream.rate, (value) {
       _speed = value as double;
       _emit();
@@ -91,12 +88,23 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
   bool _completed = false;
   AppLoopMode _loopMode = AppLoopMode.off;
   bool _shuffle = false;
+
+  /// User/API target volume (0-1). Only [setVolume] moves it; envelope steps,
+  /// loading-time backend reports and late events never do.
   double _volume = 1;
+
+  /// Volume last successfully written to the backend (0-1). The envelope starts
+  /// from this value instead of from a backend-observed one.
   double _appliedVolume = 1;
   double _speed = 1;
   final VolumeFader _volumeFader = VolumeFader();
-  int _fadeGeneration = 0;
-  bool _ignoreVolumeStream = false;
+
+  /// Invalidates volume writes issued by a superseded operation so an old
+  /// envelope step can never lower the output after a newer intent.
+  int _volumeEpoch = 0;
+
+  /// Serializes backend volume writes so they land in issue order.
+  Future<void> _volumeWrites = Future<void>.value();
   Object? _error;
   EqualizerSettings _equalizerSettings = const EqualizerSettings();
   bool _disposed = false;
@@ -113,6 +121,7 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
     _index = _queue.isEmpty ? 0 : startIndex.clamp(0, _queue.length - 1);
     _completed = false;
     _error = null;
+    _stopFade();
     if (_queue.isEmpty) {
       await _player.stop();
       _emit();
@@ -131,20 +140,18 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
     await Future.wait<void>(<Future<void>>[
       _player.setPlaylistMode(_toMediaKitPlaylistMode(_loopMode)),
       _player.setShuffle(_shuffle),
-      _player.setVolume(_volume * 100),
+      _applyVolume(_volume),
       _player.setRate(_speed),
       _applyEqualizer(),
     ]);
-    _appliedVolume = _volume;
     _emit();
   }
 
   @override
   Future<void> play() async {
     _completed = false;
-    _fadeGeneration++;
-    _volumeFader.cancel();
-    await _applyVolume(0, suppressStream: true);
+    _stopFade();
+    await _applyVolume(0);
     await _player.play();
     unawaited(_fadeTo(_volume));
   }
@@ -155,32 +162,31 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
       await _fadeTo(0);
     }
     await _player.pause();
+    _stopFade();
     await _applyVolume(_volume);
   }
 
   @override
-  Future<void> next() async {
-    final wasPlaying = _playing;
-    if (wasPlaying) {
-      await _fadeTo(0);
-    }
-    _completed = false;
-    await _player.next();
-    if (wasPlaying) {
-      unawaited(_fadeTo(_volume));
-    }
-  }
+  Future<void> next() => _switchTrack(_player.next);
 
   @override
-  Future<void> previous() async {
+  Future<void> previous() => _switchTrack(_player.previous);
+
+  /// Fades out, moves the backend, then returns to the current user target.
+  /// The target is read after the switch, so a volume change issued while the
+  /// switch is in flight wins over the value captured at the start.
+  Future<void> _switchTrack(Future<void> Function() move) async {
     final wasPlaying = _playing;
     if (wasPlaying) {
       await _fadeTo(0);
     }
     _completed = false;
-    await _player.previous();
+    await move();
     if (wasPlaying) {
       unawaited(_fadeTo(_volume));
+    } else {
+      _stopFade();
+      await _applyVolume(_volume);
     }
   }
 
@@ -256,44 +262,52 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
   Future<void> setVolume(double value) async {
     _checkVolume(value);
     _volume = value;
-    _fadeGeneration++;
-    _ignoreVolumeStream = false;
-    _volumeFader.cancel();
-    await _player.setVolume(value * 100);
-    _appliedVolume = value;
+    _stopFade();
+    await _applyVolume(value);
     _emit();
   }
 
-  Future<void> _applyVolume(double value, {bool suppressStream = false}) async {
-    final wasIgnoring = _ignoreVolumeStream;
-    if (suppressStream) {
-      _ignoreVolumeStream = true;
-    }
-    try {
-      await _player.setVolume(value * 100);
-      _appliedVolume = value;
-    } finally {
-      if (suppressStream) {
-        _ignoreVolumeStream = wasIgnoring;
-      }
-    }
+  /// Starts a new volume intent: the envelope in flight is cancelled and every
+  /// write issued before this point is dropped instead of reaching the backend,
+  /// so an old step can never lower the output after the user acted.
+  void _stopFade() {
+    _volumeEpoch++;
+    _volumeFader.cancel();
   }
 
-  Future<void> _fadeTo(double target) async {
-    final generation = ++_fadeGeneration;
-    _ignoreVolumeStream = true;
-    try {
-      await _volumeFader.fade(
-        from: _appliedVolume,
-        to: target,
-        apply: _applyVolume,
-        duration: const Duration(milliseconds: 120),
-      );
-    } finally {
-      if (generation == _fadeGeneration) {
-        _ignoreVolumeStream = false;
+  /// Writes [value] (0-1) to the media_kit boundary, which expects 0-100.
+  ///
+  /// Writes are serialized so they land in issue order, and a write issued by a
+  /// superseded operation is dropped before it can move the backend or
+  /// [_appliedVolume]. Failures still propagate to the caller.
+  Future<void> _applyVolume(double value, {int? epoch}) {
+    final intent = epoch ?? _volumeEpoch;
+    final write = _volumeWrites.then<void>((_) async {
+      if (intent != _volumeEpoch) {
+        return;
       }
-    }
+      await _player.setVolume(value * 100);
+      if (intent != _volumeEpoch) {
+        return;
+      }
+      _appliedVolume = value;
+    });
+    // Keep the queue usable after a failed write; the failure is still reported
+    // to the caller through [write].
+    _volumeWrites = write.then<void>((_) {}, onError: (Object _) {});
+    return write;
+  }
+
+  /// Runs the desktop 120 ms envelope from the last applied value to [target].
+  Future<void> _fadeTo(double target) async {
+    final epoch = ++_volumeEpoch;
+    _volumeFader.cancel();
+    await _volumeFader.fade(
+      from: _appliedVolume,
+      to: target,
+      apply: (value) => _applyVolume(value, epoch: epoch),
+      duration: const Duration(milliseconds: 120),
+    );
   }
 
   @override
@@ -394,6 +408,7 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
         ? _index.clamp(0, _queue.length - 1)
         : _queue.indexWhere((item) => item.id == currentItemId);
     _index = restoredIndex < 0 ? 0 : restoredIndex;
+    _stopFade();
     await _mpvCacheReady;
     await _player.open(
       Playlist(
@@ -407,11 +422,10 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
     await Future.wait<void>(<Future<void>>[
       _player.setPlaylistMode(_toMediaKitPlaylistMode(_loopMode)),
       _player.setShuffle(_shuffle),
-      _player.setVolume(_volume * 100),
+      _applyVolume(_volume),
       _player.setRate(_speed),
       _applyEqualizer(),
     ]);
-    _appliedVolume = _volume;
     if (position > Duration.zero) {
       await _player.seek(position);
     }
@@ -449,7 +463,9 @@ class MediaKitAudioPlayerService implements AudioPlayerService {
   @override
   Future<void> dispose() async {
     _disposed = true;
-    _volumeFader.cancel();
+    // Drops any envelope step still queued for the backend so a write cannot
+    // land on the disposed player.
+    _stopFade();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
