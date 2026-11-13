@@ -1273,16 +1273,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             // Compact Lyrics Preview Card
             Expanded(
               child: Center(
-                child: SmoothPositionBuilder(
-                  service: service,
-                  builder: (context, position, controls) =>
-                      CompactLyricsPreview(
-                        item: item,
-                        position: position,
-                        onTap: () => setState(
-                          () => _mobileMode = _MobileStageMode.lyrics,
-                        ),
-                      ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: SmoothPositionBuilder(
+                      service: service,
+                      builder: (context, position, controls) =>
+                          CompactLyricsPreview(
+                            item: item,
+                            position: position,
+                            onTap: () => setState(
+                              () => _mobileMode = _MobileStageMode.lyrics,
+                            ),
+                          ),
+                    ),
+                  ),
                 ),
               ),
             ),

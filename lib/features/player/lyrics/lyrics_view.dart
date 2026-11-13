@@ -391,7 +391,7 @@ class CompactLyricsPreview extends ConsumerWidget {
             borderRadius: BorderRadius.circular(14),
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(14),
@@ -407,12 +407,13 @@ class CompactLyricsPreview extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14.5,
+                      fontSize: 18,
                       fontWeight: FontWeight.w700,
+                      height: 1.35,
                     ),
                   ),
                   if (nextText.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       nextText,
                       textAlign: TextAlign.center,
@@ -420,7 +421,8 @@ class CompactLyricsPreview extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 12.5,
+                        fontSize: 15,
+                        height: 1.35,
                       ),
                     ),
                   ],
