@@ -74,7 +74,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Load read-only SSH deploy key (private feedback dependency)
@@ -82,7 +82,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
 
-      - name: Install dependencies
+      - name: Install dependencies (root)
+        run: flutter pub get
+
+      # 根目录 analyze 会连 packages/ 下的测试文件一起检查；子包没有自己的
+      # package_config 时解析不到 package:test，会报 65 个 uri_does_not_exist /
+      # undefined_function。与 ci.yml 保持一致，先给子包装依赖再分析。
+      - name: Install dependencies (subsonic_api)
+        working-directory: packages/subsonic_api
         run: flutter pub get
 
       - name: Analyze
@@ -120,7 +127,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
 
       # Keep Gradle out of the SDK auto-installer path that returned an invalid
@@ -212,7 +219,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Load read-only SSH deploy key (private feedback dependency)
@@ -285,7 +292,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Load read-only SSH deploy key (private feedback dependency)
@@ -339,7 +346,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Load read-only SSH deploy key (private feedback dependency)

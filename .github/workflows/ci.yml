@@ -40,7 +40,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Load read-only SSH deploy key (private feedback dependency)
@@ -48,15 +48,17 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
 
+      # 子包依赖要先装：根目录 flutter analyze 会连 packages/ 下的测试一起检查，
+      # 没有子包 package_config 时会报 65 个 package:test 解析错误。
       - name: Install dependencies (root)
         run: flutter pub get
-
-      - name: Run flutter analyze (root)
-        run: flutter analyze
 
       - name: Install dependencies (subsonic_api)
         working-directory: packages/subsonic_api
         run: flutter pub get
+
+      - name: Run flutter analyze (root)
+        run: flutter analyze
 
       - name: Run flutter analyze (subsonic_api)
         working-directory: packages/subsonic_api
@@ -72,7 +74,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.47.9'
           cache: true
 
       - name: Load read-only SSH deploy key (private feedback dependency)
@@ -83,12 +85,12 @@ jobs:
       - name: Install dependencies (root)
         run: flutter pub get
 
-      - name: Run flutter test (root)
-        run: flutter test
-
       - name: Install dependencies (subsonic_api)
         working-directory: packages/subsonic_api
         run: flutter pub get
+
+      - name: Run flutter test (root)
+        run: flutter test
 
       - name: Run flutter test (subsonic_api)
         working-directory: packages/subsonic_api
