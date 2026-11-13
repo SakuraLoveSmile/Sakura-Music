@@ -82,7 +82,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.FEEDBACK_DEPLOY_KEY }}
 
-      - name: Install dependencies
+      - name: Install dependencies (root)
+        run: flutter pub get
+
+      # 根目录 analyze 会连 packages/ 下的测试文件一起检查；子包没有自己的
+      # package_config 时解析不到 package:test，会报 65 个 uri_does_not_exist /
+      # undefined_function。与 ci.yml 保持一致，先给子包装依赖再分析。
+      - name: Install dependencies (subsonic_api)
+        working-directory: packages/subsonic_api
         run: flutter pub get
 
       - name: Analyze
