@@ -87,6 +87,7 @@ class FakeGitHub:
         self.ref = None
         self.annotation = None
         self.release = None
+        self.commit = dict(commit=dict(message='kaneo(root): 测试任务标题'))
         self.assets = {}
         self.calls = []
         self.releases = []
@@ -106,6 +107,7 @@ class FakeGitHub:
             elif '/releases/assets/' in path:
                 result = next(a['_body'] for a in self.assets.values() if str(a['id']) == path.rsplit('/', 1)[1])
             elif '/releases?' in path: result = self.releases
+            elif '/commits/' in path: result = self.commit
             else: raise AssertionError(path)
             return copy.deepcopy(result)
         if method == 'POST' and path.endswith('/git/tags'):
@@ -150,6 +152,26 @@ class RecoveryTests(unittest.TestCase):
 
     def publish(self, env=None):
         return pilot.publish(self.manifest, env or self.env, self.root, self.remote)
+
+    def test_release_and_feed_list_the_delivered_user_request(self):
+        self.remote.commit = dict(commit=dict(message='kaneo(root): 隐藏首页无作用的统计区\n\nKaneo-Task: root'))
+        self.publish()
+        body = self.remote.release['body']
+        self.assertTrue(body.startswith('kaneopilot-owner:'))
+        self.assertIn('【本次更新】', body)
+        self.assertIn('用户反馈：隐藏首页无作用的统计区', body)
+        candidate = json.loads((self.root / 'candidate.json').read_bytes())
+        self.assertNotIn('kaneopilot-owner:', candidate['body'])
+        self.assertIn('用户反馈：隐藏首页无作用的统计区', candidate['body'])
+
+    def test_missing_or_foreign_commit_does_not_invent_notes(self):
+        for commit in (None, dict(commit=dict(message='Merge pull request #9')), dict(commit={})):
+            with self.subTest(commit=commit):
+                self.remote = FakeGitHub()
+                self.remote.commit = commit
+                self.publish()
+                self.assertNotIn('本次更新', self.remote.release['body'])
+                self.assertNotIn('用户反馈', json.loads((self.root / 'candidate.json').read_bytes())['body'])
 
     def test_draft_then_publish_and_exact_provenance(self):
         result = self.publish()
