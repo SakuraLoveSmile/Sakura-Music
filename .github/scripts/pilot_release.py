@@ -151,6 +151,67 @@ def owner_marker(manifest, env):
     return 'kaneopilot-owner:' + canonical(owner).decode('utf-8')
 
 
+KANEO_SUBJECT = re.compile(r'kaneo\([^)]*\):\s*(.+)')
+CHANGELOG_TITLE_LIMIT = 300
+
+
+def kaneo_task_title(manifest, request=api):
+    """The frozen root task's title, read from its immutable delivery commit.
+
+    The task manifest only carries identities, so the user-visible request is
+    recovered from the commit subject. Missing, foreign or non-Kaneo commits
+    deliberately produce no notes instead of invented text.
+    """
+    member = next((item for item in manifest.get('members') or []
+                   if isinstance(item, dict) and item.get('task_id') == manifest.get('root_task_id')), None)
+    if member is None or not matches(SHA, member.get('head_sha')):
+        return ''
+    value = request('GET', '/repos/' + manifest['repository'] + '/commits/' + member['head_sha'])
+    commit = value.get('commit') if isinstance(value, dict) else None
+    message = commit.get('message') if isinstance(commit, dict) else None
+    if not isinstance(message, str):
+        return ''
+    matched = KANEO_SUBJECT.fullmatch(message.split('\n', 1)[0].strip())
+    if matched is None:
+        return ''
+    title = ' '.join(matched.group(1).split())
+    if len(title) > CHANGELOG_TITLE_LIMIT:
+        title = title[:CHANGELOG_TITLE_LIMIT].rstrip() + '…'
+    return title
+
+
+def release_changelog(manifest, request=api):
+    """User-facing test-build notes listing the delivered user request."""
+    title = kaneo_task_title(manifest, request)
+    return '【本次更新】\n\n• 用户反馈：' + title if title else ''
+
+
+def release_body(marker, notes):
+    parts = [marker]
+    if notes:
+        parts.append(notes)
+    parts.append('iOS assets are unsigned; signing is required before device installation.')
+    return '\n\n'.join(parts)
+
+
+def _owner_head(line):
+    value = line[5:-4] if line.startswith('<!-- ') and line.endswith(' -->') else line
+    if not value.startswith('kaneopilot-owner:'):
+        return False
+    try:
+        return isinstance(json.loads(value.split(':', 1)[1]), dict)
+    except ValueError:
+        return False
+
+
+def user_feed_body(body):
+    """The update feed carries user text only; drop a valid ownership head."""
+    lines = body.split('\n')
+    if lines and _owner_head(lines[0]):
+        return '\n'.join(lines[1:]).lstrip('\n')
+    return body
+
+
 def prepare(manifest, env, root):
     files = collect_assets(root)
     assets = [dict(name=name, size=path.stat().st_size, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
@@ -205,6 +266,8 @@ def publish(manifest, env, root, request=api):
     marker = owner_marker(manifest, env)
     ref = request('GET', prefix + '/git/ref/tags/' + tag)
     release = request('GET', prefix + '/releases/tags/' + tag)
+    # Resolve user notes before any remote write; recovery keeps the original body.
+    notes = release_changelog(manifest, request) if release is None else ''
     if ref is not None:
         obj = ref.get('object', {})
         require(obj.get('type') == 'tag' and matches(SHA, obj.get('sha')), 'Foreign tag; refusing recovery')
@@ -224,7 +287,7 @@ def publish(manifest, env, root, request=api):
         release = request('POST', prefix + '/releases', data=dict(tag_name=manifest['tag'],
                           target_commitish=manifest['target_sha'], name=manifest['tag'], draft=True,
                           prerelease=prerelease, make_latest='false',
-                          body=marker + '\n\niOS assets are unsigned; signing is required before device installation.'))
+                          body=release_body(marker, notes)))
     else:
         require(release.get('body', '').split('\n', 1)[0] == marker and
                 release.get('tag_name') == manifest['tag'] and release.get('prerelease') is prerelease,
@@ -310,7 +373,7 @@ def publish(manifest, env, root, request=api):
     candidate = dict(tag_name=manifest['tag'], version=manifest['version'],
                      build_number=manifest['build_number'], prerelease=prerelease, draft=False,
                      html_url='https://github.com/' + repository + '/releases/tag/' + manifest['tag'],
-                     body=final.get('body') or '', published_at=final.get('published_at'),
+                     body=user_feed_body(final.get('body') or ''), published_at=final.get('published_at'),
                      assets=[dict(name=a['name'], size=a['size'], digest='sha256:' + a['sha256'],
                      browser_download_url='https://github.com/' + repository + '/releases/download/' + manifest['tag'] + '/' + a['name']) for a in provenance['assets']])
     (root / 'candidate.json').write_bytes(canonical(candidate))
