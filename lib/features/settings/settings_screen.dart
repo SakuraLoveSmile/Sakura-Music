@@ -59,7 +59,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context.l10n.downloadOff,
     ];
 
-    return Scaffold(
+    // System back must land on the music home, never on the launcher: the home
+    // screen enters `/settings` with `go()`, so there is nothing to pop, and
+    // without this interception Android backgrounds the whole app.
+    final Widget scaffold = Scaffold(
       backgroundColor: const Color(0xFF131418),
       appBar: AppBar(
         backgroundColor: const Color(0xFF131418),
@@ -71,13 +74,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             color: Colors.white,
           ),
           tooltip: context.l10n.back,
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
-          },
+          onPressed: _handleBack,
         ),
         title: Text(
           context.l10n.settings,
@@ -390,6 +387,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+
+    // `context.canPop()` is `GoRouter.of(this)`, which throws "No GoRouter found
+    // in context" in a host that never mounts go_router (widget tests and
+    // previews render this page inside a plain `MaterialApp`), so the build
+    // reads the router through the non-throwing `maybeOf` instead.
+    final GoRouter? router = GoRouter.maybeOf(context);
+    if (router == null) {
+      // No router to navigate with: leave the host's own back behaviour
+      // untouched instead of asserting during build.
+      return scaffold;
+    }
+
+    return PopScope(
+      canPop: router.canPop(),
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        // A real pop already navigated, so returning here keeps one back event
+        // from navigating twice.
+        if (didPop) return;
+        _handleBack();
+      },
+      child: scaffold,
+    );
+  }
+
+  /// Single back entry point: the AppBar arrow and the system back gesture both
+  /// land here. With history we pop; without it (the usual `go('/settings')`
+  /// entry) we go to `/home`, where router.dart's redirect sends an install
+  /// with no server to `/welcome`.
+  void _handleBack() {
+    final GoRouter? router = GoRouter.maybeOf(context);
+    if (router == null) {
+      // Router-less host: fall back to the enclosing navigator so the arrow
+      // still closes a pushed page instead of asserting.
+      Navigator.maybePop(context).ignore();
+      return;
+    }
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go('/home');
+    }
   }
 
   Widget _buildVIPCard(BuildContext context) {
