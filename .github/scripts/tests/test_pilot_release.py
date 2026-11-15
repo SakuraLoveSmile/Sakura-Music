@@ -17,7 +17,8 @@ def fixture():
     manifest = dict(schema=1, batch_id='batch-1', repository='owner/repo', project_id='music',
                     root_task_id='root', target_sha='a' * 40,
                     members=[dict(task_id='root', execution_run_id='run-1', plan_sha256='b' * 64,
-                                  requirements_sha256='c' * 64, head_sha='d' * 40)],
+                                  requirements_sha256='c' * 64, head_sha='d' * 40,
+                                  reporter='alice', summary='隐藏首页无作用的统计区')],
                     channel='prerelease', version='0.3.1', tag='v0.3.1-pilot.1800000000',
                     build_number=1800000000, required_assets=list(pilot.ASSETS))
     raw = pilot.canonical(manifest)
@@ -55,7 +56,9 @@ class ContractTests(unittest.TestCase):
         cases = [dict(m, build_number=0), dict(m, build_number=True), dict(m, build_number=2147483648),
                  dict(m, channel='prod'), dict(m, version='0.3.1-beta'), dict(m, required_assets=['../oops']),
                  dict(m, required_assets=[]), dict(m, members=m['members'] * 2),
-                 dict(m, members=[dict(m['members'][0], plan_sha256='invalid')])]
+                 dict(m, members=[dict(m['members'][0], plan_sha256='invalid')]),
+                 dict(m, members=[dict(m['members'][0], reporter='')]),
+                 dict(m, members=[dict(m['members'][0], summary='x' * 1025)])]
         for bad in cases:
             raw = pilot.canonical(bad)
             with self.subTest(bad=bad), self.assertRaises(ValueError):
@@ -153,25 +156,40 @@ class RecoveryTests(unittest.TestCase):
     def publish(self, env=None):
         return pilot.publish(self.manifest, env or self.env, self.root, self.remote)
 
-    def test_release_and_feed_list_the_delivered_user_request(self):
-        self.remote.commit = dict(commit=dict(message='kaneo(root): 隐藏首页无作用的统计区\n\nKaneo-Task: root'))
+    def test_release_and_feed_list_reporter_and_solved_problem(self):
+        self.remote.commit = dict(commit=dict(message='kaneo(root): 不应使用\n\nKaneo-Task: root'))
         self.publish()
         body = self.remote.release['body']
         self.assertTrue(body.startswith('kaneopilot-owner:'))
         self.assertIn('【本次更新】', body)
-        self.assertIn('用户反馈：隐藏首页无作用的统计区', body)
+        self.assertIn('@alice：隐藏首页无作用的统计区', body)
+        self.assertNotIn('不应使用', body)
         candidate = json.loads((self.root / 'candidate.json').read_bytes())
         self.assertNotIn('kaneopilot-owner:', candidate['body'])
-        self.assertIn('用户反馈：隐藏首页无作用的统计区', candidate['body'])
+        self.assertIn('@alice：隐藏首页无作用的统计区', candidate['body'])
+
+    def test_summary_missing_falls_back_to_commit_title(self):
+        self.manifest['members'][0].pop('summary')
+        self.remote.commit = dict(commit=dict(message='kaneo(root): 用户原话标题\n\nKaneo-Task: root'))
+        self.publish()
+        self.assertIn('@alice：用户原话标题', self.remote.release['body'])
+
+    def test_missing_reporter_uses_generic_user(self):
+        self.manifest['members'][0].pop('reporter')
+        self.publish()
+        self.assertIn('@用户：隐藏首页无作用的统计区', self.remote.release['body'])
 
     def test_missing_or_foreign_commit_does_not_invent_notes(self):
+        for member in self.manifest['members']:
+            member.pop('reporter', None)
+            member.pop('summary', None)
         for commit in (None, dict(commit=dict(message='Merge pull request #9')), dict(commit={})):
             with self.subTest(commit=commit):
                 self.remote = FakeGitHub()
                 self.remote.commit = commit
                 self.publish()
                 self.assertNotIn('本次更新', self.remote.release['body'])
-                self.assertNotIn('用户反馈', json.loads((self.root / 'candidate.json').read_bytes())['body'])
+                self.assertNotIn('@用户', json.loads((self.root / 'candidate.json').read_bytes())['body'])
 
     def test_draft_then_publish_and_exact_provenance(self):
         result = self.publish()
