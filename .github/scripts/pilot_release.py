@@ -79,6 +79,10 @@ def validate(env):
         for key in ('plan_sha256', 'requirements_sha256'):
             require(matches(HASH, member.get(key)), 'Invalid member ' + key)
         require(matches(SHA, member.get('head_sha')), 'Invalid member head_sha')
+        for key in ('reporter', 'summary'):
+            if key in member:
+                require(isinstance(member[key], str) and member[key].strip()
+                        and len(member[key].encode('utf-8')) <= 1024, 'Invalid member ' + key)
     for key in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'):
         require(re.fullmatch(r'[1-9][0-9]*', env.get(key, '')) is not None, 'Invalid ' + key)
     return manifest
@@ -153,6 +157,8 @@ def owner_marker(manifest, env):
 
 KANEO_SUBJECT = re.compile(r'kaneo\([^)]*\):\s*(.+)')
 CHANGELOG_TITLE_LIMIT = 300
+CHANGELOG_REPORTER_LIMIT = 80
+CHANGELOG_DESCRIPTION_LIMIT = 200
 
 
 def kaneo_task_title(manifest, request=api):
@@ -180,10 +186,34 @@ def kaneo_task_title(manifest, request=api):
     return title
 
 
+def _clean_text(value, limit):
+    if not isinstance(value, str):
+        return ''
+    text = ' '.join(value.replace('kaneopilot-owner:', '').split())
+    return text[:limit].rstrip() + '…' if len(text) > limit else text
+
+
+def release_entry(manifest, request=api):
+    """`@reporter：one-sentence solved problem` for the frozen root task.
+
+    The KaneoPilot manifest carries the optional reporter and a one-sentence
+    summary from the frozen plan. Older manifests fall back to the immutable
+    delivery commit title and, without a reporter, to the generic @用户.
+    """
+    member = next((item for item in manifest.get('members') or []
+                   if isinstance(item, dict) and item.get('task_id') == manifest.get('root_task_id')), None)
+    reporter = _clean_text((member or {}).get('reporter'), CHANGELOG_REPORTER_LIMIT).lstrip('@')
+    summary = _clean_text((member or {}).get('summary'), CHANGELOG_DESCRIPTION_LIMIT)
+    description = summary or kaneo_task_title(manifest, request)
+    if not description:
+        return ''
+    return ('@' + reporter if reporter else '@用户') + '：' + description
+
+
 def release_changelog(manifest, request=api):
     """User-facing test-build notes listing the delivered user request."""
-    title = kaneo_task_title(manifest, request)
-    return '【本次更新】\n\n• 用户反馈：' + title if title else ''
+    entry = release_entry(manifest, request)
+    return '【本次更新】\n\n' + entry if entry else ''
 
 
 def release_body(marker, notes):
