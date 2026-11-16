@@ -1,7 +1,7 @@
 # feedback-20261116a：升级 feedback 组件至 0.9.1 并发布 v0.3.9
 
 - 项目 / 任务编号：personal-music / feedback-20261116a
-- 状态：实现中（发布核验后更新为待体验）
+- 状态：待体验（已实现并发布 v0.3.9；待真实安装包体验确认）
 - 创建日期（Asia/Taipei）：2026-11-16
 - 权威记录：本文件
 - 基线：`origin/main` `3e863a8`。本地主工作树的 `main` 与 origin/main 为无关历史且含用户未提交改动，本次不改写或提交它；发布工作在本分支完成，FF 合入 `main`。
@@ -32,11 +32,14 @@
 | 版本/标签校验 | `pilot_release.py source-version pubspec.yaml v0.3.9` | version=0.3.9、build_number=1794840601、prerelease=false |
 | 未验证 | 真实安装包升级与真机交互 | 未执行（发布流水线构建与身份核验后补记） |
 
-## 提交与发布
+## 提交与发布（2026-11-16）
 
-- 实现提交（本分支）：组件 ref、lock、release-build vendoring、版本号、用户向日志、本记录。
-- 计划：FF 推送到 `main` → main CI 通过 → 签名标签 `v0.3.9` → 发布流水线 → 核对 Release/资产/双渠道清单。
-- 尚未验证：发布后 9 资产、渠道清单与安装包身份；发布失败时的重跑按既有流程处理。
+- 实现提交 `93b67ed`：组件 ref、lock、release-build vendoring、版本 `0.3.9+1794840601`、用户向日志、本记录。
+- main CI [43891039531](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/43891039531) 4 个 job 成功；签名标签 `v0.3.9` 指向 `93b67ed`（GPG 校验通过），标签 CI [43891486483](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/43891486483) 成功。
+- 发布流水线 [43891486464](https://github.com/SakuraLoveSmile/Sakura-Music/actions/runs/43891486464)：8 个 job 全部成功（Validate/Test/iOS/Windows/macOS/Android/Publish）。
+- [Release v0.3.9](https://github.com/SakuraLoveSmile/Sakura-Music/releases/tag/v0.3.9)：2026-11-16T15:09:09Z 公开，非草稿、非预发布、Latest，**9 个资产**；body 为用户向日志 `release/notes/v0.3.9.md`。
+- 渠道清单提交 `5f70eda`：`release/latest.json` 与 `release/preview.json` 均为 `v0.3.9` / `0.3.9` / `1794840601` / prerelease=false / 9 资产。
+- 安装包身份（各平台版本号、反馈着色器/文案）与真机升级交互尚未逐项核验。
 
 ## 回退
 
